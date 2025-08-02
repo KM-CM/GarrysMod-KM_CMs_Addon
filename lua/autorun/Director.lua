@@ -87,11 +87,8 @@ function Director_CreateMusicPlayerFromTableInternal( ply, tbl )
 		tHandles = {}, //This One is Used for Public Handles and Uses The User's Custom Time
 		m_tHandles = {} //This One is Used for Private Handles and Uses The Sound's True End Time
 	}, { __index = function( self, Key )
-		local v = rawget( self, Key )
-		if v == nil then
-			v = rawget( tbl, Key )
-			if v == nil then return rawget( CDirectorMusicPlayer, Key )
-			else return v end
+		v = rawget( tbl, Key )
+		if v == nil then return rawget( CDirectorMusicPlayer, Key )
 		else return v end
 	end } )
 	return self
@@ -104,6 +101,7 @@ function CDirectorMusicPlayer:StopAll()
 	table.Empty( self.m_tHandles )
 end
 
+local SysTime = SysTime
 function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flActualLength )
 	if Director_Debug:GetBool() then
 		print "<CDirectorMusicPlayer::Play>"
@@ -120,8 +118,8 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 	Sound = CreateSound( ply, Sound, f )
 	ply.GAME_bNextSoundMute = true
 	Sound:Play()
-	self.tHandles[ Index ] = { Sound, RealTime() + flHandleLength }
-	self.m_tHandles[ Index ] = { Sound, flVolume || 1, RealTime() + ( flActualLength || flHandleLength ) }
+	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength }
+	self.m_tHandles[ Index ] = { Sound, flVolume || 1, SysTime() + ( flActualLength || flHandleLength ) }
 	self:UpdateInternal()
 	return Sound //Just in Case
 end
@@ -147,13 +145,13 @@ function CDirectorMusicPlayer:UpdateInternal( f, s )
 	self.m_flVolume = flVolume
 	local tHandles = {}
 	for i, d in pairs( self.tHandles ) do
-		if RealTime() > d[ 2 ] then d[ 1 ]:Stop() continue end
+		if SysTime() > d[ 2 ] then d[ 1 ]:Stop() continue end
 		tHandles[ i ] = d
 	end
 	self.tHandles = tHandles
 	local m_tHandles = {}
 	for i, d in pairs( self.m_tHandles ) do
-		if RealTime() > d[ 3 ] then d[ 1 ]:Stop() continue end
+		if SysTime() > d[ 3 ] then d[ 1 ]:Stop() continue end
 		local s = d[ 1 ]
 		s:ChangeVolume( math.Clamp( .03, d[ 2 ] * flVolume, 1 ) )
 		m_tHandles[ i ] = d
