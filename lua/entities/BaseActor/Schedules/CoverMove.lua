@@ -126,21 +126,27 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		if sched.bActed == nil then
 			if sched.bActed then self:DLG_Advancing() elseif sched.bRetreating then self:DLG_Retreating() end
 			sched.bActed = true
-			if math.random( 1 ) == 1 then
+			local bSearch = true
+			//If We can Shoot Them, Almost Always Go for It, UnLess Retreating
+			if math.Rand( 0, 1.5 ) <= ( sched.bRetreating && 1 || .75 ) then
 				local vec, enemy = self:FindExposedEnemy( self.vCover, tEnemies, self.bCoverDuck )
-				if IsValid( enemy ) then
+				if IsValid( enemy ) && math.Rand( 0, 1.5 ) <= ( sched.bRetreating && 1 || .75 ) then
 					sched.vFrom = vec
 					sched.pToShootEnemy = enemy
-				else
-					local vFrom, vTo, enemy = self:FindSuppressEnemy( self.vCover, tEnemies, self.bCoverDuck )
-					if IsValid( enemy ) then
-						sched.vFrom = vFrom
-						sched.vTo = vTo
-						sched.pToShootEnemy = enemy
-						sched.bSuppressing = true
-					end
+					sched.bToShoot = true
+					bSearch = nil
 				end
-				sched.bToShoot = true
+			end
+			//OtherWise, Consider Doing It
+			if bSearch && math.random( sched.bRetreating && 3 || 2 ) == 1 then
+				local vFrom, vTo, enemy = self:FindSuppressEnemy( self.vCover, tEnemies, self.bCoverDuck )
+				if IsValid( enemy ) then
+					sched.vFrom = vFrom
+					sched.vTo = vTo
+					sched.pToShootEnemy = enemy
+					sched.bSuppressing = true
+					sched.bToShoot = true
+				end
 			end
 		end
 		if sched.bToShoot then
@@ -394,3 +400,4 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		end
 	else return {} end
 end )
+
