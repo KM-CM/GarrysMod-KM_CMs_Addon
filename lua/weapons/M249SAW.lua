@@ -24,6 +24,8 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
+SWEP.flZoomSpeedIn = 4
+SWEP.flZoomSpeedOut = 1
 
 SWEP.flViewModelAimX = 0
 SWEP.flViewModelAimY = -5.95
