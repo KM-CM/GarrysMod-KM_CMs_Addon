@@ -11,9 +11,7 @@ function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	end
 	return flSpreadX, flSpreadY
 end
-//Trust Me It's Not Worth It
-//function SWEP:GatherCrosshairAlpha( MyTable ) return ( 1 - MyTable.flZoom ) * 255 end
-function SWEP:GatherCrosshairAlpha( MyTable ) if MyTable.flZoom > .8 then return 255 end end
+function SWEP:GatherCrosshairAlpha( MyTable ) return MyTable.bDontDrawCrosshairDuringZoom && ( 1 - MyTable.flZoom ) * 255 || 255 end
 
 SWEP.CrosshairColorBase = Color( 255, 255, 255 )
 SWEP.CrosshairColorOutLine = Color( 0, 0, 0 )
@@ -53,7 +51,6 @@ function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	//if LocalPlayer():KeyDown( IN_ZOOM ) || SysTime() <= MyTable.flSecondaryAttackDefaultZoom then return true end
-	if MyTable.bDontDrawCrosshairDuringZoom && MyTable.flZoom > .8 then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
 	if v != nil then return v( MyTable, self ) end
 end
