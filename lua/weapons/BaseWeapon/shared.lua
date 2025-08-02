@@ -76,6 +76,8 @@ if CLIENT then
 	SWEP.flViewModelPitchSpeed = 8
 	SWEP.flViewModelYawSpeed = 8
 	SWEP.flZoom = 0
+	SWEP.flZoomSpeedIn = 8
+	SWEP.flZoomSpeedOut = 3
 	SWEP.flCustomZoomFoV = nil
 	SWEP.flMaxZoom = .1 //As Seen in The Literal Line Below, FoV * ( 1 - This * flZoom )
 	SWEP.flCurrentFoV = 0
@@ -99,11 +101,11 @@ if CLIENT then
 		local MyTable = CEntity_GetTable( self )
 		if LocalPlayer():KeyDown( IN_ZOOM ) || SysTime() <= MyTable.flSecondaryAttackDefaultZoom then
 			if MyTable.flZoom < 1 then
-				MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * 8 * FrameTime(), 1 )
+				MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
 		else
 			if MyTable.flZoom > 0 then
-				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * 2 * FrameTime(), 0 )
+				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
 			end
 		end
 		local flZoom = MyTable.flZoom
