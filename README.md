@@ -1,1 +1,1 @@
-After I looked at KM_CM's Random Things, I realized I didn't like the direction where it was going. So I created the second addon - which is this - the successor of RT - KM_CM's Addon. RT will no longer recieve updates. This will. I am planning to make this the best Garry's Mod addon. Ever.
+The successor of [KM_CM's Random Things](https://github.com/KM-CM/GarrysMod-KM_CMs_Random_Things).
