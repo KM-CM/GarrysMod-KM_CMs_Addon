@@ -119,7 +119,7 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 			if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
 		end
 	end
-	/*Too Cheaty - Makes Silencers Almost Completely Useless
+	/*Too Cheaty - Makes Silencers Almost Completely UseLess
 	local ang = ( vEnd - vStart ):Angle()
 	for ent in pairs( __ACTOR_LIST__ ) do
 		if ent == Owner || Owner.Disposition && tIgnoreRagneAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRagneAttackDisp[ ent:Disposition( Owner ) ] then continue end
@@ -176,6 +176,20 @@ hook.Add( "Think", "GameImprovements", function()
 		end
 		ent.GAME_tSuppressionAmount = tSuppressionAmount
 	end
+end )
+
+local FixBunnyHop = CreateConVar( "FixBunnyHop", 1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "Fixes Bunny Hopping by Not Allowing The Player to Jump The a Few MilliSeconds After He Hit The Ground", 0, 1 )
+local FixBunnyHopLength = CreateConVar( "FixBunnyHopLength", .1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "The Amount of FixBunnyHop", 0, 1 )
+local tFixBunnyHop = {}
+local CEntity_IsOnGround = CEntity.IsOnGround
+hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
+	if FixBunnyHop:GetBool() then
+		if CEntity_IsOnGround( ply ) then
+			if CurTime() <= ( tFixBunnyHop[ ply ] || 0 ) then
+				cmd:RemoveKey( IN_JUMP )
+			else tFixBunnyHop[ ply ] = nil end
+		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
+	else tFixBunnyHop[ ply ] = nil end
 end )
 
 local player_Iterator = player.Iterator
