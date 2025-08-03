@@ -53,7 +53,7 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "Glock18_Shot"
 	self:TakePrimaryAmmo( 1 )
-	self:SetNextPrimaryFire( CurTime() + math.Rand( .04285714285, .05454545454 ) )
+	self:SetNextPrimaryFire( CurTime() + .05 )
 end
 
 sound.Add {
@@ -77,3 +77,4 @@ function SWEP:SecondaryAttack()
 	self:EmitSound( b && "Glock18_SwitchAuto" || "Glock18_SwitchSemi" )
 	self:SetNextSecondaryFire( CurTime() + .2 )
 end
+
