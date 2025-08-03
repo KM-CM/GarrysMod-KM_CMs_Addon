@@ -83,8 +83,7 @@ sound.Add {
 
 function SWEP:PerformReload()
 	local owner = self:GetOwner()
-	if !IsValid( owner ) || owner.GetAmmoCount && owner:GetAmmoCount( self.Primary.Ammo ) <= 0 then return end
-	if self:Clip1() >= self.Primary.ClipSize then return end
+	if !IsValid( owner ) || owner.GetAmmoCount && owner:GetAmmoCount( self.Primary.Ammo ) <= 0 || self:Clip1() >= self.Primary.ClipSize || !self.bSemi && !self.bPumped then return end
 	self:EmitSound "SPAS12_Reload"
 	if owner.RemoveAmmo then owner:RemoveAmmo( 1, self.Primary.Ammo, false ) end
 	self:SetClip1( self:Clip1() + 1 )
@@ -224,3 +223,4 @@ function SWEP:SecondaryAttack()
 	self:EmitSound( b && "SPAS12_SwitchSemi" || "SPAS12_SwitchPump" )
 	self:SetNextSecondaryFire( CurTime() + .2 )
 end
+
