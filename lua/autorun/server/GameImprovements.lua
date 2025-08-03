@@ -194,24 +194,24 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 
 	//TODO: Side Peeking Code
 	local bInCover
+	local EyeAngles = ply:EyeAngles()
+	local EyeVector = EyeAngles:Forward()
+	local EyeVectorFlat = EyeAngles:Forward()
+	EyeVectorFlat.z = 0
+	EyeVectorFlat:Normalize()
+	local trDuck = util_TraceLine {
+		start = ply:GetPos() + ply:GetViewOffsetDucked(),
+		endpos = ply:GetPos() + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+		mask = MASK_SOLID,
+		filter = ply
+	}
+	local trStand = util_TraceLine {
+		start = ply:GetPos() + ply:GetViewOffset(),
+		endpos = ply:GetPos() + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+		mask = MASK_SOLID,
+		filter = ply
+	}
 	if ply:IsOnGround() then
-		local EyeAngles = ply:EyeAngles()
-		local EyeVector = EyeAngles:Forward()
-		local EyeVectorFlat = EyeAngles:Forward()
-		EyeVectorFlat.z = 0
-		EyeVectorFlat:Normalize()
-		local trDuck = util_TraceLine {
-			start = ply:GetPos() + ply:GetViewOffsetDucked(),
-			endpos = ply:GetPos() + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * 2,
-			mask = MASK_SOLID,
-			filter = ply
-		}
-		local trStand = util_TraceLine {
-			start = ply:GetPos() + ply:GetViewOffset(),
-			endpos = ply:GetPos() + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * 2,
-			mask = MASK_SOLID,
-			filter = ply
-		}
 		if cmd:KeyDown( IN_DUCK ) then
 			if trDuck.Hit || trStand.Hit then
 				bInCover = true
