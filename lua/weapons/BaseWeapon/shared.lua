@@ -1,6 +1,4 @@
 function SWEP:PrimaryAttack() end
-SWEP.Secondary.Automatic = true
-function SWEP:SecondaryAttack() self:CallOnClient "SecondaryAttackDefaultZoom" end
 
 function SWEP:Reload()
 	self:SetClip1( 0 )
@@ -96,10 +94,9 @@ if CLIENT then
 		if IsValid( owner ) then return self.flCurrentFoV / owner:GetFOV() end
 	end
 	local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
-	function SWEP:SecondaryAttackDefaultZoom() CEntity_GetTable( self ).flSecondaryAttackDefaultZoom = SysTime() + .02 end
 	function SWEP:CalcViewModelView( vm, opos, oang, pos, ang )
 		local MyTable = CEntity_GetTable( self )
-		if LocalPlayer():KeyDown( IN_ZOOM ) || SysTime() <= MyTable.flSecondaryAttackDefaultZoom then
+		if LocalPlayer():KeyDown( IN_ZOOM ) then
 			if MyTable.flZoom < 1 then
 				MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
@@ -125,3 +122,4 @@ if CLIENT then
 end
 
 weapons.Register( SWEP, "BaseWeapon" )
+
