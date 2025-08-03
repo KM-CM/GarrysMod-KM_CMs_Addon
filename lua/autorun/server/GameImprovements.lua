@@ -222,6 +222,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		end
 	end
+	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 	if bInCover then
 		local b
 		if cmd:KeyDown( IN_ATTACK ) then b = true ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed() end
