@@ -182,6 +182,7 @@ local FixBunnyHop = CreateConVar( "FixBunnyHop", 1, FCVAR_SERVER_CAN_EXECUTE + F
 local FixBunnyHopLength = CreateConVar( "FixBunnyHopLength", .1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "The Amount of FixBunnyHop", 0, 1 )
 local tFixBunnyHop = {}
 local CEntity_IsOnGround = CEntity.IsOnGround
+local util_TraceLine = util.TraceLine
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if FixBunnyHop:GetBool() then
 		if CEntity_IsOnGround( ply ) then
@@ -190,6 +191,69 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			else tFixBunnyHop[ ply ] = nil end
 		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
 	else tFixBunnyHop[ ply ] = nil end
+
+	//TODO: Side Peeking Code
+	local bInCover
+	if ply:IsOnGround() then
+		local EyeAngles = ply:EyeAngles()
+		local EyeVector = EyeAngles:Forward()
+		local EyeVectorFlat = EyeAngles:Forward()
+		EyeVectorFlat.z = 0
+		EyeVectorFlat:Normalize()
+		local trDuck = util_TraceLine {
+			start = ply:GetPos() + ply:GetViewOffsetDucked(),
+			endpos = ply:GetPos() + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+			mask = MASK_SOLID,
+			filter = ply
+		}
+		local trStand = util_TraceLine {
+			start = ply:GetPos() + ply:GetViewOffset(),
+			endpos = ply:GetPos() + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+			mask = MASK_SOLID,
+			filter = ply
+		}
+		if cmd:KeyDown( IN_DUCK ) then
+			if trDuck.Hit || trStand.Hit then
+				bInCover = true
+			end
+		else
+			if trDuck.Hit && trStand.Hit then
+				bInCover = true
+			end
+		end
+	end
+	if bInCover then
+		local b
+		if cmd:KeyDown( IN_ATTACK ) then b = true ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed() end
+		if cmd:KeyDown( IN_ZOOM ) || CurTime() <= ( ply.CTRL_flCoverPeekTime || 0 ) then
+			cmd:RemoveKey( IN_SPEED )
+			cmd:AddKey( IN_WALK )
+			if trDuck.Hit && !trStand.Hit then
+				if ply.CTRL_bInCoverDuck == nil then
+					if b then ply.CTRL_flCoverDoShootTime = CurTime() + ply:GetUnDuckSpeed() end
+					ply.CTRL_flCoverDontShootTime = CurTime() + ply:GetUnDuckSpeed()
+				end
+				bInCover = nil
+				ply.CTRL_bInCoverDuck = true
+				cmd:RemoveKey( IN_DUCK )
+			end
+		else ply.CTRL_bInCoverDuck = nil end
+	else ply.CTRL_bInCoverDuck = nil end
+	local v = ply.CTRL_flCoverDoShootTime
+	if v then
+		if CurTime() > v then
+			cmd:AddKey( IN_ATTACK )
+			ply.CTRL_flCoverDoShootTime = nil
+		elseif CurTime() < v then cmd:RemoveKey( IN_ATTACK ) end
+	end
+	if bInCover then
+		//cmd:RemoveKey( IN_JUMP )
+		ply:SetNW2Bool( "CTRL_bInCover", true ) 
+		ply.CTRL_bInCover = true
+	else
+		ply:SetNW2Bool( "CTRL_bInCover", false )
+		ply.CTRL_bInCover = nil
+	end
 end )
 
 local player_Iterator = player.Iterator
