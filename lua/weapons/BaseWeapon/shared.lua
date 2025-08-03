@@ -1,4 +1,5 @@
 function SWEP:PrimaryAttack() end
+function SWEP:SecondaryAttack() end
 
 function SWEP:Reload()
 	self:SetClip1( 0 )
@@ -122,4 +123,5 @@ if CLIENT then
 end
 
 weapons.Register( SWEP, "BaseWeapon" )
+
 
