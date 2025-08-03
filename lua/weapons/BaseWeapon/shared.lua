@@ -12,9 +12,17 @@ function SWEP:AllowsAutoSwitchTo() return false end
 SWEP.Primary_DryFireSound = "Weapon_Pistol.Empty"
 SWEP.Secondary_DryFireSound = "Weapon_Pistol.Empty"
 
+local CEntity = FindMetaTable "Entity"
+local CEntity_GetOwner = CEntity.GetOwner
+SWEP.bDisAllowPrimaryInCover = true
 function SWEP:CanPrimaryAttack()
 	//Believe It or Not, Some People ( Including VALVe ) have The AUDACITY to Ignore This Check!
 	if CurTime() <= self:GetNextPrimaryFire() then return end
+	local owner = CEntity_GetOwner( self )
+	if CurTime() <= ( owner.CTRL_flCoverDontShootTime || 0 ) then return end
+	if self.bDisAllowPrimaryInCover then
+		if IsValid( owner ) && owner.CTRL_bInCover then return end
+	end
 	if self:Clip1() <= 0 then
 		self:EmitSound( self.Primary_DryFireSound )
 		self:SetNextPrimaryFire( CurTime() + .2 )
@@ -23,8 +31,14 @@ function SWEP:CanPrimaryAttack()
 	return true
 end
 
+SWEP.bDisAllowSecondaryInCover = false
 function SWEP:CanSecondaryAttack()
 	if CurTime() <= self:GetNextSecondaryFire() then return end
+	local owner = CEntity_GetOwner( self )
+	if CurTime() <= ( owner.CTRL_flCoverDontShootTime || 0 ) then return end
+	if self.bDisAllowSecondaryInCover then
+		if IsValid( owner ) && owner.CTRL_bInCover then return end
+	end
 	if self:Clip2() <= 0 then
 		self:EmitSound( self.Secondary_DryFireSound )
 		self:SetNextSecondaryFire( CurTime() + .2 )
@@ -54,9 +68,11 @@ SWEP.BobScale = 0
 SWEP.SwayScale = 0
 
 if CLIENT then
+	local CEntity_GetTable = CEntity.GetTable
 	function SWEP:ResetZoom()
-		self.flZoom = 0
-		self.flSecondaryAttackDefaultZoom = 0
+		local MyTable = CEntity_GetTable( self )
+		MyTable.flZoom = 0
+		MyTable.flCover = LocalPlayer():GetNW2Bool "CTRL_bInCover" && 1 || 0
 	end
 	SWEP.flViewModelX = 0
 	SWEP.flViewModelY = 0
@@ -77,6 +93,7 @@ if CLIENT then
 	SWEP.flZoom = 0
 	SWEP.flZoomSpeedIn = 8
 	SWEP.flZoomSpeedOut = 3
+	SWEP.flCover = 0 //Uses flZoomSpeedIn for Both In and Out
 	SWEP.flCustomZoomFoV = nil
 	SWEP.flMaxZoom = .1 //As Seen in The Literal Line Below, FoV * ( 1 - This * flZoom )
 	SWEP.flCurrentFoV = 0
@@ -93,18 +110,31 @@ if CLIENT then
 		local owner = LocalPlayer()
 		if IsValid( owner ) then return self.flCurrentFoV / owner:GetFOV() end
 	end
-	local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 	function SWEP:CalcViewModelView( vm, opos, oang, pos, ang )
 		local MyTable = CEntity_GetTable( self )
-		if LocalPlayer():KeyDown( IN_ZOOM ) then
-			if MyTable.flZoom < 1 then
-				MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+		local ply = LocalPlayer()
+		if ply:GetNW2Bool( "CTRL_bInCover", false ) then
+			if MyTable.flCover < 1 then
+				MyTable.flCover = math_min( MyTable.flCover + ( 1 - MyTable.flCover ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
-		else
 			if MyTable.flZoom > 0 then
 				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
 			end
+		else
+			if MyTable.flCover > 0 then
+				MyTable.flCover = math_max( MyTable.flCover - MyTable.flCover * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
+			if ply:KeyDown( IN_ZOOM ) then
+				if MyTable.flZoom < 1 then
+					MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+				end
+			else
+				if MyTable.flZoom > 0 then
+					MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
+				end
+			end
 		end
+		pos = pos - ang:Up() * 8 * MyTable.flCover
 		local flZoom = MyTable.flZoom
 		local flZoomInv = 1 - flZoom
 		if MyTable.aViewModelLastAng then
@@ -116,6 +146,7 @@ if CLIENT then
 		ang[ 1 ] = ang[ 1 ] - MyTable.flViewModelPitch
 		ang[ 2 ] = ang[ 2 ] - MyTable.flViewModelYaw
 		pos = pos + ang:Forward() * ( MyTable.flViewModelAimX * flZoom + MyTable.flViewModelX * flZoomInv ) + ang:Right() * ( MyTable.flViewModelAimY * flZoom + MyTable.flViewModelY * flZoomInv ) + ang:Up() * ( MyTable.flViewModelAimZ * flZoom + MyTable.flViewModelZ * flZoomInv )
+		ang.p = ang.p - 22.5 * MyTable.flCover
 		return pos, ang
 	end
 	include "Crosshair.lua"
