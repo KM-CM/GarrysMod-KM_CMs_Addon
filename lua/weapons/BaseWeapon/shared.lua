@@ -81,7 +81,6 @@ if CLIENT then
 	SWEP.flMaxZoom = .1 //As Seen in The Literal Line Below, FoV * ( 1 - This * flZoom )
 	SWEP.flCurrentFoV = 0
 	SWEP.bDontDrawCrosshairDuringZoom = true
-	SWEP.flSecondaryAttackDefaultZoom = 0
 	SWEP.Crosshair = ""
 	local t = math
 	local math_min, math_max = t.min, t.max
@@ -123,5 +122,3 @@ if CLIENT then
 end
 
 weapons.Register( SWEP, "BaseWeapon" )
-
-
