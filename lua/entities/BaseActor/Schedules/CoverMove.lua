@@ -400,4 +400,3 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		end
 	else return {} end
 end )
-

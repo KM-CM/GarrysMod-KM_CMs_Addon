@@ -72,7 +72,6 @@ if CLIENT then
 	function SWEP:ResetZoom()
 		local MyTable = CEntity_GetTable( self )
 		MyTable.flZoom = 0
-		MyTable.flCover = LocalPlayer():GetNW2Bool "CTRL_bInCover" && 1 || 0
 	end
 	SWEP.flViewModelX = 0
 	SWEP.flViewModelY = 0
@@ -93,12 +92,26 @@ if CLIENT then
 	SWEP.flZoom = 0
 	SWEP.flZoomSpeedIn = 8
 	SWEP.flZoomSpeedOut = 3
-	SWEP.flCover = 0 //Uses flZoomSpeedIn for Both In and Out
+	//These Use flZoomSpeedIn for Both In and Out
+	SWEP.flCover = 0
+	SWEP.flCoverBlindFireUp = 0
+	SWEP.flCoverBlindFireUpY = 14
+	SWEP.flCoverBlindFireLeft = 0
+	SWEP.flCoverBlindFireRight = 0
+	SWEP.flCoverBlindFireLeftZ = -4
+	SWEP.flCoverBlindFireRightZ = -8
+	SWEP.flCoverVariantsCenter = 0
+	SWEP.flCoverVariantsCenterY = -4
+	SWEP.flCoverVariantsRight = 0
+	SWEP.flCoverVariantsRightY = 2
+	SWEP.flCoverVariantsLeft = 0
+	SWEP.flCoverVariantsLeftY = -14
 	SWEP.flCustomZoomFoV = nil
 	SWEP.flMaxZoom = .1 //As Seen in The Literal Line Below, FoV * ( 1 - This * flZoom )
 	SWEP.flCurrentFoV = 0
 	SWEP.bDontDrawCrosshairDuringZoom = true
 	SWEP.Crosshair = ""
+	SWEP.__VIEWMODEL_FULLY_MODELED__ = false
 	local t = math
 	local math_min, math_max = t.min, t.max
 	local math_AngleDifference = t.AngleDifference
@@ -113,7 +126,8 @@ if CLIENT then
 	function SWEP:CalcViewModelView( vm, opos, oang, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
-		if ply:GetNW2Bool( "CTRL_bInCover", false ) then
+		local bInCover = ply:GetNW2Bool( "CTRL_bInCover", false )
+		if bInCover then
 			if MyTable.flCover < 1 then
 				MyTable.flCover = math_min( MyTable.flCover + ( 1 - MyTable.flCover ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
@@ -133,6 +147,15 @@ if CLIENT then
 					MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
 				end
 			end
+			if MyTable.flCoverVariantsCenter > 0 then
+				MyTable.flCoverVariantsCenter = math_max( MyTable.flCoverVariantsCenter - MyTable.flCoverVariantsCenter * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
+			if MyTable.flCoverVariantsRight > 0 then
+				MyTable.flCoverVariantsRight = math_max( MyTable.flCoverVariantsRight - MyTable.flCoverVariantsRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
+			if MyTable.flCoverVariantsLeft > 0 then
+				MyTable.flCoverVariantsLeft = math_max( MyTable.flCoverVariantsLeft - MyTable.flCoverVariantsLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
 		end
 		pos = pos - ang:Up() * 8 * MyTable.flCover
 		local flZoom = MyTable.flZoom
@@ -143,10 +166,73 @@ if CLIENT then
 			MyTable.flViewModelPitch = math_Approach( MyTable.flViewModelPitch, flDiffPitch * flZoomInv, MyTable.flViewModelPitchSpeed * FrameTime() )
 			MyTable.flViewModelYaw = math_Approach( MyTable.flViewModelYaw, flDiffYaw * flZoomInv, MyTable.flViewModelYawSpeed * FrameTime() )
 		else MyTable.aViewModelLastAng = ang end
+		if MyTable.__VIEWMODEL_FULLY_MODELED__ then
+			local PEEK = ply:GetNW2Int( "CTRL_Peek", COVER_PEEK_NONE )
+			if PEEK == COVER_BLINDFIRE_UP then
+				if MyTable.flCoverBlindFireUp < 1 then
+					MyTable.flCoverBlindFireUp = math_min( MyTable.flCoverBlindFireUp + ( 1 - MyTable.flCoverBlindFireUp ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+				end
+			else
+				if MyTable.flCoverBlindFireUp > 0 then
+					MyTable.flCoverBlindFireUp = math_max( MyTable.flCoverBlindFireUp - MyTable.flCoverBlindFireUp * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+				end
+			end
+			if PEEK == COVER_BLINDFIRE_LEFT then
+				if MyTable.flCoverBlindFireLeft < 1 then
+					MyTable.flCoverBlindFireLeft = math_min( MyTable.flCoverBlindFireLeft + ( 1 - MyTable.flCoverBlindFireLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+				end
+			else
+				if MyTable.flCoverBlindFireLeft > 0 then
+					MyTable.flCoverBlindFireLeft = math_max( MyTable.flCoverBlindFireLeft - MyTable.flCoverBlindFireLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+				end
+			end
+			if PEEK == COVER_BLINDFIRE_RIGHT then
+				if MyTable.flCoverBlindFireRight < 1 then
+					MyTable.flCoverBlindFireRight = math_min( MyTable.flCoverBlindFireRight + ( 1 - MyTable.flCoverBlindFireRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+				end
+			else
+				if MyTable.flCoverBlindFireRight > 0 then
+					MyTable.flCoverBlindFireRight = math_max( MyTable.flCoverBlindFireRight - MyTable.flCoverBlindFireRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+				end
+			end
+			if bInCover then
+				local VARIANTS = ply:GetNW2Int( "CTRL_Variants", COVER_VARIANTS_CENTER )
+				if VARIANTS == COVER_VARIANTS_CENTER then
+					if MyTable.flCoverVariantsCenter < 1 then
+						MyTable.flCoverVariantsCenter = math_min( MyTable.flCoverVariantsCenter + ( 1 - MyTable.flCoverVariantsCenter ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+					end
+				else
+					if MyTable.flCoverVariantsCenter > 0 then
+						MyTable.flCoverVariantsCenter = math_max( MyTable.flCoverVariantsCenter - MyTable.flCoverVariantsCenter * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+					end
+				end
+				if VARIANTS == COVER_VARIANTS_RIGHT then
+					if MyTable.flCoverVariantsRight < 1 then
+						MyTable.flCoverVariantsRight = math_min( MyTable.flCoverVariantsRight + ( 1 - MyTable.flCoverVariantsRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+					end
+				else
+					if MyTable.flCoverVariantsRight > 0 then
+						MyTable.flCoverVariantsRight = math_max( MyTable.flCoverVariantsRight - MyTable.flCoverVariantsRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+					end
+				end
+				if VARIANTS == COVER_VARIANTS_LEFT then
+					if MyTable.flCoverVariantsLeft < 1 then
+						MyTable.flCoverVariantsLeft = math_min( MyTable.flCoverVariantsLeft + ( 1 - MyTable.flCoverVariantsLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+					end
+				else
+					if MyTable.flCoverVariantsLeft > 0 then
+						MyTable.flCoverVariantsLeft = math_max( MyTable.flCoverVariantsLeft - MyTable.flCoverVariantsLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+					end
+				end
+			end
+		end
 		ang[ 1 ] = ang[ 1 ] - MyTable.flViewModelPitch
 		ang[ 2 ] = ang[ 2 ] - MyTable.flViewModelYaw
+		pos = pos + ang:Right() * ( MyTable.flCoverBlindFireUp * MyTable.flCoverBlindFireUpY + MyTable.flCoverVariantsCenter * MyTable.flCoverVariantsCenterY + MyTable.flCoverVariantsRight * MyTable.flCoverVariantsRightY + MyTable.flCoverVariantsLeft * MyTable.flCoverVariantsLeftY )
+		pos = pos + ang:Up() * ( MyTable.flCoverBlindFireRight * MyTable.flCoverBlindFireRightZ - MyTable.flCoverBlindFireLeft * MyTable.flCoverBlindFireLeftZ )
 		pos = pos + ang:Forward() * ( MyTable.flViewModelAimX * flZoom + MyTable.flViewModelX * flZoomInv ) + ang:Right() * ( MyTable.flViewModelAimY * flZoom + MyTable.flViewModelY * flZoomInv ) + ang:Up() * ( MyTable.flViewModelAimZ * flZoom + MyTable.flViewModelZ * flZoomInv )
 		ang.p = ang.p - 22.5 * MyTable.flCover
+		ang.r = ang.r - 180 * MyTable.flCoverBlindFireUp + 90 * MyTable.flCoverBlindFireLeft - 90 * MyTable.flCoverBlindFireRight
 		return pos, ang
 	end
 	include "Crosshair.lua"

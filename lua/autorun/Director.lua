@@ -166,6 +166,8 @@ DIRECTOR_CROSSFADE_SPEED = .04
 hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Think!
 	for _, ply in player_Iterator() do
 		ply:SetCanZoom( false )
+		ply:SetDuckSpeed( .25 )
+		ply:SetUnDuckSpeed( .25 )
 		local h = ply:Health() / ply:GetMaxHealth()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
 		if !ply.DR_ThreatAware then ply.DR_ThreatAware = DIRECTOR_THREAT_NULL end

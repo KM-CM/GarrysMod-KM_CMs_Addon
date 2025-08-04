@@ -192,8 +192,13 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
 	else tFixBunnyHop[ ply ] = nil end
 
+	if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
+
 	//TODO: Side Peeking Code
 	local bInCover
+	local bGunDoesntUseCoverStance //Used in Very Special Circumstances
+	local PEEK = COVER_PEEK_NONE
+	local VARIANTS = COVER_VARIANTS_CENTER
 	local EyeAngles = ply:EyeAngles()
 	local EyeVector = EyeAngles:Forward()
 	local EyeVectorFlat = EyeAngles:Forward()
@@ -224,22 +229,181 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	end
 	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 	if bInCover then
+		if CurTime() > ( ply.CTRL_flCoverMoveTime || 0 ) then
+			ply.CTRL_bMovingLeft = nil
+			ply.CTRL_bMovingRight = nil
+		end
 		local b
+		local bLeft, bRight
+		if cmd:KeyDown( IN_DUCK ) && trDuck.Hit then
+			local vStart = ply:GetPos() + ply:GetViewOffsetDucked()
+			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			if util_TraceLine( {
+				start = vStart,
+				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit && !util_TraceLine( {
+				start = vStart,
+				endpos = vec,
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit then
+				bLeft = util_TraceLine( {
+					start = vec,
+					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
+					mask = MASK_SOLID,
+					filter = ply
+				} ).Hit
+			end
+			local vec = vStart + trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			if util_TraceLine( {
+				start = vStart,
+				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit && !util_TraceLine( {
+				start = vStart,
+				endpos = vec,
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit then
+				bRight = util_TraceLine( {
+					start = vec,
+					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
+					mask = MASK_SOLID,
+					filter = ply
+				} ).Hit
+			end
+		else
+			local vStart = ply:GetPos() + ply:GetViewOffset()
+			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			if util_TraceLine( {
+				start = vStart,
+				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit && !util_TraceLine( {
+				start = vStart,
+				endpos = vec,
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit then
+				bLeft = util_TraceLine( {
+					start = vec,
+					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
+					mask = MASK_SOLID,
+					filter = ply
+				} ).Hit
+			end
+			local vec = vStart + trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			if util_TraceLine( {
+				start = vStart,
+				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit && !util_TraceLine( {
+				start = vStart,
+				endpos = vec,
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit then
+				bRight = util_TraceLine( {
+					start = vec,
+					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
+					mask = MASK_SOLID,
+					filter = ply
+				} ).Hit
+			end
+		end
+		if bLeft && bRight then
+		elseif bLeft then VARIANTS = COVER_VARIANTS_LEFT
+		elseif bRight then VARIANTS = COVER_VARIANTS_RIGHT end
 		if cmd:KeyDown( IN_ATTACK ) then b = true ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed() end
-		if cmd:KeyDown( IN_ZOOM ) || CurTime() <= ( ply.CTRL_flCoverPeekTime || 0 ) then
+		local bZoom = cmd:KeyDown( IN_ZOOM )
+		if bZoom then ply.CTRL_bPeekZoom = true else ply.CTRL_bPeekZoom = nil end
+		if bZoom || CurTime() <= ( ply.CTRL_flCoverPeekTime || 0 ) then
 			cmd:RemoveKey( IN_SPEED )
 			cmd:AddKey( IN_WALK )
 			if trDuck.Hit && !trStand.Hit then
-				if ply.CTRL_bInCoverDuck == nil then
-					if b then ply.CTRL_flCoverDoShootTime = CurTime() + ply:GetUnDuckSpeed() end
-					ply.CTRL_flCoverDontShootTime = CurTime() + ply:GetUnDuckSpeed()
+				local bDo = bLeft && bRight || !( bLeft || bRight )
+				if !bDo then
+					if ply.CTRL_bInCoverDuck then
+						bDo = true
+					else
+						if EyeAngles.p < -10 then bDo = true end
+					end
 				end
-				bInCover = nil
-				ply.CTRL_bInCoverDuck = true
-				cmd:RemoveKey( IN_DUCK )
+				if bDo then
+					bLeft, bRight = nil, nil
+					if ply.CTRL_bInCoverDuck == nil then
+						if b then ply.CTRL_flCoverDoShootTime = CurTime() + ply:GetUnDuckSpeed() end
+						ply.CTRL_flCoverDontShootTime = CurTime() + ply:GetUnDuckSpeed()
+					end
+					bInCover = nil
+					if ply.CTRL_bPeekZoom == nil then PEEK = COVER_BLINDFIRE_UP end
+					ply.CTRL_bInCoverDuck = true
+					cmd:RemoveKey( IN_DUCK )
+				end
+			else ply.CTRL_bInCoverDuck = nil end
+			if bLeft && bRight then
+			elseif bLeft then
+				ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed()
+				ply.CTRL_flCoverMoveTime = CurTime() + ply:GetUnDuckSpeed()
+				cmd:SetSideMove( -ply:GetRunSpeed() )
+				ply.CTRL_bMovingLeft = true
+				ply.CTRL_vCover = ply:GetPos()
+				if !ply.CTRL_bPeekZoom && ( !ply.CTRL_flCoverDoShootTime || CurTime() <= ply.CTRL_flCoverDoShootTime ) then ply.CTRL_flCoverDoShootTime = CurTime() end
+			elseif bRight then
+				ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed()
+				ply.CTRL_flCoverMoveTime = CurTime() + ply:GetUnDuckSpeed()
+				cmd:SetSideMove( ply:GetRunSpeed() )
+				ply.CTRL_bMovingRight = true
+				ply.CTRL_vCover = ply:GetPos()
+				if !ply.CTRL_bPeekZoom && ( !ply.CTRL_flCoverDoShootTime || CurTime() <= ply.CTRL_flCoverDoShootTime ) then ply.CTRL_flCoverDoShootTime = CurTime() end
 			end
-		else ply.CTRL_bInCoverDuck = nil end
-	else ply.CTRL_bInCoverDuck = nil end
+			if CurTime() <= ( ply.CTRL_flCoverMoveTime || 0 ) then
+				if !bZoom then
+					if ply.CTRL_bMovingLeft then
+						PEEK = COVER_BLINDFIRE_LEFT
+					elseif ply.CTRL_bMovingRight then
+						PEEK = COVER_BLINDFIRE_RIGHT
+					end
+				end
+				//Dont Use The Cover Gun Stance
+				bGunDoesntUseCoverStance = true
+			end
+		else ply.CTRL_bInCoverDuck = nil ply.CTRL_bPeekZoom = nil end
+	else
+		local bZoom = ply:KeyDown( IN_ZOOM )
+		if ply:KeyDown( IN_ATTACK ) || bZoom then
+			ply.CTRL_flCoverMoveTime = CurTime() + ply:GetUnDuckSpeed()
+		end
+		if ply.CTRL_vCover && ply:GetPos():DistToSqr( ply.CTRL_vCover ) > 9216/*96*/ then
+			ply.CTRL_flCoverMoveTime = nil
+			ply.CTRL_bMovingLeft = nil
+			ply.CTRL_bMovingRight = nil
+			ply.CTRL_vCover = nil
+		end
+		if CurTime() > ( ply.CTRL_flCoverMoveTime || 0 ) then
+			if ply.CTRL_bMovingLeft then
+				cmd:SetSideMove( ply:GetRunSpeed() )
+			elseif ply.CTRL_bMovingRight then
+				cmd:SetSideMove( -ply:GetRunSpeed() )
+			end
+			ply.CTRL_bPeekZoom = nil
+		else
+			if !ply.CTRL_bPeekZoom then
+				if ply.CTRL_bMovingLeft then
+					PEEK = COVER_BLINDFIRE_LEFT
+				elseif ply.CTRL_bMovingRight then
+					PEEK = COVER_BLINDFIRE_RIGHT
+				end
+			end
+		end
+		ply.CTRL_flCoverPeekTime = nil
+		ply.CTRL_bInCoverDuck = nil
+	end
 	local v = ply.CTRL_flCoverDoShootTime
 	if v then
 		if CurTime() > v then
@@ -247,7 +411,9 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			ply.CTRL_flCoverDoShootTime = nil
 		elseif CurTime() < v then cmd:RemoveKey( IN_ATTACK ) end
 	end
-	if bInCover then
+	if bGunDoesntUseCoverStance then
+		ply:SetNW2Bool( "CTRL_bInCover", false )
+	elseif bInCover then
 		//cmd:RemoveKey( IN_JUMP )
 		ply:SetNW2Bool( "CTRL_bInCover", true ) 
 		ply.CTRL_bInCover = true
@@ -255,6 +421,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		ply:SetNW2Bool( "CTRL_bInCover", false )
 		ply.CTRL_bInCover = nil
 	end
+	ply:SetNW2Int( "CTRL_Variants", VARIANTS )
+	ply:SetNW2Int( "CTRL_Peek", PEEK )
 end )
 
 local player_Iterator = player.Iterator

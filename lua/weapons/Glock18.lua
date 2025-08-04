@@ -77,4 +77,3 @@ function SWEP:SecondaryAttack()
 	self:EmitSound( b && "Glock18_SwitchAuto" || "Glock18_SwitchSemi" )
 	self:SetNextSecondaryFire( CurTime() + .2 )
 end
-

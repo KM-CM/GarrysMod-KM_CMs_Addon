@@ -21,18 +21,20 @@ SWEP.flCrosshairBase = .0012
 SWEP.flCrosshairOutLine = .0008
 __WEAPON_CROSSHAIR_TABLE__ = {
 	[ "" ] = function( MyTable, self )
-		local flHeight, flWidth = ScrH(), ScrW()
-		//I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
-		local flRadius = flHeight * .001
-		local flX = flWidth * .5
-		local flY = flHeight * .5
-		local flAlpha = MyTable.GatherCrosshairAlpha( self, MyTable )
-		if flAlpha == nil then return end
-		local c = MyTable.CrosshairColorBase
-		for I = 0, flRadius do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flAlpha ) end
-		c = MyTable.CrosshairColorOutLine
-		for I = flHeight, flRadius + MyTable.flCrosshairOutLine * flHeight do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flAlpha ) end
-		return true
+		//Just Realized I can Do That
+		return MyTable.GatherCrosshairAlpha( self, MyTable ) <= 0
+		//local flHeight, flWidth = ScrH(), ScrW()
+		////I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
+		//local flRadius = flHeight * .001
+		//local flX = flWidth * .5
+		//local flY = flHeight * .5
+		//local flAlpha = MyTable.GatherCrosshairAlpha( self, MyTable )
+		//if flAlpha == nil then return end
+		//local c = MyTable.CrosshairColorBase
+		//for I = 0, flRadius do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flAlpha ) end
+		//c = MyTable.CrosshairColorOutLine
+		//for I = flHeight, flRadius + MyTable.flCrosshairOutLine * flHeight do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flAlpha ) end
+		//return true
 	end,
 	Shotgun = function( MyTable, self )
 		local flSpread = MyTable.GatherCrosshairSpread( self, MyTable, true )

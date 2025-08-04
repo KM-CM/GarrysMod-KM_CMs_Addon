@@ -1,3 +1,12 @@
+COVER_PEEK_NONE = 0
+COVER_BLINDFIRE_UP = 1
+COVER_BLINDFIRE_LEFT = 2
+COVER_BLINDFIRE_RIGHT = 3
+
+COVER_VARIANTS_CENTER = 0
+COVER_VARIANTS_LEFT = 1
+COVER_VARIANTS_RIGHT = 2
+
 function AddThinkToEntity( self, func )
 	local n = EntityUniqueIdentifier( self )
 	hook.Add( "Think", n, function()
