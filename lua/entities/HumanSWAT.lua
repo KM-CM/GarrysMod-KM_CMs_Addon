@@ -18,6 +18,10 @@ list.Set( "NPC", "HumanSWAT", {
 		"Glock18,M16A4",
 		"Glock18,weapon_smg1",
 		"Glock18,weapon_shotgun",
+		"Glock18,M16A4,M249",
+		"Glock18,weapon_smg1,M249",
+		"Glock18,weapon_shotgun,M249",
+		"Glock18,M249"
 	}
 } )
 
@@ -33,3 +37,4 @@ function ENT:Initialize()
 	self:SetMaxHealth( 100 )
 	BaseClass.Initialize( self )
 end
+
