@@ -37,5 +37,3 @@ function ENT:Initialize()
 	self:SetMaxHealth( 100 )
 	BaseClass.Initialize( self )
 end
-
-

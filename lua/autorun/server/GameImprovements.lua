@@ -204,15 +204,17 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	local EyeVectorFlat = EyeAngles:Forward()
 	EyeVectorFlat.z = 0
 	EyeVectorFlat:Normalize()
-	local trDuck = util_TraceLine {
-		start = ply:GetPos() + ply:GetViewOffsetDucked(),
-		endpos = ply:GetPos() + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+	local vView = ply:GetPos() + ply:GetViewOffset()
+	local trStand = util_TraceLine {
+		start = vView,
+		endpos = vView + EyeVectorFlat * ply:OBBMaxs().x * 2,
 		mask = MASK_SOLID,
 		filter = ply
 	}
-	local trStand = util_TraceLine {
-		start = ply:GetPos() + ply:GetViewOffset(),
-		endpos = ply:GetPos() + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * 2,
+	local vViewDucked = ply:GetPos() + ply:GetViewOffsetDucked() * .5
+	local trDuck = util_TraceLine {
+		start = vViewDucked,
+		endpos = vViewDucked + EyeVectorFlat * ply:OBBMaxs().x * 2,
 		mask = MASK_SOLID,
 		filter = ply
 	}
@@ -236,7 +238,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		local b
 		local bLeft, bRight
 		if cmd:KeyDown( IN_DUCK ) && trDuck.Hit then
-			local vStart = ply:GetPos() + ply:GetViewOffsetDucked()
+			local vStart = vViewDucked
 			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
@@ -276,7 +278,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				} ).Hit
 			end
 		else
-			local vStart = ply:GetPos() + ply:GetViewOffset()
+			local vStart = vView
 			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,

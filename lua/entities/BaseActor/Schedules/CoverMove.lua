@@ -175,6 +175,17 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				if trStand.Hit && ( !trDuck || trDuck.Hit ) then sched.bToShoot = nil return end
 				if !sched.Path then sched.Path = Path "Follow" end
 				self:ComputePath( sched.Path, sched.vFrom )
+				local flHealth = enemy:Health()
+				local ws, w = 0 //Weapon Strength
+				for wep in pairs( self.tWeapons ) do
+					local t = wep.Primary_flDelay || 0
+					if t <= 0 then continue end
+					local d = wep.Primary_flDamage || 0
+					if d <= 0 then continue end
+					local nws = math.abs( flHealth - 1 / t * d )
+					if nws < ws then w, ws = wep, nws end
+				end
+				if IsValid( w ) then self:SetActiveWeapon( w ) end
 				if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
 					if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
 					if CurTime() > sched.Time then return { true } end
@@ -203,7 +214,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 						}
 						if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 							local b = true
-							if CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
+							if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
 								local flMultiplier = 1
 								if tAllies then
 									for ent in pairs( tAllies ) do
@@ -268,6 +279,17 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				if trStand.Hit && ( !trDuck || trDuck.Hit ) then sched.bToShoot = nil return end
 				if !sched.Path then sched.Path = Path "Follow" end
 				self:ComputePath( sched.Path, sched.vFrom )
+				local flHealth = enemy:Health()
+				local ws, w = 0 //Weapon Strength
+				for wep in pairs( self.tWeapons ) do
+					local t = wep.Primary_flDelay || 0
+					if t <= 0 then continue end
+					local d = wep.Primary_flDamage || 0
+					if d <= 0 then continue end
+					local nws = math.abs( flHealth - 1 / t * d )
+					if nws < ws then w, ws = wep, nws end
+				end
+				if IsValid( w ) then self:SetActiveWeapon( w ) end
 				if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
 					if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
 					if CurTime() > sched.Time then return { true } end
@@ -296,7 +318,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 						}
 						if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 							local b = true
-							if CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
+							if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
 								local flMultiplier = 1
 								if tAllies then
 									for ent in pairs( tAllies ) do
@@ -362,7 +384,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			}
 			if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 				local b = true
-				if CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
+				if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
 					local flThreshold = ent:Health() * .1
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
 						if other != self && am > flThreshold then b = nil break end

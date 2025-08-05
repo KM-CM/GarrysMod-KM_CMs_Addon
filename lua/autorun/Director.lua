@@ -27,8 +27,8 @@ local _ThreatValueToName = {
 }
 function Director_ThreatValueToName( n ) return _ThreatValueToName[ n ] || "DIRECTOR_THREAT_NULL" end
 
-Director_Debug = CreateConVar( "Director_Debug", 0, FCVAR_CHEAT + FCVAR_NEVER_AS_STRING, "", 0, 1 )
-local Director_Debug = Director_Debug
+local Director_Debug = CreateConVar( "Director_Debug", 0, FCVAR_CHEAT + FCVAR_NEVER_AS_STRING, "", 0, 1 )
+local Player_Debug_EyeOffset = CreateConVar( "Player_Debug_EyeOffset", 0, FCVAR_CHEAT + FCVAR_NEVER_AS_STRING, "", 0, 1 )
 
 function Director_GetThreat( ply, ent )
 	if ent.GetEnemy && IsValid( ent:GetEnemy() ) then
@@ -163,8 +163,24 @@ local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Ite
 
 DIRECTOR_CROSSFADE_SPEED = .04
 
+local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Think!
 	for _, ply in player_Iterator() do
+		if Player_Debug_EyeOffset:GetBool() then
+			if ply:GetViewOffsetDucked() == VectorZ28 then
+				ply:SetViewOffsetDucked( Vector( 0, 0, 42 ) )
+			end
+			local dir = ply:EyeAngles()
+			dir.p = 0
+			dir = dir:Forward()
+			local flDist = ply:OBBMaxs().x * 2
+			local v = ply:GetPos() + ply:GetViewOffset()
+			debugoverlay.Line( v, v + dir * flDist, .1, Color( 128, 128, 255 ), true )
+			local v = ply:GetPos() + ply:GetViewOffsetDucked()
+			debugoverlay.Line( v, v + dir * flDist, .1, Color( 128, 128, 255 ), true )
+		end
+		ply:SetViewOffset( ply:GetViewOffset() )
+		ply:SetViewOffsetDucked( ply:GetViewOffsetDucked() )
 		ply:SetCanZoom( false )
 		ply:SetDuckSpeed( .25 )
 		ply:SetUnDuckSpeed( .25 )

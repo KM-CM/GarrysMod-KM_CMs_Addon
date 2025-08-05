@@ -223,4 +223,3 @@ function SWEP:SecondaryAttack()
 	self:EmitSound( b && "SPAS12_SwitchSemi" || "SPAS12_SwitchPump" )
 	self:SetNextSecondaryFire( CurTime() + .2 )
 end
-

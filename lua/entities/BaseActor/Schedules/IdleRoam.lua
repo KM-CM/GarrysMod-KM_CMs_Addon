@@ -1,5 +1,13 @@
 Actor_RegisterSchedule( "IdleRoam", function( self, sched )
 	if !table.IsEmpty( self.tEnemies ) then return {} end
+	if CurTime() > self.flWeaponReloadTime then
+		local t = {}
+		for wep in pairs( self.tWeapons ) do if wep:Clip1() < wep:GetMaxClip1() then table.insert( t, wep ) end end
+		if !table.IsEmpty( t ) then
+			self:SetActiveWeapon( table.Random( t ) )
+			self:WeaponReload()
+		end
+	end
 	if CurTime() > ( sched.flStandTime || 0 ) then
 		if !sched.Path then sched.Path = Path "Follow" sched.Path:SetGoalTolerance( self.flPathTolerance ) end
 		if !sched.vGoal then
