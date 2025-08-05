@@ -196,7 +196,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 
 	//TODO: Side Peeking Code
 	local bInCover
-	local bGunDoesntUseCoverStance //Used in Very Special Circumstances
+	local bGunUsesCoverStance //Used in Very Special Circumstances
 	local PEEK = COVER_PEEK_NONE
 	local VARIANTS = COVER_VARIANTS_CENTER
 	local EyeAngles = ply:EyeAngles()
@@ -363,21 +363,20 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				if !ply.CTRL_bPeekZoom && ( !ply.CTRL_flCoverDoShootTime || CurTime() <= ply.CTRL_flCoverDoShootTime ) then ply.CTRL_flCoverDoShootTime = CurTime() end
 			end
 			if CurTime() <= ( ply.CTRL_flCoverMoveTime || 0 ) then
-				if !bZoom then
-					if ply.CTRL_bMovingLeft then
-						PEEK = COVER_BLINDFIRE_LEFT
-					elseif ply.CTRL_bMovingRight then
-						PEEK = COVER_BLINDFIRE_RIGHT
-					end
+				if ply.CTRL_bMovingLeft then
+					PEEK = bZoom && COVER_FIRE_LEFT || COVER_BLINDFIRE_LEFT
+				elseif ply.CTRL_bMovingRight then
+					PEEK = bZoom && COVER_FIRE_RIGHT || COVER_BLINDFIRE_RIGHT
 				end
 				//Dont Use The Cover Gun Stance
-				bGunDoesntUseCoverStance = true
+				bGunUsesCoverStance = true
 			end
 		else ply.CTRL_bInCoverDuck = nil ply.CTRL_bPeekZoom = nil end
 	else
 		local bZoom = ply:KeyDown( IN_ZOOM )
 		if ply:KeyDown( IN_ATTACK ) || bZoom then
 			ply.CTRL_flCoverMoveTime = CurTime() + ply:GetUnDuckSpeed()
+			if bZoom then ply.CTRL_bPeekZoom = true end
 		end
 		if ply.CTRL_vCover && ply:GetPos():DistToSqr( ply.CTRL_vCover ) > 9216/*96*/ then
 			ply.CTRL_flCoverMoveTime = nil
@@ -387,18 +386,18 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		end
 		if CurTime() > ( ply.CTRL_flCoverMoveTime || 0 ) then
 			if ply.CTRL_bMovingLeft then
+				bGunUsesCoverStance = true
 				cmd:SetSideMove( ply:GetRunSpeed() )
 			elseif ply.CTRL_bMovingRight then
+				bGunUsesCoverStance = true
 				cmd:SetSideMove( -ply:GetRunSpeed() )
 			end
 			ply.CTRL_bPeekZoom = nil
 		else
-			if !ply.CTRL_bPeekZoom then
-				if ply.CTRL_bMovingLeft then
-					PEEK = COVER_BLINDFIRE_LEFT
-				elseif ply.CTRL_bMovingRight then
-					PEEK = COVER_BLINDFIRE_RIGHT
-				end
+			if ply.CTRL_bMovingLeft then
+				PEEK = ply.CTRL_bPeekZoom && COVER_FIRE_LEFT || COVER_BLINDFIRE_LEFT
+			elseif ply.CTRL_bMovingRight then
+				PEEK = ply.CTRL_bPeekZoom && COVER_FIRE_RIGHT || COVER_BLINDFIRE_RIGHT
 			end
 		end
 		ply.CTRL_flCoverPeekTime = nil
@@ -411,8 +410,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			ply.CTRL_flCoverDoShootTime = nil
 		elseif CurTime() < v then cmd:RemoveKey( IN_ATTACK ) end
 	end
-	if bGunDoesntUseCoverStance then
-		ply:SetNW2Bool( "CTRL_bInCover", false )
+	if bGunUsesCoverStance then
+		ply:SetNW2Bool( "CTRL_bInCover", true )
 	elseif bInCover then
 		//cmd:RemoveKey( IN_JUMP )
 		ply:SetNW2Bool( "CTRL_bInCover", true ) 
