@@ -45,7 +45,7 @@ function SWEP:SetupDataTables()
 	self:NetworkVar( "Bool", 0, "Reloading" )
 	self:NetworkVar( "Float", 0, "ReloadTimer" )
 	local f = BaseClass.SetupDataTables
-	if v then return f( self ) end
+	if f then return f( self ) end
 end
 
 function SWEP:Reload()
@@ -223,3 +223,4 @@ function SWEP:SecondaryAttack()
 	self:EmitSound( b && "SPAS12_SwitchSemi" || "SPAS12_SwitchPump" )
 	self:SetNextSecondaryFire( CurTime() + .2 )
 end
+
