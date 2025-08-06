@@ -12,6 +12,10 @@ SWEP.Primary.ClipSize = 7
 SWEP.Primary.DefaultClip = 7
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Pistol"
+SWEP.Primary_flSpreadX = .017
+SWEP.Primary_flSpreadY = .017
+SWEP.Primary_flDamage = 80
+SWEP.Primary_flDelay = .06
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
@@ -42,8 +46,8 @@ function SWEP:PrimaryAttack()
 		Src = owner:GetShootPos(),
 		Dir = owner:GetAimVector(),
 		Tracer = 1,
-		Spread = Vector( .017, .017 ),
-		Damage = 80
+		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
+		Damage = self.Primary_flDamage
 	}
 	self:ShootEffects()
 	owner:SetAnimation( PLAYER_ATTACK1 )
@@ -54,5 +58,5 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "DesertEagle_Shot"
 	self:TakePrimaryAmmo( 1 )
-	self:SetNextPrimaryFire( CurTime() + .06 )
+	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end

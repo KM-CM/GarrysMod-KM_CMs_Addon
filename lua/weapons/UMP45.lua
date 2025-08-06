@@ -1,40 +1,43 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-SWEP.Category = "Pistols"
-SWEP.PrintName = "#weapon_pistol"
-if CLIENT then language.Add( "weapon_pistol", "USP Match" ) end
+SWEP.Category = "Submachine Guns"
+SWEP.PrintName = "#UMP45"
+if CLIENT then language.Add( "UMP45", "H&K UMP45" ) end
 SWEP.Instructions = "Primary to shoot."
-SWEP.Purpose = "Universal Self-Loading Pistol, Match Variant."
-SWEP.ViewModel = Model "models/weapons/c_pistol.mdl"
+SWEP.Purpose = "Heckler & Koch Universale Maschinenpistole 45."
+SWEP.ViewModel = Model "models/weapons/cstrike/c_smg_ump45.mdl"
 SWEP.UseHands = true
-SWEP.WorldModel = Model "models/weapons/w_pistol.mdl"
-SWEP.Primary.ClipSize = 15
-SWEP.Primary.DefaultClip = 15
-SWEP.Primary.Automatic = false
-SWEP.Primary.Ammo = "Pistol"
-SWEP.Primary_flSpreadX = .017
-SWEP.Primary_flSpreadY = .017
-SWEP.Primary_flDamage = 80
+SWEP.WorldModel = Model "models/weapons/w_smg_ump45.mdl"
+SWEP.Primary.ClipSize = 25
+SWEP.Primary.DefaultClip = 25
+SWEP.Primary.Automatic = true
+SWEP.Primary.Ammo = "SMG1"
+SWEP.Primary_flSpreadX = .044
+SWEP.Primary_flSpreadY = .044
 SWEP.Primary_flDelay = .08571428571
+SWEP.Primary_flDamage = 80
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
-SWEP.Slot = 1
+SWEP.AdminOnly = false
+SWEP.Weight = 1
+SWEP.Slot = 2
+SWEP.DrawAmmo = true
 
-SWEP.flViewModelAimX = -12
-SWEP.flViewModelAimY = -5.52
-SWEP.flViewModelAimZ = 3.15
+SWEP.flViewModelAimX = -8
+SWEP.flViewModelAimY = -8.6
+SWEP.flViewModelAimZ = 3.5
 
 sound.Add {
-	name = "USP_Match_Shot",
+	name = "UMP45_Shot",
 	channel = CHAN_WEAPON,
 	level = 150,
 	pitch = { 90, 110 },
-	sound = "^HKP2000Shot.wav"
+	sound = "^UMP45Shot.wav"
 }
 
-function SWEP:Initialize() self:SetHoldType "Pistol" end
+function SWEP:Initialize() self:SetHoldType "SMG" end
 
 function SWEP:PrimaryAttack()
 	if !self:CanPrimaryAttack() then return end
@@ -54,7 +57,9 @@ function SWEP:PrimaryAttack()
 	ed:SetAttachment( 1 )
 	ed:SetFlags( 1 )
 	util.Effect( "MuzzleFlash", ed )
-	self:EmitSound "USP_Match_Shot"
+	self:EmitSound "UMP45_Shot"
 	self:TakePrimaryAmmo( 1 )
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
+
+list.Add( "NPCUsableWeapons", { class = "UMP45", title = "#UMP45", category = SWEP.Category } )

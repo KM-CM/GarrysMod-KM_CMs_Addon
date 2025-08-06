@@ -15,6 +15,7 @@ SWEP.Primary.Ammo = "SMG1"
 SWEP.Primary_flDelay = .08571428571
 SWEP.Primary_flSpreadX = .0073
 SWEP.Primary_flSpreadY = .0073
+SWEP.Primary_flDamage = 80
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
@@ -47,7 +48,7 @@ function SWEP:PrimaryAttack()
 		Dir = owner:GetAimVector(),
 		Tracer = 1,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
-		Damage = 80
+		Damage = self.Primary_flDamage
 	}
 	self:ShootEffects()
 	owner:SetAnimation( PLAYER_ATTACK1 )

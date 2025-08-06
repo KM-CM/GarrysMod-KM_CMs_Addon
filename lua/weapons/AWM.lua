@@ -15,6 +15,7 @@ SWEP.Primary.Ammo = "357"
 SWEP.Primary_flSpreadX = .00009259259
 SWEP.Primary_flSpreadY = .00009259259
 SWEP.Primary_flDamage = 128
+SWEP.Primary_flDelay = 1.4
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
@@ -76,7 +77,7 @@ function SWEP:PrimaryAttack()
 	self:EmitSound "AWM_Shot"
 	self:TakePrimaryAmmo( 1 )
 	//self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() ) //Bolt-Action
-	self:SetNextPrimaryFire( CurTime() + 1.4 )
+	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
 list.Add( "NPCUsableWeapons", { class = "AWM", title = "#AWM", category = SWEP.Category } )

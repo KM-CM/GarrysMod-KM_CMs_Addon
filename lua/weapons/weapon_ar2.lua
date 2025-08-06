@@ -12,6 +12,10 @@ SWEP.Primary.ClipSize = 30
 SWEP.Primary.DefaultClip = 30
 SWEP.Primary.Automatic = true
 SWEP.Primary.Ammo = "AR2"
+SWEP.Primary_flSpreadX = .017
+SWEP.Primary_flSpreadY = .017
+SWEP.Primary_flDamage = 80
+SWEP.Primary_flDelay = .07
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
@@ -20,6 +24,10 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
+
+SWEP.flViewModelAimX = -8
+SWEP.flViewModelAimY = -5.82
+SWEP.flViewModelAimZ = 1.257
 
 sound.Add {
 	name = "OSIPR_Shot",
@@ -40,8 +48,8 @@ function SWEP:PrimaryAttack()
 		Dir = owner:GetAimVector(),
 		Tracer = 1,
 		TracerName = "AR2Tracer",
-		Spread = Vector( .017, .017 ),
-		Damage = 80
+		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
+		Damage = self.Primary_flDamage
 	}
 	self:ShootEffects()
 	owner:SetAnimation( PLAYER_ATTACK1 )
@@ -52,5 +60,5 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "OSIPR_Shot"
 	self:TakePrimaryAmmo( 1 )
-	self:SetNextPrimaryFire( CurTime() + .09 )
+	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end

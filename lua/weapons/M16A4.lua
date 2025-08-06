@@ -14,12 +14,17 @@ SWEP.Primary.ClipSize = 30
 SWEP.Primary.DefaultClip = 30
 SWEP.Primary.Automatic = true
 SWEP.Primary.Ammo = "Pistol"
+SWEP.Primary_flSpreadX = .03
+SWEP.Primary_flSpreadY = .03
+SWEP.Primary_flDamage = 80
+SWEP.Primary_flDelay = .063
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 2
+SWEP.bSilenced = false
 SWEP.CSMuzzleFlashes = true
 
 sound.Add {
@@ -44,11 +49,7 @@ function SWEP:Deploy() self:SendWeaponAnim( self.bSilenced && ACT_VM_DRAW_SILENC
 function SWEP:Holster()
 	if self.flSilencerInterruptTime then
 		if CurTime() <= self.flSilencerInterruptTime then
-			if self.bSilenced then
-				self.bSilenced = nil
-			else
-				self.bSilenced = true
-			end
+			self.bSilenced = !self.bSilenced
 			if self.bSilenced then
 				self.WorldModel = WORLDMODEL_SILENCED
 			else
@@ -83,8 +84,8 @@ function SWEP:PrimaryAttack()
 		Src = owner:GetShootPos(),
 		Dir = owner:GetAimVector(),
 		Tracer = 1,
-		Spread = Vector( .03, .03 ),
-		Damage = 60
+		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
+		Damage = self.Primary_flDamage
 	}
 	owner:MuzzleFlash()
 	owner:SetAnimation( PLAYER_ATTACK1 )
@@ -96,7 +97,7 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound( self.bSilenced && "SilencedShot" || "M16A4_Shot" )
 	self:TakePrimaryAmmo( 1 )
-	self:SetNextPrimaryFire( CurTime() + .063 )
+	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
 function SWEP:SecondaryAttack()

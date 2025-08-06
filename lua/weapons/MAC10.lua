@@ -12,6 +12,10 @@ SWEP.Primary.ClipSize = 30
 SWEP.Primary.DefaultClip = 30
 SWEP.Primary.Automatic = true
 SWEP.Primary.Ammo = "SMG1"
+SWEP.Primary_flSpreadX = .02
+SWEP.Primary_flSpreadY = .02
+SWEP.Primary_flDamage = 60
+SWEP.Primary_flDelay = .04
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
@@ -39,8 +43,8 @@ function SWEP:PrimaryAttack()
 		Src = owner:GetShootPos(),
 		Dir = owner:GetAimVector(),
 		Tracer = 1,
-		Spread = Vector( .02, .02 ),
-		Damage = 80
+		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
+		Damage = self.Primary_flDamage
 	}
 	self:ShootEffects()
 	owner:SetAnimation( PLAYER_ATTACK1 )
@@ -51,7 +55,7 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "MAC10_Shot"
 	self:TakePrimaryAmmo( 1 )
-	self:SetNextPrimaryFire( CurTime() + math.Rand( .04, .05 ) )
+	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
 list.Add( "NPCUsableWeapons", { class = "MAC10", title = "#MAC10", category = SWEP.Category } )

@@ -182,7 +182,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 					if t <= 0 then continue end
 					local d = wep.Primary_flDamage || 0
 					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / t * d )
+					local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
 					if nws < ws then w, ws = wep, nws end
 				end
 				if IsValid( w ) then self:SetActiveWeapon( w ) end
@@ -286,7 +286,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 					if t <= 0 then continue end
 					local d = wep.Primary_flDamage || 0
 					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / t * d )
+					local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
 					if nws < ws then w, ws = wep, nws end
 				end
 				if IsValid( w ) then self:SetActiveWeapon( w ) end

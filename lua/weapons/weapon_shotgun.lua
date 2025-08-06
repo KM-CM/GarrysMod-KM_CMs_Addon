@@ -17,6 +17,7 @@ SWEP.Primary_flSpreadX = .0635
 SWEP.Primary_flSpreadY = .0635
 SWEP.Primary_flDelay = .2
 SWEP.Primary_flPumpDelay = .4
+SWEP.Primary_flDamage = 40
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
@@ -185,7 +186,7 @@ function SWEP:PrimaryAttack()
 		Tracer = 1,
 		Num = self.Primary_flNum,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
-		Damage = 40,
+		Damage = self.Primary_flDamage,
 		Force = 2
 	}
 	self:ShootEffects()
