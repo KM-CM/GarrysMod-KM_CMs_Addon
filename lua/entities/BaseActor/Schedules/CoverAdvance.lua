@@ -3,8 +3,6 @@ local math_Clamp = math.Clamp
 local math_min = math.min
 local math_abs = math.abs
 
-function ENT:DLG_Advancing() end
-
 local navmesh_GetNearestNavArea = navmesh.GetNearestNavArea
 
 function ENT:FindAdvanceCover( vCover, tEnemies )

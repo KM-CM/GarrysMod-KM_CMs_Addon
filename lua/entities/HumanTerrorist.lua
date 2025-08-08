@@ -1,5 +1,5 @@
 AddCSLuaFile()
-DEFINE_BASECLASS "BaseActorPlayer"
+DEFINE_BASECLASS "BaseActorPlayerHuman"
 
 scripted_ents.Register( ENT, "HumanTerrorist" )
 

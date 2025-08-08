@@ -46,6 +46,7 @@ function ENT:FindPathBattleLine( Path, tEnemies, flTolerance )
 	for I = 0, Path:GetLength(), flTolerance do
 		local vec = Path:GetPositionOnPath( I )
 		for enemy in pairs( tEnemies ) do
+			if !IsValid( enemy ) then continue end
 			local vShoot = enemy:GetPos() + enemy:OBBCenter()
 			local tr = util.TraceLine {
 				start = vec + vStand,

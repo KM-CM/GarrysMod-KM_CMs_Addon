@@ -25,10 +25,10 @@ end
 function GetVelocity( ent )
 	if ent.__GetVelocity__ then return ent:__GetVelocity__() end
 	if ent:IsPlayer() || ent:IsNPC() then return ent:GetVelocity()
-	elseif ent:IsNextBot() then
+	else
 		local phys = ent:GetPhysicsObject()
 		if IsValid( phys ) then return phys:GetVelocity() end
-		return ent.loco:GetVelocity()
 	end
+	if ent:IsNextBot() then return ent.loco:GetVelocity() end
 	return Vector( 0, 0, 0 )
 end

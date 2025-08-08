@@ -6,9 +6,13 @@ ENT.iDefaultClass = CLASS_NONE
 //The Reason We Dont Do ENT.__ACTOR_TABLE_BY_CLASS__ = {} is Because
 //Garry's Mod Lua Internally Does Magic That Makes The Table NOT Mutable.
 //Usually, This is Extremely Useful, But Here, It's a Very Small Problem.
-local __ACTOR_TABLE_BY_CLASS__ = {}
+//local __ACTOR_TABLE_BY_CLASS__ = {}
+__ACTOR_TABLE_BY_CLASS__ = __ACTOR_TABLE_BY_CLASS__ || {}
+local __ACTOR_TABLE_BY_CLASS__ = __ACTOR_TABLE_BY_CLASS__
 function ENT.GetActorTableByClass() return __ACTOR_TABLE_BY_CLASS__ end
-function ENT:GetAlliesByClass() return __ACTOR_TABLE_BY_CLASS__[ self.iClass || self.iDefaultClass ] end
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+local CLASS_NONE = CLASS_NONE
+function ENT:GetAlliesByClass() local t = CEntity_GetTable( self ) if t == CLASS_NONE then return end return __ACTOR_TABLE_BY_CLASS__[ t.iClass || t.iDefaultClass ] end
 
 //Getters Exist for a Reason. Use Them.
 function ENT:GetNPCClass() return self.iClass || self.iDefaultClass end

@@ -140,6 +140,8 @@ end
 
 function CDirectorMusicPlayer:GetIntensity() return self.m_pOwner.DR_flIntensity || 0 end
 
+DIRECTOR_CROSSFADE_SPEED = .04
+
 function CDirectorMusicPlayer:UpdateInternal( f, s )
 	local flVolume = math.Approach( self.m_flVolume, f || self.m_flVolume, s || 1 )
 	self.m_flVolume = flVolume
@@ -160,8 +162,6 @@ function CDirectorMusicPlayer:UpdateInternal( f, s )
 end
 
 local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Iterator, util.TraceLine
-
-DIRECTOR_CROSSFADE_SPEED = .04
 
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Think!

@@ -115,19 +115,9 @@ function ENT:Behaviour() end
 function ENT:ActorOnDeath() for wep in pairs( self.tWeapons ) do self:DropWeapon( wep ) end end
 
 ENT.GAME_flSuppression = 0
-ENT.flSuppressionMax = 6
-ENT.flSuppressionRec = .5
+ENT.flSuppressionMax = 2
+ENT.flSuppressionRec = 2
 ENT.flSuppressionHide = .1
-
-ENT.flCombatStateSuppressionShort = 0
-ENT.flCombatStateSuppressionShortMax = 2
-ENT.flCombatStateSuppressionShortRec = 2
-ENT.flCombatStateSuppressionShortEffect = 2
-
-ENT.flCombatStateSuppressionLong = 0
-ENT.flCombatStateSuppressionLongMax = 24
-ENT.flCombatStateSuppressionLongRec = .33
-ENT.flCombatStateSuppressionLongEffect = 12
 
 local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 function ENT:GAME_OnRangeAttacked( _, _, _, flDamage )

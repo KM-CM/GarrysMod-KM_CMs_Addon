@@ -9,7 +9,8 @@ function ENT:DoCoverMove( tEnemies )
 	if n > 0 then
 		local pCover, vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
 		if pCover != nil then
-			( self:SetSchedule "TakeCoverMove" ).bAdvancing = true
+			local sched = self:SetSchedule "TakeCoverMove"
+			if n < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
 			self.vCover = vec
 			self.pCover = pCover
 			self.bCoverDuck = bDuck
@@ -18,7 +19,8 @@ function ENT:DoCoverMove( tEnemies )
 	else
 		local pCover, vec, bDuck = self:FindRetreatCover( self.vCover, tEnemies )
 		if pCover != nil then
-			( self:SetSchedule "TakeCoverMove" ).bRetreating = self.flCombatState < 0
+			local sched = self:SetSchedule "TakeCoverMove"
+			if n > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end
 			self.vCover = vec
 			self.pCover = pCover
 			self.bCoverDuck = bDuck
@@ -31,6 +33,13 @@ ENT.flCoverMoveDistance = 800
 
 include "CoverAdvance.lua"
 include "CoverRetreat.lua"
+
+function ENT:DLG_Advancing() end
+function ENT:DLG_Retreating() end
+function ENT:DLG_TakeCoverGeneral() end
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+function ENT:DLG_TakeCoverAdvance() CEntity_GetTable( self ).DLG_TakeCoverGeneral( self ) end
+function ENT:DLG_TakeCoverRetreat() CEntity_GetTable( self ).DLG_TakeCoverGeneral( self ) end
 
 Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
@@ -46,6 +55,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			table.insert( tShootables, { vec, enemy } )
 		end
 	end
+	if !self:CanExpose() then self:SetSchedule "TakeCover" return {} end
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if self.pCover && self.vCover then
@@ -124,7 +134,10 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		end
 		if b then self.pCover = nil self.vCover = nil return end
 		if sched.bActed == nil then
-			if sched.bActed then self:DLG_Advancing() elseif sched.bRetreating then self:DLG_Retreating() end
+			if sched.bTakeCoverAdvance then self:DLG_TakeCoverAdvance()
+			elseif sched.bTakeCoverRetreat then self:DLG_TakeCoverRetreat()
+			elseif sched.bAdvancing then self:DLG_Advancing()
+			elseif sched.bRetreating then self:DLG_Retreating() end
 			sched.bActed = true
 			local bSearch = true
 			//If We can Shoot Them, Almost Always Go for It, UnLess Retreating
@@ -182,7 +195,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 					if t <= 0 then continue end
 					local d = wep.Primary_flDamage || 0
 					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
+					local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
 					if nws < ws then w, ws = wep, nws end
 				end
 				if IsValid( w ) then self:SetActiveWeapon( w ) end
@@ -286,7 +299,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 					if t <= 0 then continue end
 					local d = wep.Primary_flDamage || 0
 					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
+					local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
 					if nws < ws then w, ws = wep, nws end
 				end
 				if IsValid( w ) then self:SetActiveWeapon( w ) end

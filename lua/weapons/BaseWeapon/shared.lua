@@ -135,26 +135,8 @@ if CLIENT then
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
 		local bInCover = ply:GetNW2Bool( "CTRL_bInCover", false )
-		if bInCover then
-			if MyTable.flCover < 1 then
-				MyTable.flCover = math_min( MyTable.flCover + ( 1 - MyTable.flCover ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-			if MyTable.flZoom > 0 then
-				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
-			end
-		else
-			if MyTable.flCover > 0 then
-				MyTable.flCover = math_max( MyTable.flCover - MyTable.flCover * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-			if ply:KeyDown( IN_ZOOM ) then
-				if MyTable.flZoom < 1 then
-					MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-				end
-			else
-				if MyTable.flZoom > 0 then
-					MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
-				end
-			end
+		local bCoverStance = bInCover
+		if !bInCover then
 			if MyTable.flCoverVariantsCenter > 0 then
 				MyTable.flCoverVariantsCenter = math_max( MyTable.flCoverVariantsCenter - MyTable.flCoverVariantsCenter * MyTable.flZoomSpeedIn * FrameTime(), 0 )
 			end
@@ -176,6 +158,7 @@ if CLIENT then
 		else MyTable.aViewModelLastAng = ang end
 		local PEEK = ply:GetNW2Int( "CTRL_Peek", COVER_PEEK_NONE )
 		if PEEK == COVER_BLINDFIRE_UP then
+			bCoverStance = nil
 			if MyTable.flCoverBlindFireUp < 1 then
 				MyTable.flCoverBlindFireUp = math_min( MyTable.flCoverBlindFireUp + ( 1 - MyTable.flCoverBlindFireUp ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
@@ -185,6 +168,7 @@ if CLIENT then
 			end
 		end
 		if PEEK == COVER_BLINDFIRE_LEFT then
+			bCoverStance = nil
 			if MyTable.flCoverBlindFireLeft < 1 then
 				MyTable.flCoverBlindFireLeft = math_min( MyTable.flCoverBlindFireLeft + ( 1 - MyTable.flCoverBlindFireLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
@@ -194,6 +178,7 @@ if CLIENT then
 			end
 		end
 		if PEEK == COVER_BLINDFIRE_RIGHT then
+			bCoverStance = nil
 			if MyTable.flCoverBlindFireRight < 1 then
 				MyTable.flCoverBlindFireRight = math_min( MyTable.flCoverBlindFireRight + ( 1 - MyTable.flCoverBlindFireRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
 			end
@@ -218,6 +203,27 @@ if CLIENT then
 		else
 			if MyTable.flCoverFireRight > 0 then
 				MyTable.flCoverFireRight = math_max( MyTable.flCoverFireRight - MyTable.flCoverFireRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
+		end
+		if bCoverStance then
+			if MyTable.flCover < 1 then
+				MyTable.flCover = math_min( MyTable.flCover + ( 1 - MyTable.flCover ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+			end
+			if MyTable.flZoom > 0 then
+				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
+			end
+		else
+			if MyTable.flCover > 0 then
+				MyTable.flCover = math_max( MyTable.flCover - MyTable.flCover * MyTable.flZoomSpeedIn * FrameTime(), 0 )
+			end
+			if ply:KeyDown( IN_ZOOM ) then
+				if MyTable.flZoom < 1 then
+					MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
+				end
+			else
+				if MyTable.flZoom > 0 then
+					MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
+				end
 			end
 		end
 		if bInCover then

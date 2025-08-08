@@ -503,7 +503,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			if t <= 0 then continue end
 			local d = wep.Primary_flDamage || 0
 			if d <= 0 then continue end
-			local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
+			local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
 			if nws < ws then w, ws = wep, nws end
 		end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
@@ -606,7 +606,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			if t <= 0 then continue end
 			local d = wep.Primary_flDamage || 0
 			if d <= 0 then continue end
-			local nws = math.abs( flHealth - 1 / t * d * ( wep.Primary_flNum || 1 ) )
+			local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
 			if nws < ws then w, ws = wep, nws end
 		end
 		if IsValid( w ) then self:SetActiveWeapon( w ) end

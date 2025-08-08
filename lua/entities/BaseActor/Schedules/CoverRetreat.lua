@@ -3,8 +3,6 @@ local math_Clamp = math.Clamp
 local math_min = math.min
 local math_abs = math.abs
 
-function ENT:DLG_Retreating() end
-
 local navmesh_GetNearestNavArea = navmesh.GetNearestNavArea
 
 function ENT:FindRetreatCover( vCover, tEnemies )
@@ -13,8 +11,8 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 	if !IsValid( enemy ) then return end
 	local area = navmesh.GetNearestNavArea( self:GetPos() )
 	if area == nil then return end
-	local flMinDistSqr = self:GetPos():Distance( enemy:GetPos() ) + self.flCoverMoveDistance * math_abs( math_min( 0, self.flCombatState, self.flCombatStateSmall ) )
-	flMinDistSqr = flMinDistSqr * flMinDistSqr
+	local flDist = self:GetPos():Distance( enemy:GetPos() ) + self.flCoverMoveDistance * math_abs( math_min( 0, self.flCombatState, self.flCombatStateSmall ) )
+	local flDistSqr = flDist * flDist
 	local tQueue, tVisited = { { area, 0 } }, {}
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
@@ -32,8 +30,11 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 		end
 	end
 	local vToEnemy = ( enemy:GetPos() - self:GetPos() ):GetNormalized()
+	local flGiveUpDist = flDist * 4
+	local pBestCover, vBestCover, bBestCoverDuck
 	while !table.IsEmpty( tQueue ) do
 		local area, dist = unpack( table.remove( tQueue ) )
+		if dist > flGiveUpDist then return pBestCover, vBestCover, bBestCoverDuck end //Give Up
 		for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 			local new = t.area
 			local id = new:GetID()
@@ -63,8 +64,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 		for _, d in ipairs( tCovers ) do
 			local Cover = d[ 1 ]
 			local vec = Cover.m_Vector + Cover.m_vForward * flOff
-			if vec:DistToSqr( enemy:GetPos() ) <= flMinDistSqr ||
-			( vec - self:GetPos() ):GetNormalized():Dot( vToEnemy ) < 0 then continue end
+			if ( vec - self:GetPos() ):GetNormalized():Dot( vToEnemy ) < 0 then continue end
 			local b
 			if tAllies then
 				for ally in pairs( tAllies ) do
@@ -137,7 +137,10 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 				end
 			end
 			if b then continue end
-			return Cover, vec, bDuck
+			pBestCover, vBestCover, bBestCoverDuck = Cover, vec, bDuck
+			if vec:DistToSqr( enemy:GetPos() ) > flDistSqr then
+				return Cover, vec, bDuck
+			end
 		end
 	end
 end

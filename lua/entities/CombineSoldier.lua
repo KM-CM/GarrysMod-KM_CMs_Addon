@@ -25,7 +25,7 @@ sound.Add {
 }
 
 sound.Add {
-	name = "Combine_Soldier_Closing",
+	name = "Combine_Soldier_Advancing",
 	channel = CHAN_VOICE,
 	level = 150,
 	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
@@ -35,6 +35,37 @@ sound.Add {
 		"npc/combine_soldier/vo/unitisclosing.wav",
 		"npc/combine_soldier/vo/unitismovingin.wav",
 		"npc/combine_soldier/vo/bearing.wav"
+	}
+}
+
+sound.Add {
+	name = "Combine_Soldier_TakeCover",
+	channel = CHAN_VOICE,
+	level = 150,
+	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
+	sound = {
+		"npc/combine_soldier/vo/bodypackholding.wav",
+		"npc/combine_soldier/vo/cover.wav",
+		"npc/combine_soldier/vo/coverhurt.wav",
+		"npc/combine_soldier/vo/stabilizationteamholding.wav",
+		"npc/combine_soldier/vo/sharpzone.wav",
+		"npc/combine_soldier/vo/isholdingatcode.wav",
+		"npc/combine_soldier/vo/isfinalteamunitbackup.wav",
+		"npc/combine_soldier/vo/heavyresistance.wav"
+	}
+}
+
+sound.Add {
+	name = "Combine_Soldier_Retreating",
+	channel = CHAN_VOICE,
+	level = 150,
+	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
+	sound = {
+		"npc/combine_soldier/vo/displace.wav",
+		"npc/combine_soldier/vo/displace2.wav",
+		"npc/combine_soldier/vo/sharpzone.wav",
+		"npc/combine_soldier/vo/heavyresistance.wav",
+		"npc/combine_soldier/vo/isfinalteamunitbackup.wav"
 	}
 }
 
@@ -67,8 +98,13 @@ if CLIENT then language.Add( "CombineSoldier", "Combine Soldier" ) end
 
 if !SERVER then return end
 
-function ENT:DLG_FiringAtAnExposedTarget() self:EmitSound "Combine_Soldier_FiringAtAnExposedTarget" end
-function ENT:DLG_Advancing() self:EmitSound "Combine_Soldier_Closing" end
+local CEntity_EmitSound = FindMetaTable( "Entity" ).EmitSound
+
+function ENT:DLG_FiringAtAnExposedTarget() CEntity_EmitSound( self, "Combine_Soldier_FiringAtAnExposedTarget" ) end
+function ENT:DLG_Advancing() CEntity_EmitSound( self, "Combine_Soldier_Advancing" ) end
+function ENT:DLG_Retreating() CEntity_EmitSound( self, "Combine_Soldier_Retreating" ) end
+
+function ENT:DLG_TakeCoverGeneral() CEntity_EmitSound( self, "Combine_Soldier_TakeCover" ) end
 
 ENT.iDefaultClass = CLASS_COMBINE
 
