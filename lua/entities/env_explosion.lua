@@ -71,7 +71,7 @@ function ENT:Explode()
 	local flDist = flRange + 64
 	local flDamage = flMagnitude * 32
 	util_BlastDamage( self, GetOwner( self ), self:GetPos(), flDist, flDamage )
-	util_ScreenShake( self:GetPos(), flMagnitude * 256, flMagnitude * .002, math.min( 12, flMagnitude * .2 ), flMagnitude * 64 )
+	util_ScreenShake( self:GetPos(), flMagnitude * 256, flMagnitude * .001, math.min( 12, flMagnitude * .2 ), flMagnitude * 64 )
 	for _ = 1, math.max( 5, flRange * .2 ) do //Effects
 		local dir = VectorRand()
 		local tr = util_TraceLine {
