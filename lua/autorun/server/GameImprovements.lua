@@ -159,8 +159,6 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	return true
 end )
 
-hook.Add( "PlayerDeath", "GameImprovements", function( ply ) for _, wep in ipairs( ply:GetWeapons() ) do ply:DropWeapon( wep ) end end )
-
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
 	for _, ent in ents_Iterator() do

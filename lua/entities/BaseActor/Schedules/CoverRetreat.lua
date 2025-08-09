@@ -11,8 +11,10 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 	if !IsValid( enemy ) then return end
 	local area = navmesh.GetNearestNavArea( self:GetPos() )
 	if area == nil then return end
-	local flDist = self:GetPos():Distance( enemy:GetPos() ) + self.flCoverMoveDistance * math_abs( math_min( 0, self.flCombatState, self.flCombatStateSmall ) )
-	local flDistSqr = flDist * flDist
+	//local flDist = self:GetPos():Distance( enemy:GetPos() ) + self.flCoverMoveDistance * math_abs( math_min( 0, self.flCombatState, self.flCombatStateSmall ) )
+	//local flDistSqr = flDist * flDist
+	local flDistSqr = self:GetPos():Distance( enemy:GetPos() ) + self.flCoverMoveDistance * math_abs( math_min( 0, self.flCombatState, self.flCombatStateSmall ) )
+	flDistSqr = flDistSqr * flDistSqr
 	local tQueue, tVisited = { { area, 0 } }, {}
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
@@ -30,16 +32,17 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 		end
 	end
 	local vToEnemy = ( enemy:GetPos() - self:GetPos() ):GetNormalized()
-	local flGiveUpDist = flDist * 4
+	//local flGiveUpDist = flDist * 4
 	local pBestCover, vBestCover, bBestCoverDuck
 	while !table.IsEmpty( tQueue ) do
 		local area, dist = unpack( table.remove( tQueue ) )
-		if dist > flGiveUpDist then return pBestCover, vBestCover, bBestCoverDuck end //Give Up
+		//if dist > flGiveUpDist then return pBestCover, vBestCover, bBestCoverDuck end //Give Up
 		for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 			local new = t.area
 			local id = new:GetID()
 			if tVisited[ id ] then continue end
 			tVisited[ id ] = true
+			if ( area:GetClosestPointOnArea( self:GetPos() ) - self:GetPos() ):GetNormalized():Dot( vToEnemy ) > 0 then continue end
 			local d = area:ComputeAdjacentConnectionHeightChange( new )
 			if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
 			table.insert( tQueue, { new, t.dist + dist } )
@@ -64,7 +67,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 		for _, d in ipairs( tCovers ) do
 			local Cover = d[ 1 ]
 			local vec = Cover.m_Vector + Cover.m_vForward * flOff
-			if ( vec - self:GetPos() ):GetNormalized():Dot( vToEnemy ) < 0 then continue end
+			if ( vec - self:GetPos() ):GetNormalized():Dot( vToEnemy ) > 0 then continue end
 			local b
 			if tAllies then
 				for ally in pairs( tAllies ) do

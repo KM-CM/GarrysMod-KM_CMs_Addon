@@ -44,6 +44,7 @@ function ENT:DLG_TakeCoverRetreat() CEntity_GetTable( self ).DLG_TakeCoverGenera
 Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
+	if !self:CanExpose() then self:SetSchedule "TakeCover" return {} end
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	local enemy, trueenemy = self:SetupEnemy( enemy )
@@ -55,7 +56,6 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			table.insert( tShootables, { vec, enemy } )
 		end
 	end
-	if !self:CanExpose() then self:SetSchedule "TakeCover" return {} end
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if self.pCover && self.vCover then
@@ -253,18 +253,16 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 						end
 					end
 					if IsValid( pEnemy ) then
-						if self:CanExpose() then
-							if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-							//local flDist = self.flWalkSpeed * 4
-							//flDist = flDist * flDist
-							//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
-							local flDist = self.flProwlSpeed * 4
-							flDist = flDist * flDist
-							if self:GetPos():DistToSqr( self.vCover ) > flDist then
-								self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-							else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-							//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-						else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+						if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+						//local flDist = self.flWalkSpeed * 4
+						//flDist = flDist * flDist
+						//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
+						local flDist = self.flProwlSpeed * 4
+						flDist = flDist * flDist
+						if self:GetPos():DistToSqr( self.vCover ) > flDist then
+							self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+						else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+						//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 					else
 						local goal = sched.Path:GetCurrentGoal()
 						if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
@@ -357,18 +355,16 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 						end
 					end
 					if IsValid( pEnemy ) then
-						if self:CanExpose() then
-							if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-							//local flDist = self.flWalkSpeed * 4
-							//flDist = flDist * flDist
-							//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
-							local flDist = self.flProwlSpeed * 4
-							flDist = flDist * flDist
-							if self:GetPos():DistToSqr( self.vCover ) > flDist then
-								self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-							else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-							//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-						else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+						if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+						//local flDist = self.flWalkSpeed * 4
+						//flDist = flDist * flDist
+						//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
+						local flDist = self.flProwlSpeed * 4
+						flDist = flDist * flDist
+						if self:GetPos():DistToSqr( self.vCover ) > flDist then
+							self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+						else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+						//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 					else
 						local goal = sched.Path:GetCurrentGoal()
 						if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
@@ -412,19 +408,17 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			end
 		end
 		if IsValid( pEnemy ) then
-			if self:CanExpose() then
-				if self.bCoverDuck == true then sched.bCoverStand = nil
-				elseif sched.bCoverStand == nil then sched.bCoverStand = math.random( 2 ) == 1 end
-				//local flDist = self.flWalkSpeed * 4
-				//flDist = flDist * flDist
-				//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bCoverStand then
-				local flDist = self.flProwlSpeed * 4
-				flDist = flDist * flDist
-				if self:GetPos():DistToSqr( self.vCover ) > flDist then
-					self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-				else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-				//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-			else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+			if self.bCoverDuck == true then sched.bCoverStand = nil
+			elseif sched.bCoverStand == nil then sched.bCoverStand = math.random( 2 ) == 1 end
+			//local flDist = self.flWalkSpeed * 4
+			//flDist = flDist * flDist
+			//if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bCoverStand then
+			local flDist = self.flProwlSpeed * 4
+			flDist = flDist * flDist
+			if self:GetPos():DistToSqr( self.vCover ) > flDist then
+				self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+			else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+			//else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 		else
 			local goal = sched.Path:GetCurrentGoal()
 			if goal then

@@ -8,11 +8,25 @@ ENT.iDefaultClass = CLASS_NONE
 //Usually, This is Extremely Useful, But Here, It's a Very Small Problem.
 //local __ACTOR_TABLE_BY_CLASS__ = {}
 __ACTOR_TABLE_BY_CLASS__ = __ACTOR_TABLE_BY_CLASS__ || {}
-local __ACTOR_TABLE_BY_CLASS__ = __ACTOR_TABLE_BY_CLASS__
-function ENT.GetActorTableByClass() return __ACTOR_TABLE_BY_CLASS__ end
+local __ACTOR_TABLE_BY_CLASS_LOCAL__ = __ACTOR_TABLE_BY_CLASS_LOCAL__
+function ENT.GetActorTableByClass() return __ACTOR_TABLE_BY_CLASS_LOCAL__ end
 local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 local CLASS_NONE = CLASS_NONE
-function ENT:GetAlliesByClass() local t = CEntity_GetTable( self ) if t == CLASS_NONE then return end return __ACTOR_TABLE_BY_CLASS__[ t.iClass || t.iDefaultClass ] end
+function ENT:GetAlliesByClass() local t = CEntity_GetTable( self ) if t == CLASS_NONE then return end return __ACTOR_TABLE_BY_CLASS_LOCAL__[ t.iClass || t.iDefaultClass ] end
+
+local isentity, IsValid = isentity, IsValid
+hook.Add( "Think", "BaseActorDisposition", function()
+	local t = {}
+	for cls, tbl in pairs( __ACTOR_TABLE_BY_CLASS__ ) do
+		for ent in pairs( tbl ) do
+			if !isentity( ent ) || !IsValid( ent ) then continue end
+			local v = tbl[ cls ]
+			if v then v[ ent ] = true else tbl[ cls ] = { [ ent ] = true } end
+		end
+	end
+	__ACTOR_TABLE_BY_CLASS__ = t
+	__ACTOR_TABLE_BY_CLASS_LOCAL__ = t
+end )
 
 //Getters Exist for a Reason. Use Them.
 function ENT:GetNPCClass() return self.iClass || self.iDefaultClass end

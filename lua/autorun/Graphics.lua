@@ -9,22 +9,21 @@ function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 
 
 if !CLIENT_DLL then return end
 
+local util_TraceLine = util.TraceLine
+local MASK_VISIBLE_AND_NPCS = MASK_VISIBLE_AND_NPCS
+local LocalPlayer = LocalPlayer
+local EyePos = EyePos
+local vUpHuge = Vector( 0, 0, 999999 )
+
 //Similar to util.IsSkyboxVisibleFromPoint
 function UTIL_IsUnderSkybox()
 	return util_TraceLine( {
 		start = EyePos(),
-		endpos = EyePos() + vUp,
+		endpos = EyePos() + vUpHuge,
 		filter = LocalPlayer(),
-		mask = MASK
+		mask = MASK_VISIBLE_AND_NPCS
 	} ).HitSky
 end
-setfenv( UTIL_IsUnderSkybox, {
-	util_TraceLine = util.TraceLine,
-	LocalPlayer = LocalPlayer,
-	EyePos = EyePos,
-	vUp = Vector( 0, 0, 999999 ),
-	MASK = MASK_VISIBLE_AND_NPCS
-} )
 
 //These Shall NOT be Overriden by ANYTHING!
 local BLEED_MAX_COLOR_MULTIPLY = 1
@@ -46,6 +45,7 @@ local MAX_WATER_BLUR = 3
 //[ 0, 1 ], Not [ 0, MAX_WATER_BLUR ]!
 local WATER_BLUR_CHANGE_SPEED_TO = .8
 local WATER_BLUR_CHANGE_SPEED_FROM = .2
+
 
 hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	local self = LocalPlayer()
@@ -125,3 +125,6 @@ hook.Add( "SetupWorldFog", "Graphics", function()
 	render.FogMaxDensity( ( flBrightness < .5 && math.Remap( flBrightness, 0, .5, 0, 1 ) || math.Remap( flBrightness, .5, 1, 1, 0 ) ) * ( self.GP_FogDensityMul || 0 ) )
 	return true
 end )
+
+__HUD_SHOULD_NOT_DRAW__ = { CHudHistoryResource = true, CHudGeiger = true, CHudDamageIndicator = true }
+hook.Add( "HUDShouldDraw", "Graphics", function( sName ) return __HUD_SHOULD_NOT_DRAW__[ sName ] == nil end )

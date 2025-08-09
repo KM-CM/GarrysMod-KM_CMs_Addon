@@ -9,14 +9,14 @@ ENT.flAllyRetreatShareDistance = 4096
 
 //Short-Term Suppression Does Not Get Shared Between Allies
 ENT.flCombatStateSuppressionShort = 0
-ENT.flCombatStateSuppressionShortMax = 2
-ENT.flCombatStateSuppressionShortRec = 2
-ENT.flCombatStateSuppressionShortEffect = 2
+ENT.flCombatStateSuppressionShortMax = 16
+ENT.flCombatStateSuppressionShortRec = 4
+ENT.flCombatStateSuppressionShortEffect = 8
 
 ENT.flCombatStateSuppressionLong = 0
-ENT.flCombatStateSuppressionLongMax = 256
+ENT.flCombatStateSuppressionLongMax = 768
 ENT.flCombatStateSuppressionLongRec = 2
-ENT.flCombatStateSuppressionLongEffect = 128
+ENT.flCombatStateSuppressionLongEffect = 512
 
 local math = math
 local math_Clamp = math.Clamp

@@ -5,6 +5,9 @@ ENT.tPreScheduleResetVariables.pActualCover = false
 
 function ENT:RangeAttack() self:WeaponPrimaryVolley() end
 
+//Small Suppressed, Does NOT want Someone Else to Help Yet
+function ENT:DLG_Suppressed() end
+
 //See The Code, I have No Easy Way of Explaining This One
 ENT.flSuppressionTraceFraction = .66
 
@@ -453,7 +456,8 @@ function ENT:DLG_Suppressing( enemy ) end
 
 Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	local enemy, trueenemy = self:SetupEnemy( sched.Enemy )
-	if !IsValid( enemy ) || !self:CanExpose() || !sched.vFrom then return {} end
+	if !IsValid( enemy ) || !sched.vFrom then return {} end
+	if !self:CanExpose() then self:DLG_Suppressed() return {} end
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
 	local c = self:GetWeaponClipPrimary()
