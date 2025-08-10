@@ -14,8 +14,9 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 	//If We can Hit Em from Here - Dont Bother
 	local flTarget = IsValid( t ) && 0 || self:FindPathBattleLine( Path, tEnemies )
 	if flTarget == nil then return end
-	local f = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
-	flTarget = math_Clamp( flTarget + f, 0, Path:GetLength() )
+	local flAdvance = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
+	local flAdvanceSqr = flAdvance * flAdvance
+	flTarget = math_Clamp( flTarget + flAdvance, 0, Path:GetLength() )
 	local vPos = Path:GetPositionOnPath( flTarget )
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return end
@@ -35,6 +36,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 			table.insert( tShootables, { vec, enemy } )
 		end
 	end
+	local pBestCover, vBestCover, bBestCoverDuck
 	while !table.IsEmpty( tQueue ) do
 		local area, dist = unpack( table.remove( tQueue ) )
 		for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
@@ -139,7 +141,9 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 				end
 			end
 			if b then continue end
-			return Cover, vec, bDuck
+			pBestCover, vBestCover, bBestCoverDuck = Cover, vec, bDuck
+			if d[ 2 ] > flAdvanceSqr then return Cover, vec, bDuck end
 		end
 	end
+	return pBestCover, vBestCover, bBestCoverDuck
 end

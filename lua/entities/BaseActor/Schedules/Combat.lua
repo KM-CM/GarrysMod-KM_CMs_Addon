@@ -354,9 +354,18 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 		end
 	end
 	if self.pCover && self.vCover then
+		self.pActualCover = self.pCover
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) > 8 then self.pCover = nil return end
+		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) > 8 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
+		local tAllies = self:GetAlliesByClass()
+		if tAllies then
+			local pCover = self.pCover
+			for ally in pairs( tAllies ) do
+				if self == ally then continue end
+				if ally.pActualCover == pCover then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
+			end
+		end
 		local vec = self.vCover
 		local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then
@@ -372,7 +381,7 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 					endpos = vDuck,
 					mask = MASK_SHOT_HULL,
 					filter = { self, ent }
-				} ).Hit then self.pCover = nil return end
+				} ).Hit then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
 				if !util.TraceLine( {
 					start = vec,
 					endpos = vStand,
@@ -385,7 +394,7 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 					endpos = vStand,
 					mask = MASK_SHOT_HULL,
 					filter = { self, ent }
-				} ).Hit then self.pCover = nil return end
+				} ).Hit then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
 			end
 		end
 		self.bCoverDuck = bDuck
@@ -448,13 +457,14 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 				end
 			end
 		else sched.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .5 ), 0, 4 ) end
-	else self:SetSchedule "TakeCover" end
+	else self:SetSchedule "TakeCover" return {} end
 end )
 
 function ENT:DLG_FiringAtAnExposedTarget( enemy ) end
 function ENT:DLG_Suppressing( enemy ) end
 
 Actor_RegisterSchedule( "RangeAttack", function( self, sched )
+	self.pActualCover = self.pCover
 	local enemy, trueenemy = self:SetupEnemy( sched.Enemy )
 	if !IsValid( enemy ) || !sched.vFrom then return {} end
 	if !self:CanExpose() then self:DLG_Suppressed() return {} end

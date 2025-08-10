@@ -44,7 +44,7 @@ function ENT:DLG_TakeCoverRetreat() CEntity_GetTable( self ).DLG_TakeCoverGenera
 Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
-	if !self:CanExpose() then self:SetSchedule "TakeCover" return {} end
+	if !self:CanExpose() then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	local enemy, trueenemy = self:SetupEnemy( enemy )
@@ -64,7 +64,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.pActualCover == pCover then self.pCover = nil self.vCover = nil return end
+				if ally.pActualCover == pCover then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return {} end
 			end
 		end
 		local vec = self.vCover
