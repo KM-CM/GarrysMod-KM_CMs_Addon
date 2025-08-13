@@ -18,11 +18,10 @@ local isentity, IsValid = isentity, IsValid
 hook.Add( "Think", "BaseActorDisposition", function()
 	local t = {}
 	for cls, tbl in pairs( __ACTOR_TABLE_BY_CLASS_LOCAL__ ) do
-		if true then continue end
 		for ent in pairs( tbl ) do
 			if !isentity( ent ) || !IsValid( ent ) then continue end
-			local v = tbl[ cls ]
-			if v then v[ ent ] = true else tbl[ cls ] = { [ ent ] = true } end
+			local v = t[ cls ]
+			if v then v[ ent ] = true else t[ cls ] = { [ ent ] = true } end
 		end
 	end
 	__ACTOR_TABLE_BY_CLASS__ = t
