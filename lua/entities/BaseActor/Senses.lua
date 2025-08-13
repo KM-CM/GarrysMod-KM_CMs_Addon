@@ -106,6 +106,16 @@ local HUGE_Z = Vector( 0, 0, 999999 )
 
 ENT.flLastLookTime = 0
 ENT.flNextLookTime = 0
+/*If We've Seen Something, and Then It went Out of Sight, Dont Delete It Yet!
+Instead, Decrease The Vision Strength of It by This and Only Delete It when It's Zero.
+This Way, It's Harder for Enemies to Run Away, Since Every Half a Second They're Re-Noticed,
+as Opposed to having to Wait The Whole Spot Time Over and Over Again when They're a Pixel Out of LoS
+
+NOTE: This Does NOT Grant The Actors Free Knowledge! tVisionStrength is Only Used to Determine
+How Much We've Spotted Something, NOT to Decide if We can or cant See Something.
+
+The Formula is 1 / SecondsToLoseCompletely*/
+ENT.flLoseSpeed = .2 //5
 ENT.tVisionStrength = {} //Entity ( Even InValid, will be Filtered ) -> Float [ 0, 1 ]
 function ENT:Look()
 	if CurTime() <= self.flNextLookTime then return end
@@ -166,6 +176,11 @@ function ENT:Look()
 				end
 			end
 		else tVisionStrength[ ent ] = 0 end
+	end
+	local f = self.flLoseSpeed
+	for ent, flt in pairs( tOldVisionStrength ) do
+		if !IsValid( ent ) || flt <= 0 || tVisionStrength[ ent ] then continue end
+		tVisionStrength[ ent ] = flt - f * FrameTime()
 	end
 	local tBullseyes = {}
 	for id, data in pairs( self.tBullseyes ) do
