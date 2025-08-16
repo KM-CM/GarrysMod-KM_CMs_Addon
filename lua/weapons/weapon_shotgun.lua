@@ -28,6 +28,8 @@ SWEP.Weight = 1
 SWEP.Slot = 3
 SWEP.DrawAmmo = true
 SWEP.Crosshair = "Shotgun"
+SWEP.vSprintArm = Vector( 1.358, -6.228, -0.94 )
+SWEP.vViewModelAim = Vector( -2.955, -4, 2.2 )
 
 SWEP.bSemi = true
 SWEP.bPumped = true
@@ -37,10 +39,6 @@ SWEP.flPumpTime = 0
 SWEP.flViewModelX = -6
 SWEP.flViewModelY = -6
 SWEP.flViewModelZ = 2
-
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -8.97
-SWEP.flViewModelAimZ = 4.18
 
 function SWEP:SetupDataTables()
 	self:NetworkVar( "Bool", 0, "Reloading" )

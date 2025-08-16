@@ -24,10 +24,7 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
-
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -8.6
-SWEP.flViewModelAimZ = 3.5
+SWEP.vSprintArm = Vector( 1.358, -8.228, -0.94 )
 
 sound.Add {
 	name = "UMP45_Shot",

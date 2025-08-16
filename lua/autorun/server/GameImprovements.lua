@@ -180,7 +180,10 @@ local FixBunnyHop = CreateConVar( "FixBunnyHop", 1, FCVAR_SERVER_CAN_EXECUTE + F
 local FixBunnyHopLength = CreateConVar( "FixBunnyHopLength", .1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "The Amount of FixBunnyHop", 0, 1 )
 local tFixBunnyHop = {}
 local CEntity_IsOnGround = CEntity.IsOnGround
+local math = math
+local math_max = math.max
 local util_TraceLine = util.TraceLine
+local CEntity_WaterLevel = CEntity.WaterLevel
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if FixBunnyHop:GetBool() then
 		if CEntity_IsOnGround( ply ) then
@@ -190,9 +193,33 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
 	else tFixBunnyHop[ ply ] = nil end
 
-	if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
+	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 
-	//TODO: Side Peeking Code
+	if ply:IsOnGround() then
+		//Trash
+		//if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
+		if !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
+			if cmd:GetForwardMove() <= 0 || b then
+				ply:SetNW2Bool( "CTRL_bSprinting", false )
+				cmd:RemoveKey( IN_SPEED )
+			else
+				local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
+				ply:SetNW2Bool( "CTRL_bSprinting", b )
+				if b then
+					cmd:RemoveKey( IN_ATTACK )
+					cmd:RemoveKey( IN_ATTACK2 )
+					cmd:RemoveKey( IN_ZOOM )
+				end
+			end
+		else ply:SetNW2Bool( "CTRL_bSprinting", false ) end
+	else
+		if CEntity_WaterLevel( ply ) <= 0 && !ply.CTRL_bAllowMovingWhileInAir && ply:GetMoveType() == MOVETYPE_WALK then
+			cmd:SetForwardMove( 0 )
+			cmd:SetSideMove( 0 )
+		end
+		ply:SetNW2Bool( "CTRL_bSprinting", false )
+	end
+
 	local bInCover
 	local bGunUsesCoverStance //Used in Very Special Circumstances
 	local PEEK = COVER_PEEK_NONE
@@ -218,7 +245,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	}
 	if ply:IsOnGround() then
 		if cmd:KeyDown( IN_DUCK ) then
-			if trDuck.Hit || trStand.Hit then
+			if trDuck.Hit then
 				bInCover = true
 			end
 		else
@@ -227,7 +254,6 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		end
 	end
-	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 	if bInCover then
 		if CurTime() > ( ply.CTRL_flCoverMoveTime || 0 ) then
 			ply.CTRL_bMovingLeft = nil

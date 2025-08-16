@@ -24,10 +24,7 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
-
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -5.82
-SWEP.flViewModelAimZ = 1.257
+SWEP.vViewModelAim = Vector( -5.82, -8, 1.255 )
 
 sound.Add {
 	name = "OSIPR_Shot",

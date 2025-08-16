@@ -16,6 +16,7 @@ SWEP.Primary_flSpreadX = .02
 SWEP.Primary_flSpreadY = .02
 SWEP.Primary_flDelay = .06315789473
 SWEP.Primary_flDamage = 60
+SWEP.ViewModelFOV = 45
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
@@ -25,14 +26,11 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
+SWEP.vViewModelAim = Vector( -6.43, -4, 1.03 )
 
-SWEP.flViewModelX = 0
-SWEP.flViewModelY = -4
-SWEP.flViewModelZ = 0
-
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -6.42
-SWEP.flViewModelAimZ = 1.03
+//SWEP.flViewModelX = 0
+//SWEP.flViewModelY = -4
+//SWEP.flViewModelZ = 0
 
 sound.Add {
 	name = "MP7_Shot",

@@ -140,7 +140,7 @@ end
 
 function CDirectorMusicPlayer:GetIntensity() return self.m_pOwner.DR_flIntensity || 0 end
 
-DIRECTOR_CROSSFADE_SPEED = .04
+DIRECTOR_CROSSFADE_SPEED = .08
 
 function CDirectorMusicPlayer:UpdateInternal( f, s )
 	local flVolume = math.Approach( self.m_flVolume, f || self.m_flVolume, s || 1 )
@@ -269,6 +269,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 					continue
 				else
 					if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+					tMusic[ l ] = s
 					ply.DR_tMusicNext[ l ] = CurTime() + ply.DR_tMusic[ l ]:Length()
 				end
 			end

@@ -21,10 +21,7 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
-
-SWEP.flViewModelAimX = -12
-SWEP.flViewModelAimY = -5.52
-SWEP.flViewModelAimZ = 3.15
+SWEP.vViewModelAim = Vector( -5.51, -12, 3.145 )
 
 sound.Add {
 	name = "USP_Match_Shot",

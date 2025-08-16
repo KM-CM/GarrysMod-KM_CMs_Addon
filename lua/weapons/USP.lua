@@ -25,10 +25,7 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.CSMuzzleFlashes = true
-
-SWEP.flViewModelAimX = -12
-SWEP.flViewModelAimY = -5.91
-SWEP.flViewModelAimZ = 2.56
+SWEP.vViewModelAim = Vector( -5.905, -12, 2.6 )
 
 sound.Add {
 	name = "USP_Shot",

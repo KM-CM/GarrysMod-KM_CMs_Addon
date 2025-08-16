@@ -24,10 +24,6 @@ SWEP.Slot = 1
 
 SWEP.__VIEWMODEL_FULLY_MODELED__ = true
 
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -6.35
-SWEP.flViewModelAimZ = 2.18
-
 sound.Add {
 	name = "DesertEagle_Shot",
 	channel = CHAN_WEAPON,

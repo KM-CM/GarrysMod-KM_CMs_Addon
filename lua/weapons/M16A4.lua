@@ -26,6 +26,7 @@ SWEP.Spawnable = true
 SWEP.Slot = 2
 SWEP.bSilenced = false
 SWEP.CSMuzzleFlashes = true
+SWEP.vSprintArm = Vector( 1.358, -3.228, -0.94 )
 
 sound.Add {
 	name = "M16A4_Shot",

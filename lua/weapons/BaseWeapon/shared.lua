@@ -1,6 +1,8 @@
 function SWEP:PrimaryAttack() end
 function SWEP:SecondaryAttack() end
 
+SWEP.__WEAPON__ = true
+
 function SWEP:Reload()
 	self:SetClip1( 0 )
 	self:DefaultReload( ACT_VM_RELOAD )
@@ -50,8 +52,7 @@ end
 function SWEP:GetNPCBulletSpread() return 0 end
 function SWEP:GetNPCBurstSettings() return 0, self:Clip1(), self.Primary.Automatic && 0 || math.Rand( .2, .8 ) end
 
-function SWEP:Deploy() self:BaseWeaponDraw( ACT_VM_DRAW ) self:CallOnClient "ResetZoom" end
-function SWEP:Holster() self:CallOnClient "ResetZoom" return true end
+function SWEP:Deploy() self:BaseWeaponDraw( ACT_VM_DRAW ) end
 
 function SWEP:BaseWeaponDraw( act )
 	local owner = self:GetOwner()
@@ -64,210 +65,234 @@ function SWEP:BaseWeaponDraw( act )
 	if t > self:GetNextSecondaryFire() then self:SetNextSecondaryFire( t ) end
 end
 
-SWEP.BobScale = 0
-SWEP.SwayScale = 0
+local CPlayer = FindMetaTable "Player"
+local CPlayer_KeyDown = CPlayer.KeyDown
+local CPlayer_GetRunSpeed = CPlayer.GetRunSpeed
+local CEntity_GetVelocity = CEntity.GetVelocity
+local CEntity_IsOnGround = CEntity.IsOnGround
+local CEntity_GetNW2Bool = CEntity.GetNW2Bool
+local CEntity_GetTable = CEntity.GetTable
 
 if CLIENT then
-	local CEntity_GetTable = CEntity.GetTable
-	function SWEP:ResetZoom()
-		local MyTable = CEntity_GetTable( self )
-		MyTable.flZoom = 0
-	end
+	local Vector = Vector
+	local vFinal = Vector( 0, 0, 0 )
+	local vFinalAngle = Vector( 0, 0, 0 )
+	local vTarget = Vector( 0, 0, 0 )
+	local vTargetAngle = Vector( 0, 0, 0 )
+	local aAim = Angle( 0, 0, 0 )
+	local flLandTime, flJumpTime = 0, 0
+	SWEP.ViewModelFOV = 62
 	SWEP.flViewModelX = 0
 	SWEP.flViewModelY = 0
 	SWEP.flViewModelZ = 0
-	SWEP.flViewModelAimX = 0
-	SWEP.flViewModelAimY = 0
-	SWEP.flViewModelAimZ = 0
-	SWEP.flViewModelPitch = 0
-	SWEP.flViewModelYaw = 0
-	SWEP.flViewModelPitchMin = -5
-	SWEP.flViewModelPitchMax = 5
-	SWEP.flViewModelYawMin = -5
-	SWEP.flViewModelYawMax = 5
-	SWEP.flViewModelPitchExagg = 2
-	SWEP.flViewModelYawExagg = 2
-	SWEP.flViewModelPitchSpeed = 8
-	SWEP.flViewModelYawSpeed = 8
-	SWEP.flZoom = 0
-	SWEP.flZoomSpeedIn = 8
-	SWEP.flZoomSpeedOut = 3
-	//These Use flZoomSpeedIn for Both In and Out
-	SWEP.flCover = 0
-	SWEP.flCoverBlindFireUp = 0
-	SWEP.flCoverBlindFireUpY = 14
-	SWEP.flCoverBlindFireLeft = 0
-	SWEP.flCoverBlindFireRight = 0
-	SWEP.flCoverBlindFireLeftZ = -4
-	SWEP.flCoverBlindFireRightZ = -8
-	SWEP.flCoverVariantsCenter = 0
-	SWEP.flCoverVariantsCenterY = -4
-	SWEP.flCoverVariantsRight = 0
-	SWEP.flCoverVariantsRightY = 2
-	SWEP.flCoverVariantsLeft = 0
-	SWEP.flCoverVariantsLeftY = -14
-	SWEP.flCoverFireLeft = 0
-	SWEP.flCoverFireRight = 0
-	SWEP.flCustomZoomFoV = nil
-	SWEP.flMaxZoom = .1 //As Seen in The Literal Line Below, FoV * ( 1 - This * flZoom )
-	SWEP.flCurrentFoV = 0
-	SWEP.bDontDrawCrosshairDuringZoom = true
-	SWEP.Crosshair = ""
-	SWEP.__VIEWMODEL_FULLY_MODELED__ = false
-	local t = math
-	local math_min, math_max = t.min, t.max
-	local math_AngleDifference = t.AngleDifference
-	local math_Approach = t.Approach
-	local math_Clamp = t.Clamp
-	local math_Round = t.Round
+	SWEP.vViewModelAim = false
+	SWEP.vViewModelAimAngle = false
+	SWEP.flSwayScale = 60
+	SWEP.flSwayAngle = 4
+	SWEP.flSwayVector = 1.5
+	SWEP.SwayScale = 0
+	SWEP.BobScale = 0
+	SWEP.vSprintArm = Vector( 1.358, 1.228, -.94 )
+	SWEP.vSprintArmAngle = Vector( -10.554, 34.167, -20 )
+	SWEP.flAimMultiplier = 1
+	local math = math
+	local math_cos = math.cos
+	local math_sin = math.sin
+	local math_Clamp = math.Clamp
+	local math_NormalizeAngle = math.NormalizeAngle
+	local CEntity_WaterLevel = CEntity.WaterLevel
+	local CPlayer_GetWalkSpeed = CPlayer.GetWalkSpeed
+	local CPlayer_InVehicle = CPlayer.InVehicle
+	local bOnGroundLast
+	local function BezierY( f, a, b, c )
+		f = f * 3.2258
+		return ( 1 - f ) ^ 2 * a + 2 * ( 1 - f ) * f * b + ( f ^ 2 ) * c
+	end
+	local math_Remap = math.Remap
 	function SWEP:CalcView( ply, pos, ang, fov )
 		local MyTable = CEntity_GetTable( self )
-		ang[ 3 ] = ang[ 3 ] - 22.5 * MyTable.flCoverBlindFireLeft + 22.5 * MyTable.flCoverBlindFireRight - 11.25 * MyTable.flCoverFireLeft + 11.25 * MyTable.flCoverFireRight
-		local f = MyTable.flCustomZoomFoV && math.Remap( MyTable.flZoom, 0, 1, fov, MyTable.flCustomZoomFoV ) || fov * ( 1 - MyTable.flMaxZoom * MyTable.flZoom )
-		MyTable.flCurrentFoV = f
-		return pos, ang, f
+		local v = MyTable.flCustomZoomFoV
+		if v then
+			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, fov, v )
+			MyTable.flFoV = f
+			return pos, ang, f
+		else MyTable.flFoV = nil end
 	end
-	function SWEP:AdjustMouseSensitivity()
-		local owner = LocalPlayer()
-		if IsValid( owner ) then return CEntity_GetTable( self ).flCurrentFoV / owner:GetFOV() end
-	end
-	function SWEP:CalcViewModelView( vm, opos, oang, pos, ang )
+	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", 99 ) end end
+	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
-		local bInCover = ply:GetNW2Bool( "CTRL_bInCover", false )
-		local bCoverStance = bInCover
-		if !bInCover then
-			if MyTable.flCoverVariantsCenter > 0 then
-				MyTable.flCoverVariantsCenter = math_max( MyTable.flCoverVariantsCenter - MyTable.flCoverVariantsCenter * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-			if MyTable.flCoverVariantsRight > 0 then
-				MyTable.flCoverVariantsRight = math_max( MyTable.flCoverVariantsRight - MyTable.flCoverVariantsRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-			if MyTable.flCoverVariantsLeft > 0 then
-				MyTable.flCoverVariantsLeft = math_max( MyTable.flCoverVariantsLeft - MyTable.flCoverVariantsLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-		end
-		pos = pos - ang:Up() * 8 * MyTable.flCover
-		local flZoom = MyTable.flZoom
-		local flZoomInv = 1 - flZoom
-		if MyTable.aViewModelLastAng then
-			local flDiffPitch, flDiffYaw = math_Clamp( math_Round( math_AngleDifference( MyTable.aViewModelLastAng[ 1 ], ang[ 1 ] ) ) * MyTable.flViewModelPitchExagg, MyTable.flViewModelPitchMin, MyTable.flViewModelPitchMax ), math_Clamp( math_Round( math_AngleDifference( MyTable.aViewModelLastAng[ 2 ], ang[ 2 ] ) ) * MyTable.flViewModelYawExagg, MyTable.flViewModelPitchMin, MyTable.flViewModelPitchMax )
-			MyTable.aViewModelLastAng = Angle( ang )
-			MyTable.flViewModelPitch = math_Approach( MyTable.flViewModelPitch, flDiffPitch * flZoomInv, MyTable.flViewModelPitchSpeed * FrameTime() )
-			MyTable.flViewModelYaw = math_Approach( MyTable.flViewModelYaw, flDiffYaw * flZoomInv, MyTable.flViewModelYawSpeed * FrameTime() )
-		else MyTable.aViewModelLastAng = ang end
-		local PEEK = ply:GetNW2Int( "CTRL_Peek", COVER_PEEK_NONE )
-		if PEEK == COVER_BLINDFIRE_UP then
-			bCoverStance = nil
-			if MyTable.flCoverBlindFireUp < 1 then
-				MyTable.flCoverBlindFireUp = math_min( MyTable.flCoverBlindFireUp + ( 1 - MyTable.flCoverBlindFireUp ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
+		local bSprinting = CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )
+		local bZoom = !bSprinting && CPlayer_KeyDown( ply, IN_ZOOM )
+		local vAim
+		if bZoom then vAim = MyTable.vViewModelAim if !vAim then bZoom = nil end end
+		if bZoom then
+			vTarget = Vector( vAim )
+			local vAimAngle = MyTable.vViewModelAimAngle
+			vTargetAngle = vAimAngle && Vector( vAimAngle ) || Vector( 0, 0, 0 )
 		else
-			if MyTable.flCoverBlindFireUp > 0 then
-				MyTable.flCoverBlindFireUp = math_max( MyTable.flCoverBlindFireUp - MyTable.flCoverBlindFireUp * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
+			vTarget = Vector( 0, 0, 0 )
+			vTargetAngle = Vector( 0, 0, 0 )
 		end
-		if PEEK == COVER_BLINDFIRE_LEFT then
-			bCoverStance = nil
-			if MyTable.flCoverBlindFireLeft < 1 then
-				MyTable.flCoverBlindFireLeft = math_min( MyTable.flCoverBlindFireLeft + ( 1 - MyTable.flCoverBlindFireLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-		else
-			if MyTable.flCoverBlindFireLeft > 0 then
-				MyTable.flCoverBlindFireLeft = math_max( MyTable.flCoverBlindFireLeft - MyTable.flCoverBlindFireLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-		end
-		if PEEK == COVER_BLINDFIRE_RIGHT then
-			bCoverStance = nil
-			if MyTable.flCoverBlindFireRight < 1 then
-				MyTable.flCoverBlindFireRight = math_min( MyTable.flCoverBlindFireRight + ( 1 - MyTable.flCoverBlindFireRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-		else
-			if MyTable.flCoverBlindFireRight > 0 then
-				MyTable.flCoverBlindFireRight = math_max( MyTable.flCoverBlindFireRight - MyTable.flCoverBlindFireRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-		end
-		if PEEK == COVER_FIRE_LEFT then
-			if MyTable.flCoverFireLeft < 1 then
-				MyTable.flCoverFireLeft = math_min( MyTable.flCoverFireLeft + ( 1 - MyTable.flCoverFireLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-		else
-			if MyTable.flCoverFireLeft > 0 then
-				MyTable.flCoverFireLeft = math_max( MyTable.flCoverFireLeft - MyTable.flCoverFireLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-		end
-		if PEEK == COVER_FIRE_RIGHT then
-			if MyTable.flCoverFireRight < 1 then
-				MyTable.flCoverFireRight = math_min( MyTable.flCoverFireRight + ( 1 - MyTable.flCoverFireRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-		else
-			if MyTable.flCoverFireRight > 0 then
-				MyTable.flCoverFireRight = math_max( MyTable.flCoverFireRight - MyTable.flCoverFireRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-		end
-		if bCoverStance then
-			if MyTable.flCover < 1 then
-				MyTable.flCover = math_min( MyTable.flCover + ( 1 - MyTable.flCover ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-			end
-			if MyTable.flZoom > 0 then
-				MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
-			end
-		else
-			if MyTable.flCover > 0 then
-				MyTable.flCover = math_max( MyTable.flCover - MyTable.flCover * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-			end
-			if ply:KeyDown( IN_ZOOM ) then
-				if MyTable.flZoom < 1 then
-					MyTable.flZoom = math_min( MyTable.flZoom + ( 1 - MyTable.flZoom ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-				end
+		local bOnGround = CEntity_IsOnGround( ply )
+		if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CPlayer_InVehicle( ply ) then
+			bOnGroundLast = true
+		elseif bOnGround then
+			bOnGroundLast = true
+			if bSprinting then
+				vTarget = vTarget + MyTable.vSprintArm
+				vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle
+				local flBreathe = RealTime() * 18
+				local flVelocity = CEntity_GetVelocity( ply ):Length()
+				local flSpeed = CPlayer_GetRunSpeed( ply )
+				vTarget = vTarget - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * flVelocity / flSpeed, 0, math_cos( flBreathe ) * flVelocity / flSpeed )
+				vTargetAngle = vTargetAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * flVelocity / flSpeed, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * flVelocity / flSpeed, 0)
 			else
-				if MyTable.flZoom > 0 then
-					MyTable.flZoom = math_max( MyTable.flZoom - MyTable.flZoom * MyTable.flZoomSpeedOut * FrameTime(), 0 )
+				local flVelocity = CEntity_GetVelocity( ply ):Length()
+				local flSpeed = CPlayer_GetWalkSpeed( ply )
+				if flVelocity > 10 then
+					local flBreathe = RealTime() * 16
+					vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * flVelocity / flSpeed, 0, 0 )
+					vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * flVelocity / flSpeed, ( -math_cos( flBreathe * .5 ) * 1.2 ) * flVelocity / flSpeed, 0 )
 				end
+			end
+		else
+			flLandTime = RealTime() + .31
+			if bOnGroundLast then
+				flJumpTime = RealTime() + .31
+				flLandTime = 0
+				bOnGroundLast = nil
 			end
 		end
-		if bInCover then
-			local VARIANTS = ply:GetNW2Int( "CTRL_Variants", COVER_VARIANTS_CENTER )
-			if VARIANTS == COVER_VARIANTS_CENTER then
-				if MyTable.flCoverVariantsCenter < 1 then
-					MyTable.flCoverVariantsCenter = math_min( MyTable.flCoverVariantsCenter + ( 1 - MyTable.flCoverVariantsCenter ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-				end
-			else
-				if MyTable.flCoverVariantsCenter > 0 then
-					MyTable.flCoverVariantsCenter = math_max( MyTable.flCoverVariantsCenter - MyTable.flCoverVariantsCenter * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-				end
-			end
-			if VARIANTS == COVER_VARIANTS_RIGHT then
-				if MyTable.flCoverVariantsRight < 1 then
-					MyTable.flCoverVariantsRight = math_min( MyTable.flCoverVariantsRight + ( 1 - MyTable.flCoverVariantsRight ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-				end
-			else
-				if MyTable.flCoverVariantsRight > 0 then
-					MyTable.flCoverVariantsRight = math_max( MyTable.flCoverVariantsRight - MyTable.flCoverVariantsRight * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-				end
-			end
-			if VARIANTS == COVER_VARIANTS_LEFT then
-				if MyTable.flCoverVariantsLeft < 1 then
-					MyTable.flCoverVariantsLeft = math_min( MyTable.flCoverVariantsLeft + ( 1 - MyTable.flCoverVariantsLeft ) * MyTable.flZoomSpeedIn * FrameTime(), 1 )
-				end
-			else
-				if MyTable.flCoverVariantsLeft > 0 then
-					MyTable.flCoverVariantsLeft = math_max( MyTable.flCoverVariantsLeft - MyTable.flCoverVariantsLeft * MyTable.flZoomSpeedIn * FrameTime(), 0 )
-				end
+		if !bZoom && CEntity_WaterLevel( ply ) < 1 then
+			if RealTime() <= flJumpTime then
+				local f = .31 - ( flJumpTime - RealTime() )
+				local xx = BezierY( f, 0, -4, 0 )
+				local yy = 0
+				local zz = BezierY( f, 0, -2, -5 )
+				local pt = BezierY( f, 0, -4.36, 10 )
+				local yw = xx
+				local rl = BezierY( f, 0, -10.82, -5 )
+				vTarget = vTarget + Vector( xx, yy, zz )
+				vTargetAngle = vTargetAngle + Vector( pt, yw, rl )
+			elseif !bOnGround then
+				local flBreathe = RealTime() * 30
+				vTarget = vTarget + Vector( math_cos( flBreathe * .5 ) * .0625, 0, -5 + ( math_sin( flBreathe / 3 ) * .0625 ) )
+				vTargetAngle = vTargetAngle + Vector( 10 - ( math_sin( flBreathe / 3 ) * .25 ), math_cos( flBreathe * .5 ) * .25, -5 )
+			elseif RealTime() <= flLandTime then
+				local f = flLandTime - RealTime()
+				local xx = BezierY( f, 0, -4, 0 )
+				local yy = 0
+				local zz = BezierY( f, 0, -2, -5 )
+				local pt = BezierY( f, 0, -4.36, 10 )
+				local yw = xx
+				local rl = BezierY( f, 0, -10.82, -5 )
+				vTarget = vTarget + Vector( xx, yy, zz )
+				vTargetAngle = vTargetAngle + Vector( pt, yw, rl )
 			end
 		end
-		ang[ 1 ] = ang[ 1 ] - MyTable.flViewModelPitch
-		ang[ 2 ] = ang[ 2 ] - MyTable.flViewModelYaw
-		pos = pos + ang:Forward() * ( MyTable.flViewModelAimX * flZoom + MyTable.flViewModelX * flZoomInv ) + ang:Right() * ( MyTable.flViewModelAimY * flZoom + MyTable.flViewModelY * flZoomInv ) + ang:Up() * ( MyTable.flViewModelAimZ * flZoom + MyTable.flViewModelZ * flZoomInv )
-		if MyTable.__VIEWMODEL_FULLY_MODELED__ then
-			pos = pos + ang:Right() * ( MyTable.flCoverBlindFireUp * MyTable.flCoverBlindFireUpY + MyTable.flCoverVariantsCenter * MyTable.flCoverVariantsCenterY + MyTable.flCoverVariantsRight * MyTable.flCoverVariantsRightY + MyTable.flCoverVariantsLeft * MyTable.flCoverVariantsLeftY )
-			pos = pos + ang:Up() * ( MyTable.flCoverBlindFireRight * MyTable.flCoverBlindFireRightZ - MyTable.flCoverBlindFireLeft * MyTable.flCoverBlindFireLeftZ )
-			ang.r = ang.r - 180 * MyTable.flCoverBlindFireUp + 90 * MyTable.flCoverBlindFireLeft - 90 * MyTable.flCoverBlindFireRight
+		if MyTable.aLastEyePosition == nil then MyTable.aLastEyePosition = Angle( 0, 0, 0 ) end
+		local flAnimSpeed = 5
+		vFinal = LerpVector( flAnimSpeed * FrameTime(), vFinal, vTarget )
+		vFinalAngle = LerpVector( flAnimSpeed * FrameTime(), vFinalAngle, vTargetAngle )
+		pos = pos + ang:Forward() * MyTable.flViewModelX + ang:Right() * MyTable.flViewModelY + ang:Up() * MyTable.flViewModelZ
+		ang:RotateAroundAxis( ang:Right(), vFinalAngle.x )
+		ang:RotateAroundAxis( ang:Up(), vFinalAngle.y )
+		ang:RotateAroundAxis( ang:Forward(), vFinalAngle.z )
+		pos = pos + vFinal.z * ang:Up()
+		pos = pos + vFinal.y * ang:Forward()
+		pos = pos + vFinal.x * ang:Right()
+		aAim = LerpAngle( 5 * FrameTime(), aAim, ply:EyeAngles() )
+		MyTable.aLastEyePosition = aAim - ply:EyeAngles()
+		MyTable.aLastEyePosition.y = math.AngleDifference( aAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
+		local flMultiplier
+		if bZoom then
+			flMultiplier = vFinal:Distance( vTarget ) / vTarget:Length()
+		else
+			flMultiplier = math_Clamp( MyTable.flAimMultiplier + FrameTime(), 0, 1 )
 		end
-		ang.p = ang.p - 22.5 * MyTable.flCover
+		MyTable.flAimMultiplier = flMultiplier
+		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
+		local flSwayAngleNeg = -flSwayAngle
+		ang:RotateAroundAxis( ang:Right(), math_Clamp( flSwayAngle * MyTable.aLastEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
+		ang:RotateAroundAxis( ang:Up(), math_Clamp( flSwayAngleNeg * MyTable.aLastEyePosition.y / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
+		local flSwayVector = MyTable.flSwayVector * flMultiplier
+		local flSwayVectorNeg = -flSwayVector
+		pos = pos + math_Clamp( ( flSwayVectorNeg * MyTable.aLastEyePosition.p / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Up()
+		pos = pos + math_Clamp( ( flSwayVectorNeg * MyTable.aLastEyePosition.y / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Right()
 		return pos, ang
 	end
 	include "Crosshair.lua"
 end
+
+sound.Add {
+	name = "HumanSlideLoop",
+	channel = CHAN_STATIC,
+	volume = 1.0,
+	level = 80,
+	sound = "physics/flesh/flesh_scrape_rough_loop.wav"
+}
+
+if SERVER then
+	local CEntity_SetNW2Bool = CEntity.SetNW2Bool
+	local CEntity_SetNW2Vector = CEntity.SetNW2Vector
+	local CEntity_SetNW2Float = CEntity.SetNW2Float
+	local CEntity_GetNW2Vector = CEntity.GetNW2Vector
+	local CEntity_GetNW2Float = CEntity.GetNW2Float
+	hook.Add( "Move", "BaseWeapon", function( ply, mv )
+		local vel = CEntity_GetVelocity( ply )
+		if ply:Alive() then
+			if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) then
+				local f = CEntity_GetNW2Float( ply, "CTRL_flSlideSpeed", 0 )
+				if CEntity_IsOnGround( ply ) && CPlayer_KeyDown( ply, IN_DUCK ) && f > 10 then
+					mv:SetVelocity( CEntity_GetNW2Vector( ply, "CTRL_vSlide" ) * f )
+					local flRunSpeed = CPlayer_GetRunSpeed( ply )
+					local t = CEntity_GetTable( ply )
+					f = f - flRunSpeed * ( t.CTRL_flSlideSpeedDecay || .33 ) * FrameTime()
+					CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
+					local vv = t.CTRL_pSlideLoop
+					if v then
+						local p = f / flRunSpeed
+						v:ChangeVolume( p )
+						v:ChangePitch( p * 100 )
+					end
+				else
+					CEntity_SetNW2Bool( ply, "CTRL_bSliding", false )
+				end
+			else
+				local t = CEntity_GetTable( ply )
+				if !t.CTRL_bCantSlide && CEntity_IsOnGround( ply ) && CPlayer_KeyDown( ply, IN_SPEED ) && CPlayer_KeyDown( ply, IN_DUCK ) && vel:Length() >= CPlayer_GetRunSpeed( ply ) then
+					CEntity_SetNW2Bool( ply, "CTRL_bSliding", true )
+					CEntity_SetNW2Vector( ply, "CTRL_vSlide", vel:GetNormalized() )
+					local f = CPlayer_GetRunSpeed( ply )
+					CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
+					CEntity_SetNW2Float( ply, "CTRL_flSlide", CurTime() )
+					local t = CEntity_GetTable( ply )
+					local s = CreateSound( ply, t.CTRL_sSlideLoop || "HumanSlideLoop" )
+					t.CTRL_pSlideLoop = s
+					s:Play()
+				else
+					local t = CEntity_GetTable( ply )
+					local v = t.CTRL_pSlideLoop
+					if v then
+						v:Stop()
+						t.CTRL_pSlideLoop = nil
+					end
+				end
+			end
+		end
+	end )
+end
+
+local CEntity_LookupSequence = CEntity.LookupSequence
+hook.Add( "CalcMainActivity", "BaseWeapon", function( ply, vel )
+	if IsValid( ply ) && CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) then
+		local a = ACT_MP_WALK
+		ply.CalcIdeal = a
+		local s = CEntity_LookupSequence( ply, CEntity_GetTable( ply ).CTRL_sSlidingSequence || "zombie_slump_idle_02" )
+		ply.CalcSeqOverride = s
+		return a, s
+	end
+end )
 
 weapons.Register( SWEP, "BaseWeapon" )

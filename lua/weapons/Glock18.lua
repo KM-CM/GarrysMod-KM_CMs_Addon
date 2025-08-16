@@ -23,10 +23,6 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 
-SWEP.flViewModelAimX = -8
-SWEP.flViewModelAimY = -5.76
-SWEP.flViewModelAimZ = 2.955
-
 sound.Add {
 	name = "Glock18_Shot",
 	channel = CHAN_WEAPON,

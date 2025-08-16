@@ -27,10 +27,6 @@ SWEP.DrawAmmo = true
 SWEP.flZoomSpeedIn = 4
 SWEP.flZoomSpeedOut = 1
 
-SWEP.flViewModelAimX = 0
-SWEP.flViewModelAimY = -5.95
-SWEP.flViewModelAimZ = 2.35
-
 sound.Add {
 	name = "M249SAW_Shot",
 	channel = CHAN_WEAPON,

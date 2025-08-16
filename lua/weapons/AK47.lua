@@ -25,10 +25,6 @@ SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
 
-SWEP.flViewModelAimX = -12
-SWEP.flViewModelAimY = -6.616
-SWEP.flViewModelAimZ = 3.4
-
 sound.Add {
 	name = "AK47_Shot",
 	channel = CHAN_WEAPON,
