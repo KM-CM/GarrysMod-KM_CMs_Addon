@@ -184,6 +184,8 @@ local math = math
 local math_max = math.max
 local util_TraceLine = util.TraceLine
 local CEntity_WaterLevel = CEntity.WaterLevel
+local CPlayer = FindMetaTable "Player"
+local CPlayer_GetRunSpeed = CPlayer.GetRunSpeed
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if FixBunnyHop:GetBool() then
 		if CEntity_IsOnGround( ply ) then
@@ -203,6 +205,12 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				ply:SetNW2Bool( "CTRL_bSprinting", false )
 				cmd:RemoveKey( IN_SPEED )
 			else
+				cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
+				if cmd:GetSideMove() < 0 then
+					cmd:SetSideMove( -cmd:GetForwardMove() )
+				elseif cmd:GetSideMove() > 0 then
+					cmd:SetSideMove( cmd:GetForwardMove() )
+				end
 				local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
 				ply:SetNW2Bool( "CTRL_bSprinting", b )
 				if b then
@@ -475,8 +483,6 @@ local __SCALE_DAMAGE__ = __SCALE_DAMAGE__
 
 hook.Add( "ScalePlayerDamage", "GameImprovements", function( _, hg, dmg ) dmg:ScaleDamage( __SCALE_DAMAGE__[ hg ] || 1 ) return false end )
 hook.Add( "ScaleNPCDamage", "GameImprovements", function( _, hg, dmg ) dmg:ScaleDamage( __SCALE_DAMAGE__[ hg ] || 1 ) return false end )
-
-local CPlayer = FindMetaTable "Player"
 
 if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 

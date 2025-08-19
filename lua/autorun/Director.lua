@@ -11,6 +11,15 @@ function Director_RegisterMusicSound( Name, Path )
 		channel = CHAN_STATIC
 	}
 end
+function Director_RegisterNonStandardMusicSound( Name, Path )
+	sound.Add {
+		name = "MUS_" .. Name,
+		sound = Path,
+		level = 0,
+		volume = 1,
+		channel = CHAN_STATIC
+	}
+end
 
 if SERVER then
 
@@ -163,6 +172,8 @@ end
 
 local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Iterator, util.TraceLine
 
+DIRECTOR_MELEE_DANGER = 2
+
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Think!
 	for _, ply in player_Iterator() do
@@ -201,7 +212,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 		//ply.DR_tMusicEntities = tMusicEntities
 		ply.GAME_flSuppression = math.Approach( ply.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( ply.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
 		if CurTime() > ( ply.DR_flNextUpdate || 0 ) then
-			local THREAT, flIntensity, flIntensityHealth = DIRECTOR_THREAT_NULL, 0, 0
+			local THREAT, flIntensity = DIRECTOR_THREAT_NULL, 0
 			for _, ent in ents_Iterator() do
 				local bVisible = util_TraceLine( {
 					start = ply:EyePos(),
@@ -224,11 +235,22 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 				local t = Director_GetThreat( ply, ent )
 				if t > THREAT then THREAT = t end
 				if t > 0 then
-					if ent.DR_bMusicActive then flIntensity = flIntensity + ent:Health() end
-					flIntensityHealth = flIntensityHealth + ent:Health()
+					local h = ent:Health()
+					local a = 0
+					if bVisible && HasMeleeAttack( ent ) then
+						local d = ply:GetPos():Distance( ent:GetPos() )
+						if d < 384 then
+							a = a + h * DIRECTOR_MELEE_DANGER
+						elseif d < 512 then
+							a = a + h * math.Remap( d, 384, 768, DIRECTOR_MELEE_DANGER, 1 )
+						elseif d < 1024 then
+							a = a + h * math.Remap( d, 512, 1024, 1, 0 )
+						end
+					end
+					flIntensity = flIntensity + math.max( a, ent.DR_bMusicActive && h || 0 )
 				end
 			end
-			ply.DR_flIntensity = math.Clamp( ( flIntensity / flIntensityHealth ) + ( ply.GAME_flSuppression / ply:Health() ), 0, 1 )
+			ply.DR_flIntensity = math.Clamp( ( flIntensity + ply.GAME_flSuppression ) / ply:Health(), 0, 1 )
 			ply.DR_Threat = THREAT
 			if ply.DR_ThreatAware > ply.DR_Threat then ply.DR_ThreatAware = ply.DR_Threat end
 			ply.DR_flNextUpdate = CurTime() + math.Rand( .1, .2 )
@@ -246,7 +268,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 		end
 		//Lower Here, if You Even Read The Comment Above
 		ply.DR_tMusicEntities = tMusicEntities
-		local ThreatAware, bLayerFound = ply.DR_ThreatAware
+		local ThreatAware, bLayerFound, bNoLayer = ply.DR_ThreatAware
 		local tMusic = {}
 		for l, s in pairs( ply.DR_tMusic ) do
 			s:Tick()
@@ -265,10 +287,15 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 						ply.DR_tShutMeUp[ s ] = true
 						tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t )
 						ply.DR_tMusicNext[ l ] = CurTime() + tMusic[ l ]:Length()
-					else ply.DR_tMusicNext[ l ] = CurTime() + s:Length() end
+					else
+						bNoLayer = true
+						if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+						ply.DR_tMusicNext[ l ] = CurTime() + s:Length()
+					end
 					continue
 				else
-					if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+					bNoLayer = true
+					//if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
 					tMusic[ l ] = s
 					ply.DR_tMusicNext[ l ] = CurTime() + ply.DR_tMusic[ l ]:Length()
 				end
@@ -276,7 +303,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 			tMusic[ l ] = s
 		end
 		ply.DR_tMusic = tMusic
-		if !bLayerFound && ThreatAware > DIRECTOR_THREAT_NULL then
+		if !bLayerFound && bNoLayer && ThreatAware > DIRECTOR_THREAT_NULL then
 			local t = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
 			if t then
 				local b = true
@@ -318,3 +345,22 @@ end )
 end //SERVER
 
 for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end
+
+if !SERVER then return end
+
+if IsMounted "left4dead2" then
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Slayer_Electric", "music/zombat/slayer/lectric/slayer_01a.wav" )
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums1", "music/zombat/horde/drums01b.wav" )
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums2", "music/zombat/horde/drums01c.wav" )
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums3", "music/zombat/horde/drums01d.wav" )
+	DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_COMBAT ].Default_Left4Dead2_Horde01 = {
+		flBlockLength = 5.627,
+		Tick = function( self )
+			if !self.tHandles.Drums then
+				self:Play( "Drums", "MUS_Default_Left4Dead2_Horde01_Drums" .. tostring( math.random( 3 ) ), 1, 5.627 )
+				self:Play( "Slayer", "MUS_Default_Left4Dead2_Horde_Slayer_Electric", self.flSlayerVolume || 0, 5.627 )
+			end
+			self.flSlayerVolume = self:ApproachVolume( "Slayer", self:GetIntensity(), .4 * FrameTime() )
+		end
+	}
+end
