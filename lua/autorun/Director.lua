@@ -250,7 +250,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 					flIntensity = flIntensity + math.max( a, ent.DR_bMusicActive && h || 0 )
 				end
 			end
-			ply.DR_flIntensity = math.Clamp( ( flIntensity + ply.GAME_flSuppression ) / ply:Health(), 0, 1 )
+			ply.DR_flIntensity = math.Clamp( ( flIntensity + ply.GAME_flSuppression ) / ( ply:Health() * ( ply.GAME_flMaxIntensityHealthMultiplier || 4 ) ), 0, 1 )
 			ply.DR_Threat = THREAT
 			if ply.DR_ThreatAware > ply.DR_Threat then ply.DR_ThreatAware = ply.DR_Threat end
 			ply.DR_flNextUpdate = CurTime() + math.Rand( .1, .2 )
@@ -303,7 +303,7 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 			tMusic[ l ] = s
 		end
 		ply.DR_tMusic = tMusic
-		if !bLayerFound && bNoLayer && ThreatAware > DIRECTOR_THREAT_NULL then
+		if !bLayerFound && !bNoLayer && ThreatAware > DIRECTOR_THREAT_NULL then
 			local t = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
 			if t then
 				local b = true
@@ -350,14 +350,15 @@ if !SERVER then return end
 
 if IsMounted "left4dead2" then
 	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Slayer_Electric", "music/zombat/slayer/lectric/slayer_01a.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums1", "music/zombat/horde/drums01b.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums2", "music/zombat/horde/drums01c.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde01_Drums3", "music/zombat/horde/drums01d.wav" )
-	DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_COMBAT ].Default_Left4Dead2_Horde01 = {
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums1", "music/zombat/horde/drums01b.wav" )
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums2", "music/zombat/horde/drums01c.wav" )
+	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums3", "music/zombat/horde/drums01d.wav" )
+	local math_random = math.random
+	DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_COMBAT ].Default_Left4Dead2_Horde = {
 		flBlockLength = 5.627,
 		Tick = function( self )
 			if !self.tHandles.Drums then
-				self:Play( "Drums", "MUS_Default_Left4Dead2_Horde01_Drums" .. tostring( math.random( 3 ) ), 1, 5.627 )
+				self:Play( "Drums", "MUS_Default_Left4Dead2_Horde_Drums" .. tostring( math_random( 3 ) ), 1, 5.627 )
 				self:Play( "Slayer", "MUS_Default_Left4Dead2_Horde_Slayer_Electric", self.flSlayerVolume || 0, 5.627 )
 			end
 			self.flSlayerVolume = self:ApproachVolume( "Slayer", self:GetIntensity(), .4 * FrameTime() )
