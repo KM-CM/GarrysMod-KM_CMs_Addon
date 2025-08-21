@@ -17,12 +17,12 @@ SWEP.CrosshairColorOutLine = Color( 0, 0, 0 )
 SWEP.flCrosshairBase = .0012
 SWEP.flCrosshairOutLine = .0008
 __WEAPON_CROSSHAIR_TABLE__ = {
-	[ "" ] = function( MyTable, self ) end,
+	[ "" ] = function( MyTable, self ) return true end,
 	Shotgun = function( MyTable, self )
 		local flSpread = MyTable.GatherCrosshairSpread( self, MyTable, true )
 		local flHeight, flWidth = ScrH(), ScrW()
 		//I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
-		local flRadius = flSpread * flHeight * .5
+		local flRadius = flSpread * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flX = flWidth * .5
 		local flY = flHeight * .5
 		local co = MyTable.CrosshairColorOutLine
