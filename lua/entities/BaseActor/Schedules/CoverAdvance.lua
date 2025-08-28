@@ -11,12 +11,11 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 	if !IsValid( enemy ) then return end
 	self:ComputeFlankPath( Path, enemy )
 	local _, _, t = self:FindSuppressEnemy( vCover, tEnemies, self.bCoverDuck )
-	//If We can Hit Em from Here - Dont Bother
-	local flTarget = IsValid( t ) && 0 || self:FindPathBattleLineNoAllies( Path, tEnemies )
+	//If We can Hit Someone from Here - Dont Bother
+	local flTarget = IsValid( t ) && 0 || self:FindPathBattleLine( Path, tEnemies )
 	if flTarget == nil then return end
 	local flAdvance = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
 	local flAdvanceSqr = flAdvance * flAdvance
-	//Only Advance if We arent Already Moving Very Far, Like when Approaching The Enemy from The Other Side of The Map
 	if flTarget <= flAdvance then flTarget = math_Clamp( flTarget + flAdvance, 0, Path:GetLength() ) end
 	local vPos = Path:GetPositionOnPath( flTarget )
 	local area = navmesh.GetNearestNavArea( vPos )
@@ -71,15 +70,15 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 		local bFound
 		for _, d in ipairs( tCovers ) do
 			local Cover = d[ 1 ]
+			local vec = Cover.m_Vector + Cover.m_vForward * flOff
 			local b
 			if tAllies then
 				for ally in pairs( tAllies ) do
 					if self == ally then continue end
-					if ally.pActualCover == Cover then b = true break end
+					if ally.pActualCover == Cover || ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then b = true break end
 				end
 			end
 			if b then continue end
-			local vec = Cover.m_Vector + Cover.m_vForward * flOff
 			b = true
 			local vStand, vDuck, bDuck = vec + vOffStanding
 			if vOffDucking then vDuck = vec + vOffDucking end

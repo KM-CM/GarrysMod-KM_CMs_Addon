@@ -2,6 +2,7 @@
 
 ENT.tPreScheduleResetVariables.bSuppressing = false
 ENT.tPreScheduleResetVariables.pActualCover = false
+ENT.tPreScheduleResetVariables.vActualCover = false
 
 function ENT:RangeAttack() self:WeaponPrimaryVolley() end
 
@@ -355,18 +356,19 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 	end
 	if self.pCover && self.vCover then
 		self.pActualCover = self.pCover
+		self.vActualCover = self.vCover
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) > 8 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
+		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
 			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.pActualCover == pCover then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
+				if ally.pActualCover == pCover || ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
 			end
 		end
-		local vec = self.vCover
 		local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then
 			vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z )
@@ -465,6 +467,7 @@ function ENT:DLG_Suppressing( enemy ) end
 
 Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	self.pActualCover = self.pCover
+	self.vActualCover = self.vCover
 	local enemy, trueenemy = self:SetupEnemy( sched.Enemy )
 	if !IsValid( enemy ) || !sched.vFrom then return {} end
 	if !self:CanExpose() then self:DLG_Suppressed() return {} end
@@ -715,15 +718,15 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		end
 	end
 	if self.pCover && self.vCover then
+		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
 			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.pActualCover == pCover then self.pCover = nil self.vCover = nil return end
+				if ally.pActualCover == pCover || ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.pCover = nil self.vCover = nil return end
 			end
 		end
-		local vec = self.vCover
 		local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then
 			vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z )
@@ -793,6 +796,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		self:ComputePath( sched.Path, self.vCover )
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= 8 then return { true } end
 		self.pActualCover = self.pCover
+		self.vActualCover = self.vCover
 		local tNearestEnemies = {}
 		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
 		table.SortByMember( tNearestEnemies, 2, true )
@@ -810,10 +814,16 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			}
 			if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 				local b = true
-				if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-					local flThreshold = ent:Health() * .1
+				if !tr.Hit && ent.GAME_tSuppressionAmount then
+					local flThreshold, flTotal = ent:Health() * .1, 0
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-						if other != self && am > flThreshold then b = nil break end
+						if other != self then
+							flTotal = flTotal + am
+							if flTotal > flThreshold then
+								b = nil
+								break
+							end
+						end
 					end
 				end
 				if b then
@@ -894,14 +904,14 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			for _, d in ipairs( tCovers ) do
 				local Cover = d[ 1 ]
 				local b
+				local vec = Cover.m_Vector + Cover.m_vForward * flOff
 				if tAllies then
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.pActualCover == Cover then b = true break end
+						if ally.pActualCover == Cover || ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then b = true break end
 					end
 				end
 				if b then continue end
-				local vec = Cover.m_Vector + Cover.m_vForward * flOff
 				b = true
 				local vStand, vDuck, bDuck = vec + vOffStanding
 				if vOffDucking then vDuck = vec + vOffDucking end
@@ -968,6 +978,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				if b then continue end
 				self.pCover = Cover
 				self.pActualCover = Cover
+				self.vActualCover = vec
 				self.vCover = vec
 				self.bCoverDuck = bDuck
 				bFound = true

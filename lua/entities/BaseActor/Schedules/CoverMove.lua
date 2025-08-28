@@ -1,6 +1,17 @@
 function ENT:MaybeCoverMove( ... )
-	if math.random( 2 ) == 1 then return end
-	return self:DoCoverMove( ... )
+	local tAllies = self:GetAlliesByClass()
+	if tAllies then
+		local b, i
+		for ent in pairs( tAllies ) do
+			if ent != self then
+				i = true
+				if ent.bSuppressing then b = true break end
+			end
+		end
+		if math.random( i && ( b && 2 || 3 ) || 3 ) == 1 then return self:DoCoverMove( ... ) end
+	else
+		if math.random( 3 ) == 1 then return self:DoCoverMove( ... ) end
+	end
 end
 
 local math_min = math.min
@@ -8,8 +19,8 @@ function ENT:DoCoverMove( tEnemies )
 	local n = math_min( self.flCombatState, self.flCombatStateSmall )
 	if n > 0 then
 		local pCover, vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
-		if pCover == self.pActualCover then return end
 		if pCover != nil then
+			if pCover == self.pActualCover || self.vActualCover && self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
 			local sched = self:SetSchedule "TakeCoverMove"
 			if n < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
 			self.vCover = vec
@@ -19,8 +30,8 @@ function ENT:DoCoverMove( tEnemies )
 		end
 	else
 		local pCover, vec, bDuck = self:FindRetreatCover( self.vCover, tEnemies )
-		if pCover == self.pActualCover then return end
 		if pCover != nil then
+			if pCover == self.pActualCover || self.vActualCover && self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
 			local sched = self:SetSchedule "TakeCoverMove"
 			if n > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end
 			self.vCover = vec
@@ -61,15 +72,15 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if self.pCover && self.vCover then
+		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
 			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.pActualCover == pCover then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
+				if ally.pActualCover == pCover || ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
 			end
 		end
-		local vec = self.vCover
 		local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then
 			vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z )
@@ -380,6 +391,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		self:ComputePath( sched.Path, self.vCover )
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= 8 then return { true } end
 		self.pActualCover = self.pCover
+		self.vActualCover = self.vCover
 		local tNearestEnemies = {}
 		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
 		table.SortByMember( tNearestEnemies, 2, true )
