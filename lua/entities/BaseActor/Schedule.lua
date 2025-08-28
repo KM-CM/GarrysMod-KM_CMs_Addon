@@ -24,15 +24,22 @@ end
 
 ENT.tPreScheduleResetVariables = {}
 
+function ENT:SelectScheduleInternal( ... )
+	local veh = self.GAME_pVehicle
+	if IsValid( veh ) then self:SetSchedule "Vehicle_Base"
+	else self:SelectSchedule( ... ) end
+end
+
 function ENT:RunMind()
 	for k, v in pairs( self.tPreScheduleResetVariables ) do self[ k ] = Either( v == false, nil, v ) end
 	local v = self.Schedule
-	if !v then self:SelectSchedule() return end
+	if !v then self:SelectScheduleInternal() return end
 	local s = v.m_sName || ''
 	local f = self.__SCHEDULE__[ s ]
-	if !f then self:SelectSchedule( v, s ) return end
+	local b = IsValid( self.GAME_pVehicle )
+	if !f || ( b && !s:match "^Vehicle_" || !b && s:match "^Vehicle_" ) then self.Schedule = nil self:SelectScheduleInternal( v, s ) return end
 	local r = f( self, v )
-	if r != nil then self:SelectSchedule( v, s, r ) end
+	if r != nil then self:SelectScheduleInternal( v, s, r ) end
 end
 
 ------ Include Default Schedules ------
@@ -40,3 +47,4 @@ end
 include "Schedules/IdleRoam.lua"
 include "Schedules/Combat.lua"
 include "Schedules/CoverMove.lua"
+include "Schedules/Vehicle/Base.lua"

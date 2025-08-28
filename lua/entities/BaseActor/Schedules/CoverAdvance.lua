@@ -12,11 +12,12 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 	self:ComputeFlankPath( Path, enemy )
 	local _, _, t = self:FindSuppressEnemy( vCover, tEnemies, self.bCoverDuck )
 	//If We can Hit Em from Here - Dont Bother
-	local flTarget = IsValid( t ) && 0 || self:FindPathBattleLine( Path, tEnemies )
+	local flTarget = IsValid( t ) && 0 || self:FindPathBattleLineNoAllies( Path, tEnemies )
 	if flTarget == nil then return end
 	local flAdvance = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
 	local flAdvanceSqr = flAdvance * flAdvance
-	flTarget = math_Clamp( flTarget + flAdvance, 0, Path:GetLength() )
+	//Only Advance if We arent Already Moving Very Far, Like when Approaching The Enemy from The Other Side of The Map
+	if flTarget <= flAdvance then flTarget = math_Clamp( flTarget + flAdvance, 0, Path:GetLength() ) end
 	local vPos = Path:GetPositionOnPath( flTarget )
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return end
@@ -37,6 +38,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 		end
 	end
 	local pBestCover, vBestCover, bBestCoverDuck
+	local bDisAllowWater = !self.bCanSwim
 	while !table.IsEmpty( tQueue ) do
 		local area, dist = unpack( table.remove( tQueue ) )
 		for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
@@ -44,6 +46,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 			local id = new:GetID()
 			if tVisited[ id ] then continue end
 			tVisited[ id ] = true
+			if bDisAllowWater && area:IsUnderwater() then continue end
 			local d = area:ComputeAdjacentConnectionHeightChange( new )
 			if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
 			Path:MoveCursorToClosestPosition( area:GetClosestPointOnArea( vPos ) )

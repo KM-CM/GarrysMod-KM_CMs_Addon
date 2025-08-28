@@ -28,9 +28,8 @@ function ENT:OnRemove() if self.Sound then self.Sound:Stop() end end
 
 ENT.AutomaticFrameAdvance = true
 
-function ENT:OnIgnite() self:Extinguish() end
-
 function ENT:Think()
+	if self:IsOnFire() then self:Extinguish() end
 	self:NextThink( CurTime() )
 	self.__FLARE_ACTIVE__ = nil
 	if !self.flEndTime then if IsValid( self.pSprite ) then self.pSprite:Remove() end if self.Sound then self.Sound:Stop() end return true end
@@ -77,7 +76,7 @@ end
 
 function ENT:PhysicsCollide( d )
 	local p = d.HitEntity
-	if IsValid( p ) then p:Ignite() end
+	if IsValid( p ) then p:Ignite( 10 ) end
 end
 
 local AcceptInput = {

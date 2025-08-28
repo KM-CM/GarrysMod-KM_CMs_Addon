@@ -47,13 +47,19 @@ function ENT:Behaviour()
 		local hm, hn, cm, cn = self.vHullDuckMins, self.vHullDuckMaxs, self:GetCollisionBounds()
 		if hm != cm || hn != cn then
 			self:SetCollisionBounds( hm, hn )
-			if self:PhysicsInitShadow( false, false ) then self:GetPhysicsObject():SetMass( 85 ) end
+			if !IsValid( self:GetParent() ) && self:PhysicsInitShadow( false, false ) then
+				local p = self:GetPhysicsObject()
+				if IsValid( p ) then p:SetMass( 85 ) end
+			end
 		end
 	else
 		local hm, hn, cm, cn = self.vHullMins, self.vHullMaxs, self:GetCollisionBounds()
 		if hm != cm || hn != cn then
 			self:SetCollisionBounds( hm, hn )
-			if self:PhysicsInitShadow( false, false ) then self:GetPhysicsObject():SetMass( 85 ) end
+			if !IsValid( self:GetParent() ) && self:PhysicsInitShadow( false, false ) then
+				local p = self:GetPhysicsObject()
+				if IsValid( p ) then p:SetMass( 85 ) end
+			end
 		end
 	end
 	self:RunMind()

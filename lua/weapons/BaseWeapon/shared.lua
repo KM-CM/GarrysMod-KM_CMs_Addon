@@ -95,6 +95,7 @@ if CLIENT then
 	SWEP.vSprintArm = Vector( 1.358, 1.228, -.94 )
 	SWEP.vSprintArmAngle = Vector( -10.554, 34.167, -20 )
 	SWEP.flAimMultiplier = 1
+	SWEP.flFoV = 99
 	local math = math
 	local math_cos = math.cos
 	local math_sin = math.sin
@@ -116,14 +117,15 @@ if CLIENT then
 			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, fov, v )
 			MyTable.flFoV = f
 			return pos, ang, f
-		else MyTable.flFoV = nil end
+		else MyTable.flFoV = fov end
 	end
 	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", 99 ) end end
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
 		local bSprinting = CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )
-		local bZoom = !bSprinting && CPlayer_KeyDown( ply, IN_ZOOM )
+		local bSliding = CEntity_GetNW2Bool( ply, "CTRL_bSliding" )
+		local bZoom = !bSprinting && !bSliding && CPlayer_KeyDown( ply, IN_ZOOM )
 		local vAim
 		if bZoom then vAim = MyTable.vViewModelAim if !vAim then bZoom = nil end end
 		if bZoom then
@@ -135,7 +137,7 @@ if CLIENT then
 			vTargetAngle = Vector( 0, 0, 0 )
 		end
 		local bOnGround = CEntity_IsOnGround( ply )
-		if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CPlayer_InVehicle( ply ) then
+		if bSliding || CPlayer_InVehicle( ply ) then
 			bOnGroundLast = true
 		elseif bOnGround then
 			bOnGroundLast = true
@@ -235,9 +237,7 @@ sound.Add {
 
 if SERVER then
 	local CEntity_SetNW2Bool = CEntity.SetNW2Bool
-	local CEntity_SetNW2Vector = CEntity.SetNW2Vector
 	local CEntity_SetNW2Float = CEntity.SetNW2Float
-	local CEntity_GetNW2Vector = CEntity.GetNW2Vector
 	local CEntity_GetNW2Float = CEntity.GetNW2Float
 	hook.Add( "Move", "BaseWeapon", function( ply, mv )
 		local vel = CEntity_GetVelocity( ply )
@@ -245,16 +245,19 @@ if SERVER then
 			if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) then
 				local f = CEntity_GetNW2Float( ply, "CTRL_flSlideSpeed", 0 )
 				if CEntity_IsOnGround( ply ) && CPlayer_KeyDown( ply, IN_DUCK ) && f > 10 then
-					mv:SetVelocity( CEntity_GetNW2Vector( ply, "CTRL_vSlide" ) * f )
+					local v = mv:GetAngles()
+					v.p = 0
+					mv:SetVelocity( v:Forward() * f )
 					local flRunSpeed = CPlayer_GetRunSpeed( ply )
 					local t = CEntity_GetTable( ply )
 					f = f - flRunSpeed * ( t.CTRL_flSlideSpeedDecay || .33 ) * FrameTime()
 					CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
-					local vv = t.CTRL_pSlideLoop
+					local v = t.CTRL_pSlideLoop
 					if v then
-						local p = f / flRunSpeed
-						v:ChangeVolume( p )
-						v:ChangePitch( p * 100 )
+						v:ChangeVolume( ply:GetVelocity():Length() / flRunSpeed )
+						//local p = ply:GetVelocity():Length() / flRunSpeed
+						//v:ChangeVolume( p )
+						//v:ChangePitch( p * 100 )
 					end
 				else
 					CEntity_SetNW2Bool( ply, "CTRL_bSliding", false )
@@ -263,7 +266,6 @@ if SERVER then
 				local t = CEntity_GetTable( ply )
 				if !t.CTRL_bCantSlide && CEntity_IsOnGround( ply ) && CPlayer_KeyDown( ply, IN_SPEED ) && CPlayer_KeyDown( ply, IN_DUCK ) && vel:Length() >= CPlayer_GetRunSpeed( ply ) then
 					CEntity_SetNW2Bool( ply, "CTRL_bSliding", true )
-					CEntity_SetNW2Vector( ply, "CTRL_vSlide", vel:GetNormalized() )
 					local f = CPlayer_GetRunSpeed( ply )
 					CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
 					CEntity_SetNW2Float( ply, "CTRL_flSlide", CurTime() )

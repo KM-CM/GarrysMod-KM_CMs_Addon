@@ -15,11 +15,13 @@ Actor_RegisterSchedule( "IdleRoam", function( self, sched )
 			if !area then sched.flStandTime = CurTime() + math.Rand( 0, 4 ) return end
 			local tQueue, tVisited, flDistSqr = { { area, 0 } }, {}, math.Rand( 0, 1024 )
 			flDistSqr = flDistSqr * flDistSqr
+			local bDisAllowWater = !self.bCanSwim
 			while !table.IsEmpty( tQueue ) do
 				local area, dist = unpack( table.remove( tQueue ) )
 				for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 					local new = t.area
 					if tVisited[ new:GetID() ] then continue end
+					if bDisAllowWater && area:IsUnderwater() then continue end
 					table.insert( tQueue, { new, dist + t.dist } )
 					tVisited[ new:GetID() ] = true
 				end

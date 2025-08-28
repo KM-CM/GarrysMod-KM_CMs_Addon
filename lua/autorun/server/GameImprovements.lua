@@ -1,11 +1,6 @@
-local CEntity = FindMetaTable "Entity"
-if !CEntity.IgniteInternal then CEntity.IgniteInternal = CEntity.Ignite end
-function CEntity:Ignite()
-	if !self:IsOnFire() && self.OnIgnite then self:OnIgnite() end
-	self:IgniteInternal( 10 )
-end
-
-function GetFlameStopChance( self ) return math.Remap( GetVelocity( self ):Length(), 0, 800, 20000, 1000 ) end
+local math = math
+local math_Remap = math.Remap
+function GetFlameStopChance( self ) return math_Remap( GetVelocity( self ):Length(), 0, 800, 20000, 1000 ) end
 
 concommand.Add( "+drop", function() end )
 concommand.Add( "-drop", function( ply ) ply:DropWeapon() end )
@@ -52,7 +47,7 @@ function HasRangeAttack( ent )
 	end
 end
 function HasMeleeAttack( ent )
-	if ent.HAS_MELEE_ATTACK then return true end
+	if ent.HAS_MELEE_ATTACK || IsValid( ent.GAME_pVehicle ) then return true end
 	if ent.HAS_NOT_MELEE_ATTACK then return end
 	if ent.CapabilitiesGet then
 		local c = ent:CapabilitiesGet()
@@ -135,6 +130,8 @@ __TRACER_COLOR__ = {
 }
 local __TRACER_COLOR__ = __TRACER_COLOR__
 
+local IsValid = IsValid
+
 hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	if _Comp then return end
 	hook.Run( "EntityFireBullets", ent, Data, true )
@@ -159,9 +156,15 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	return true
 end )
 
+local PersistAll = CreateConVar( "PersistAll", 1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY + FCVAR_ARCHIVE, "Everything Persists", 0, 1 )
+
+hook.Add( "PhysgunPickup", "GameImprovements", function() return true end )
+
+local ents = ents
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
 	for _, ent in ents_Iterator() do
+		if PersistAll:GetBool() && ent:MapCreationID() != -1 && !ent:IsPlayer() && ( !ent:IsWeapon() || ent:IsWeapon() && ( !IsValid( ent:GetOwner() ) || IsValid( ent:GetOwner() ) && !ent:GetOwner():IsPlayer() ) ) then ent:SetPersistent( true ) end
 		local tSuppressionAmount = {}
 		if ent.GAME_tSuppressionAmount then
 			for ent, am in pairs( ent.GAME_tSuppressionAmount ) do
@@ -179,14 +182,34 @@ end )
 local FixBunnyHop = CreateConVar( "FixBunnyHop", 1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "Fixes Bunny Hopping by Not Allowing The Player to Jump The a Few MilliSeconds After He Hit The Ground", 0, 1 )
 local FixBunnyHopLength = CreateConVar( "FixBunnyHopLength", .1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "The Amount of FixBunnyHop", 0, 1 )
 local tFixBunnyHop = {}
+local CEntity = FindMetaTable "Entity"
 local CEntity_IsOnGround = CEntity.IsOnGround
-local math = math
 local math_max = math.max
 local util_TraceLine = util.TraceLine
 local CEntity_WaterLevel = CEntity.WaterLevel
+local CEntity_Remove = CEntity.Remove
 local CPlayer = FindMetaTable "Player"
 local CPlayer_GetRunSpeed = CPlayer.GetRunSpeed
+local CPlayer_Give = CPlayer.Give
+local ents_Create = ents.Create
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
+	local p = ply:GetWeapon "Hands"
+	if !IsValid( p ) then p = CPlayer_Give( ply, "Hands" ) end
+	local veh = ply.GAME_pVehicle
+	if IsValid( veh ) then
+		if veh.bDriverHoldingUse then
+			if !cmd:KeyDown( IN_USE ) then
+				veh.bDriverHoldingUse = nil
+			end
+		else
+			if ply:KeyDown( IN_USE ) && veh:ExitVehicle( ply ) then return end
+		end
+		veh:PlayerControls( ply, cmd )
+		cmd:AddKey( IN_DUCK )
+		cmd:SelectWeapon( p )
+		return
+	end
+
 	if FixBunnyHop:GetBool() then
 		if CEntity_IsOnGround( ply ) then
 			if CurTime() <= ( tFixBunnyHop[ ply ] || 0 ) then
@@ -194,6 +217,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			else tFixBunnyHop[ ply ] = nil end
 		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
 	else tFixBunnyHop[ ply ] = nil end
+
+	if ply:GetNW2Bool "CTRL_bSliding" then cmd:RemoveKey( IN_ATTACK ) cmd:RemoveKey( IN_ATTACK2 ) end
 
 	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 
@@ -222,7 +247,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		else ply:SetNW2Bool( "CTRL_bSprinting", false ) end
 	else
 		if CEntity_WaterLevel( ply ) <= 0 && !ply.CTRL_bAllowMovingWhileInAir && ply:GetMoveType() == MOVETYPE_WALK then
-			cmd:SetForwardMove( 0 )
+			//cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 		end
 		ply:SetNW2Bool( "CTRL_bSprinting", false )

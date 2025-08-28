@@ -861,6 +861,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		flOffDistSqr = flOffDistSqr * flOffDistSqr
 		local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z ) end
+		local bDisAllowWater = !self.bCanSwim
 		while !table.IsEmpty( tQueue ) do
 			local area, dist = unpack( table.remove( tQueue ) )
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
@@ -868,6 +869,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				local id = new:GetID()
 				if tVisited[ id ] then continue end
 				tVisited[ id ] = true
+				if bDisAllowWater && area:IsUnderwater() then continue end
 				local d = area:ComputeAdjacentConnectionHeightChange( new )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
 				table.insert( tQueue, { new, t.dist + dist } )

@@ -43,6 +43,9 @@ local __WEAPON_CROSSHAIR_TABLE__ = __WEAPON_CROSSHAIR_TABLE__
 
 function SWEP.pCrosshairTable() return __WEAPON_CROSSHAIR_TABLE__ end
 
+SWEP.Primary_flDelay = 1
+SWEP.Secondary_flDelay = 1
+
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
 local CEntity_GetNW2Bool = CEntity.GetNW2Bool
@@ -54,7 +57,7 @@ function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	local ply = LocalPlayer()
-	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" ) || ( MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
+	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" ) || CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || ( MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
 	if v != nil then return v( MyTable, self ) end
 end

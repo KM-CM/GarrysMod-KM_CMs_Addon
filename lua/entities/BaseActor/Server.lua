@@ -45,14 +45,20 @@ function ENT:Think()
 	if !self.bPhysics then
 		local phys = self:GetPhysicsObject()
 		if IsValid( phys ) then
-			if self:WaterLevel() == 0 then
-				phys:SetPos( self:GetPos() )
-				phys:SetAngles( self:GetAngles() )
-			else
-				phys:UpdateShadow( self:GetPos(), self:GetAngles(), 0 )
+			if IsValid( self:GetParent() ) then self:PhysicsDestroy() else
+				if self:WaterLevel() == 0 then
+					phys:SetPos( self:GetPos() )
+					phys:SetAngles( self:GetAngles() )
+				else
+					phys:UpdateShadow( self:GetPos(), self:GetAngles(), 0 )
+				end
 			end
 		end
 	end
+	if IsValid( self.GAME_pVehicle ) then
+		self:SetActiveWeapon( NULL )
+		if self:GetCollisionGroup() != COLLISION_GROUP_WORLD then self:SetCollisionGroup( COLLISION_GROUP_WORLD ) end
+	else if self:GetCollisionGroup() != COLLISION_GROUP_NPC then self:SetCollisionGroup( COLLISION_GROUP_NPC ) end end
 	self:Tick()
 end
 

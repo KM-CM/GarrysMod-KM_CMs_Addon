@@ -32,8 +32,6 @@ local BLEED_MAX_COLOR_ADD = .5
 local BLEED_COLORLESS_LOWER_THRESHOLD = .2
 local BLEED_COLORLESS_UPPER_THRESHOLD = .6
 
-local EYE_LIGHTING_ADJUST_DISTANCE = 1024
-
 local util_TraceLine = util.TraceLine
 
 local function VectorSum( v ) return abs( v[ 1 ] ) + abs( v[ 2 ] ) + abs( v[ 3 ] ) end
@@ -46,6 +44,7 @@ local MAX_WATER_BLUR = 3
 local WATER_BLUR_CHANGE_SPEED_TO = .8
 local WATER_BLUR_CHANGE_SPEED_FROM = .2
 
+local VECTOR_HUGE_Z = Vector( 0, 0, 999999 )
 
 hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	local self = LocalPlayer()
@@ -74,14 +73,20 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	else
 		tDrawColorModify[ "$pp_colour_colour" ] = 0
 	end
+	local flOxygen, flOxygenLimit = self:GetNW2Float( "GAME_flOxygen", -1 ), self:GetNW2Float( "GAME_flOxygenLimit", -1 )
+	if flOxygen != -1 && flOxygenLimit != -1 then
+		local f = flOxygenLimit * .33
+		if flOxygen <= f then
+			tDrawColorModify[ "$pp_colour_contrast" ] = tDrawColorModify[ "$pp_colour_contrast" ] * math.Remap( flOxygen, f, 0, 1, 0 )
+		end
+	end
 	local tr = util_TraceLine {
 		start = EyePos(),
-		endpos = EyePos() + EyeVector() * EYE_LIGHTING_ADJUST_DISTANCE,
+		endpos = EyePos() - VECTOR_HUGE_Z,
 		mask = MASK_VISIBLE_AND_NPCS,
 		filter = self
 	}
-	local vColor = render.ComputeLighting( tr.StartPos, tr.HitPos ) + render.ComputeDynamicLighting( tr.StartPos, tr.HitPos ) * math.Clamp( ( tr.HitPos:Distance( tr.StartPos ) / EYE_LIGHTING_ADJUST_DISTANCE ), 0, 1 )
-	vColor = vColor * math.Remap( VectorSum( vColor ), 0, 1000000000, 0, 1 )
+	local vColor = ( render.ComputeLighting( tr.HitPos, tr.HitNormal ) + render.ComputeDynamicLighting( tr.HitPos, tr.HitNormal ) ) * 33
 	local flColor = math.Clamp( VectorSum( vColor ), 0, 1 )
 	local flBloom = math.Approach( self.GP_flBloom || 0, 1 - flColor, FrameTime() )
 	self.GP_flBloom = flBloom

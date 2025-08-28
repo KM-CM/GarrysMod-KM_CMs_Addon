@@ -34,6 +34,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 	local vToEnemy = ( enemy:GetPos() - self:GetPos() ):GetNormalized()
 	//local flGiveUpDist = flDist * 4
 	local pBestCover, vBestCover, bBestCoverDuck
+	local bDisAllowWater = !self.bCanSwim
 	while !table.IsEmpty( tQueue ) do
 		local area, dist = unpack( table.remove( tQueue ) )
 		//if dist > flGiveUpDist then return pBestCover, vBestCover, bBestCoverDuck end //Give Up
@@ -42,6 +43,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 			local id = new:GetID()
 			if tVisited[ id ] then continue end
 			tVisited[ id ] = true
+			if bDisAllowWater && area:IsUnderwater() then continue end
 			if ( area:GetClosestPointOnArea( self:GetPos() ) - self:GetPos() ):GetNormalized():Dot( vToEnemy ) > 0 then continue end
 			local d = area:ComputeAdjacentConnectionHeightChange( new )
 			if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end

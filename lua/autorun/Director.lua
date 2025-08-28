@@ -175,7 +175,7 @@ local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Ite
 DIRECTOR_MELEE_DANGER = 2
 
 local VectorZ28 = Vector( 0, 0, 28 )
-hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Think!
+hook.Add( "Tick", "Director", function()
 	for _, ply in player_Iterator() do
 		if Player_Debug_EyeOffset:GetBool() then
 			if ply:GetViewOffsetDucked() == VectorZ28 then
@@ -190,6 +190,25 @@ hook.Add( "Tick", "Director", function() //Important - We Need Tick and Not Thin
 			local v = ply:GetPos() + ply:GetViewOffsetDucked()
 			debugoverlay.Line( v, v + dir * flDist, .1, Color( 128, 128, 255 ), true )
 		end
+		ply:SetNW2Float( "GAME_flOxygenLimit", ply.GAME_flOxygenLimit || 30 )
+		if ply:Alive() then
+			local o = ply:GetNW2Float( "GAME_flOxygen", -1 )
+			if o == 0 then
+				ply:SetHealth( 0 )
+				local d = DamageInfo()
+				d:SetAttacker( ply )
+				d:SetInflictor( ply )
+				d:SetDamage( 0 )
+				d:SetDamageType( DMG_DROWN )
+				ply:TakeDamageInfo( d )
+				continue
+			end
+			if ply:WaterLevel() >= 3 then
+				ply:SetNW2Float( "GAME_flOxygen", math.Clamp( ply:GetNW2Float( "GAME_flOxygen", 0 ) - FrameTime(), 0, ply:GetNW2Float( "GAME_flOxygenLimit", -1 ) ) )
+			else
+				ply:SetNW2Float( "GAME_flOxygen", math.Clamp( ply:GetNW2Float( "GAME_flOxygen", 0 ) + FrameTime() * ( ply.GAME_flOxygenRegen || ( ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) * .5 ) ), 0, ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) ) )
+			end
+		else ply:SetNW2Float( "GAME_flOxygen", ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) ) end
 		ply:SetViewOffset( ply:GetViewOffset() )
 		ply:SetViewOffsetDucked( ply:GetViewOffsetDucked() )
 		ply:SetCanZoom( false )

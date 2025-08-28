@@ -12,18 +12,33 @@ function ENT:SetupEnemy( enemy )
 	return enemy, ent
 end
 
+ENT.bCantSeeUnderWater = true
+ENT.bVisNot360 = true
 ENT.flVisionYaw = 99
 ENT.flVisionPitch = 33 //Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
 function ENT:CanSee( vec )
-	if isentity( vec ) then vec = vec:GetPos() + vec:OBBCenter() end
-	local des, aim = ( vec - self:EyePos() ):Angle(), self:EyeAngles()
-	if math.abs( math.AngleDifference( des.y, aim.y ) ) > self.flVisionYaw then return end
-	if math.abs( math.AngleDifference( des.p, aim.p ) ) > self.flVisionPitch then return end
+	local veh, ent
+	if isentity( vec ) then
+		veh = vec.GAME_pVehicle
+		if self.bCantSeeUnderWater && vec:WaterLevel() == 3 then return end
+		ent = vec
+		vec = vec:GetPos() + vec:OBBCenter()
+	end
+	if self.bVisNot360 then
+		local des, aim = ( vec - self:EyePos() ):Angle(), self:EyeAngles()
+		if math.abs( math.AngleDifference( des.y, aim.y ) ) > self.flVisionYaw then return end
+		if math.abs( math.AngleDifference( des.p, aim.p ) ) > self.flVisionPitch then return end
+	end
+	local t = { self }
+	if IsValid( ent ) then table.insert( t, ent ) end
+	if IsValid( veh ) then table.insert( t, veh ) end
+	veh = self.GAME_pVehicle
+	if IsValid( veh ) then table.insert( t, veh ) end
 	return !util.TraceLine( {
 		start = self:EyePos(),
 		endpos = vec,
 		mask = MASK_VISIBLE_AND_NPCS,
-		filter = function( ent ) return self:Disposition( ent ) == D_NU end
+		filter = t
 	} ).Hit
 end
 
@@ -129,7 +144,7 @@ function ENT:Look()
 	local vEyePos = self:EyePos()
 	for _, ent in ipairs( ents.FindInPVS( self ) ) do
 		if vEyePos:DistToSqr( ent:GetPos() + ent:OBBCenter() ) > flVisionDistSqr then continue end
-		if !self:CanSee( ent ) || !ent.__FLARE_ACTIVE__ && !self:IsHateDisposition( ent ) then continue end
+		if !ent.__FLARE_ACTIVE__ && !self:IsHateDisposition( ent ) || !self:CanSee( ent ) then continue end
 		if tOldVisionStrength[ ent ] then
 			if ent.__FLARE_ACTIVE__ then
 				if ent.Classify then
