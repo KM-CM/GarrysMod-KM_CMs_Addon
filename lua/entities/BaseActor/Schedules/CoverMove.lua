@@ -8,6 +8,7 @@ function ENT:DoCoverMove( tEnemies )
 	local n = math_min( self.flCombatState, self.flCombatStateSmall )
 	if n > 0 then
 		local pCover, vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
+		if pCover == self.pActualCover then return end
 		if pCover != nil then
 			local sched = self:SetSchedule "TakeCoverMove"
 			if n < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
@@ -18,6 +19,7 @@ function ENT:DoCoverMove( tEnemies )
 		end
 	else
 		local pCover, vec, bDuck = self:FindRetreatCover( self.vCover, tEnemies )
+		if pCover == self.pActualCover then return end
 		if pCover != nil then
 			local sched = self:SetSchedule "TakeCoverMove"
 			if n > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end

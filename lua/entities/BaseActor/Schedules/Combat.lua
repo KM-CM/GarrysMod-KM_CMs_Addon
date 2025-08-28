@@ -625,8 +625,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		end
 		if IsValid( w ) then self:SetActiveWeapon( w ) end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
-			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-			if CurTime() > sched.Time then return { true } end
+			if !sched.flTime then sched.flTime = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
+			if CurTime() > sched.flTime then return { true } end
 			if !sched.bWasInShootPosition then self:DLG_FiringAtAnExposedTarget( enemy ) end
 			sched.bWasInShootPosition = true
 			if !trDuck || trDuck && trDuck.Hit then
