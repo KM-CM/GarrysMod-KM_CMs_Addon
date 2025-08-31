@@ -364,23 +364,3 @@ end )
 end //SERVER
 
 for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end
-
-if !SERVER then return end
-
-if IsMounted "left4dead2" then
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Slayer_Electric", "music/zombat/slayer/lectric/slayer_01a.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums1", "music/zombat/horde/drums01b.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums2", "music/zombat/horde/drums01c.wav" )
-	Director_RegisterNonStandardMusicSound( "Default_Left4Dead2_Horde_Drums3", "music/zombat/horde/drums01d.wav" )
-	local math_random = math.random
-	DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_COMBAT ].Default_Left4Dead2_Horde = {
-		flBlockLength = 5.627,
-		Tick = function( self )
-			if !self.tHandles.Drums then
-				self:Play( "Drums", "MUS_Default_Left4Dead2_Horde_Drums" .. tostring( math_random( 3 ) ), 1, 5.627 )
-				self:Play( "Slayer", "MUS_Default_Left4Dead2_Horde_Slayer_Electric", self.flSlayerVolume || 0, 5.627 )
-			end
-			self.flSlayerVolume = self:ApproachVolume( "Slayer", self:GetIntensity(), .4 * FrameTime() )
-		end
-	}
-end
