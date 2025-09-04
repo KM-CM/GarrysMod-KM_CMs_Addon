@@ -85,7 +85,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 				end
 			end
 			table.SortByMember( t, 2 )
-			return table.remove( t )[ 1 ]
+			if t then return table.remove( t )[ 1 ] else return area:GetCenter() end
 		end
 	end
 end

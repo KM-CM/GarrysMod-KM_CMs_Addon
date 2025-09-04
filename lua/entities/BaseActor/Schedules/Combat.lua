@@ -526,10 +526,10 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 					if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 					local flDist = self.flWalkSpeed * 4
 					flDist = flDist * flDist
-					if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
+					if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
 						local flDist = self.flProwlSpeed * 4
 						flDist = flDist * flDist
-						if self:GetPos():DistToSqr( self.vCover ) > flDist then
+						if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
 							self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
 						else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
 					else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end

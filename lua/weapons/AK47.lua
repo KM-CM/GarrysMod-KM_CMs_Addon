@@ -26,9 +26,17 @@ SWEP.Slot = 2
 SWEP.DrawAmmo = true
 SWEP.vViewModelAim = Vector( -6.61, -12, 3.4 )
 
+//Have to Do This for Technical Reasons
 sound.Add {
 	name = "AK47_Shot",
 	channel = CHAN_WEAPON,
+	level = 150,
+	pitch = { 90, 110 },
+	sound = "^AK47Shot.wav"
+}
+sound.Add {
+	name = "AK47_Shot_Auto",
+	channel = CHAN_AUTO,
 	level = 150,
 	pitch = { 90, 110 },
 	sound = "^AK47Shot.wav"
@@ -55,6 +63,7 @@ function SWEP:PrimaryAttack()
 	ed:SetFlags( 1 )
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "AK47_Shot"
+	self:EmitSound "AK47_Shot_Auto"
 	self:TakePrimaryAmmo( 1 )
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
