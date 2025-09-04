@@ -22,6 +22,7 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.vViewModelAim = Vector( -5.51, -12, 3.145 )
+SWEP.Crosshair = "Pistol"
 
 sound.Add {
 	name = "USP_Match_Shot",

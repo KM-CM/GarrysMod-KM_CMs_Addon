@@ -25,6 +25,7 @@ SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
 SWEP.vSprintArm = Vector( 1.358, -8.228, -0.94 )
+SWEP.Crosshair = "SubMachineGun"
 
 sound.Add {
 	name = "UMP45_Shot",

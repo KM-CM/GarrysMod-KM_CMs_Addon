@@ -4,7 +4,7 @@ function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	local v = MyTable.Primary_flSpreadX
 	if v then flSpreadX = v end
 	local v = MyTable.Primary_flSpreadY
-	if v then flSpreadX = v end
+	if v then flSpreadY = v end
 	if MyTable.bCrosshairSizeIdentical || bForceIdentical then
 		local v = math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX )
 		return v, v
@@ -36,6 +36,56 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flStart = flEnd
 		local flEnd = flEnd + f
 		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, 255 ) end
+		return true
+	end,
+	/*I'm Not Gonna Draw Black Squares Inside of White Ones Like I'm Supposed to!
+	I'm Not a Graphical Designer. If Anyone has a Formula, Please Write Me in
+	The Comments of One of My Videos or Something*/
+	Rifle = function( MyTable, self )
+		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
+		local flHeight, flWidth = ScrH(), ScrW()
+		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
+		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		local b = MyTable.flCrosshairBase
+		local f = flHeight * b * 2
+		local w = flWidth * b * 12
+		surface.DrawRect( flCenterWidth + flSpreadHorizontal, flCenterHeight - f * .5, w, f )
+		surface.DrawRect( flCenterWidth - f * .5, flCenterHeight + flSpreadVertical, f, w )
+		surface.DrawRect( flCenterWidth - flSpreadHorizontal - w, flCenterHeight - f * .5, w, f )
+		surface.DrawRect( flCenterWidth - f * .5, flCenterHeight - flSpreadVertical - w, f, w )
+		return true
+	end,
+	SubMachineGun = function( MyTable, self )
+		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
+		local flHeight, flWidth = ScrH(), ScrW()
+		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
+		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		local b = MyTable.flCrosshairBase
+		local f = flHeight * b * 2
+		local w = flWidth * b * 12
+		surface.DrawRect( flCenterWidth + flSpreadHorizontal, flCenterHeight - f * .5, w, f )
+		surface.DrawRect( flCenterWidth - f * .5, flCenterHeight + flSpreadVertical, f, w )
+		surface.DrawRect( flCenterWidth - flSpreadHorizontal - w, flCenterHeight - f * .5, w, f )
+		surface.DrawRect( flCenterWidth - f * .5, flCenterHeight - flSpreadVertical - w, f, w )
+		return true
+	end,
+	Pistol = function( MyTable, self )
+		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
+		local flHeight, flWidth = ScrH(), ScrW()
+		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
+		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
+		surface.SetDrawColor( 255, 255, 255, 255 )
+		local b = MyTable.flCrosshairBase
+		local f = flHeight * b * 2
+		local w = flWidth * b * 12
+		surface.DrawRect( flCenterWidth + flSpreadHorizontal, flCenterHeight - f * .5, w, f )
+		surface.DrawRect( flCenterWidth - f * .5, flCenterHeight + flSpreadVertical, f, w )
+		surface.DrawRect( flCenterWidth - flSpreadHorizontal - w, flCenterHeight - f * .5, w, f )
 		return true
 	end
 }

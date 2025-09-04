@@ -25,6 +25,7 @@ SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
 SWEP.vViewModelAim = Vector( -5.82, -8, 1.255 )
+SWEP.Crosshair = "Rifle"
 
 sound.Add {
 	name = "OSIPR_Shot",
@@ -58,4 +59,12 @@ function SWEP:PrimaryAttack()
 	self:EmitSound "OSIPR_Shot"
 	self:TakePrimaryAmmo( 1 )
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
+end
+
+function SWEP:DoImpactEffect( tr, dt )
+	if tr.HitSky then return end
+	local ed = EffectData()
+	ed:SetOrigin( tr.HitPos + tr.HitNormal )
+	ed:SetNormal( tr.HitNormal )
+	util.Effect( "AR2Impact", ed ) 
 end

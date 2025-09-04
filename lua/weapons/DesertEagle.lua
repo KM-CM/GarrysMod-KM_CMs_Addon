@@ -21,6 +21,8 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
+SWEP.Crosshair = "Pistol"
+SWEP.vViewModelAim = Vector( -6.36, -12, 2.18 )
 
 SWEP.__VIEWMODEL_FULLY_MODELED__ = true
 
