@@ -21,12 +21,12 @@ function Director_RegisterNonStandardMusicSound( Name, Path )
 	}
 end
 
-if SERVER then
-
 DIRECTOR_THREAT_NULL = 0 //Nothing
 DIRECTOR_THREAT_HEAT = 1 //Hostiles Nearby
 DIRECTOR_THREAT_ALERT = 2 //Things are Alerted or Searching
 DIRECTOR_THREAT_COMBAT = 3 //Things are in Combat
+
+if SERVER then
 
 local _ThreatValueToName = {
 	[ DIRECTOR_THREAT_NULL ] = "DIRECTOR_THREAT_NULL",
@@ -285,6 +285,8 @@ hook.Add( "Tick", "Director", function()
 				end
 			end
 		end
+		ply:SetNW2Int( "DR_Threat", ply.DR_Threat )
+		ply:SetNW2Int( "DR_ThreatAware", ply.DR_ThreatAware )
 		//Lower Here, if You Even Read The Comment Above
 		ply.DR_tMusicEntities = tMusicEntities
 		local ThreatAware, bLayerFound, bNoLayer = ply.DR_ThreatAware

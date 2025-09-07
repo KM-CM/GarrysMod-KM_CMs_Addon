@@ -216,6 +216,13 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		return
 	end
 
+	local c = ply:GetModel()
+	local v = __PLAYER_MODEL__[ c ]
+	if v then
+		v = v.StartCommand
+		if v && v( ply, cmd ) then return end
+	end
+
 	local bGround = CEntity_IsOnGround( ply )
 	if !bGround && CEntity_WaterLevel( ply ) > 0 then
 		if !ply.GAME_sRestoreGun then
@@ -249,7 +256,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if ply:IsOnGround() then
 		//Trash
 		//if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
-		if !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
+		local v = __PLAYER_MODEL__[ ply:GetModel() ]
+		if !Either( v, v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
 			if cmd:GetForwardMove() <= 0 || b then
 				ply:SetNW2Bool( "CTRL_bSprinting", false )
 				cmd:RemoveKey( IN_SPEED )
@@ -270,7 +278,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		else ply:SetNW2Bool( "CTRL_bSprinting", false ) end
 	else
-		if CEntity_WaterLevel( ply ) <= 0 && !ply.CTRL_bAllowMovingWhileInAir && ply:GetMoveType() == MOVETYPE_WALK then
+		local v = __PLAYER_MODEL__[ ply:GetModel() ]
+		if CEntity_WaterLevel( ply ) <= 0 && !Either( v, v.bAllowMovingWhileInAir, ply.CTRL_bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
 			//cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 		end
@@ -513,7 +522,7 @@ local CEntity_GetTable = CEntity.GetTable
 
 local CPlayer_KeyDown = CPlayer.KeyDown
 
-function QuickSlide_Can( ply, t ) if t == nil then t = CEntity_GetTable( ply ) end return !t.CTRL_bCantSlide && CEntity_IsOnGround( ply ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() end
+function QuickSlide_Can( ply, t ) if t == nil then t = CEntity_GetTable( ply ) end return !Either( t.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, t.CTRL_bCantSlide ) && CEntity_IsOnGround( ply ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() end
 local CEntity_SetNW2Bool = CEntity.SetNW2Bool
 local CEntity_SetNW2Float = CEntity.SetNW2Float
 local CEntity_GetNW2Float = CEntity.GetNW2Float
@@ -563,7 +572,7 @@ function QuickSlide_CalcLength( ply )
 end
 hook.Add( "Move", "GameImprovements", function( ply, mv )
 	if ply:Alive() then
-		if !CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) then
+		if !CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) && QuickSlide_Can( ply ) then
 			local t = CEntity_GetTable( ply )
 			if CPlayer_KeyDown( ply, IN_SPEED ) && CPlayer_KeyDown( ply, IN_DUCK ) && QuickSlide_Can( ply, t ) then QuickSlide_Start( ply, t ) end
 		end

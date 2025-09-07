@@ -81,13 +81,78 @@ hook_Add( "HandlePlayerDrivingNew", "Base", function( ply, plyTable, pVehicle )
 	return true
 end )
 
+__PLAYER_MODEL__ = {}
+local __PLAYER_MODEL__ = __PLAYER_MODEL__
+
 local hook_Run = hook.Run
-hook_Add( "CalcMainActivity", "BaseVehicle", function( ply, vel )
+hook_Add( "CalcMainActivity", "Improvements", function( ply, vel )
 	local veh = ply.GAME_pVehicle || ply:GetNW2Entity "GAME_pVehicle"
 	if IsValid( veh ) then
 		local t = ply:GetTable()
 		hook_Run( "HandlePlayerDrivingNew", ply, t, veh )
 		return t.CalcIdeal, t.CalcSeqOverride
+	end
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if v then
+		v = v.CalcMainActivity
+		if v then
+			local t = ply:GetTable()
+			local a, s = v( ply, t )
+			t.CalcIdeal = a
+			t.CalcSeqOverride = s
+			return a, s
+		end
+	end
+end )
+
+hook.Add( "PlayerFootstep", "Improvements", function( ply, ... )
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if v then
+		v = v.PlayerFootstep
+		if v then return v( ply, ... ) end
+	end
+end )
+
+hook.Add( "PlayerSpawn", "Improvements", function( ply, ... )
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if v then
+		v = v.PlayerSpawn
+		if v then return v( ply, ... ) end
+	end
+end )
+
+hook.Add( "PlayerHandleAnimEvent", "Improvements", function( ply, ... )
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if v then
+		v = v.PlayerHandleAnimEvent
+		if v then return v( ply, ... ) end
+	end
+end )
+
+hook.Add( "TranslateActivity", "Improvements", function( ply, ... )
+	local c = ply:GetModel()
+	local v = __PLAYER_MODEL__[ c ]
+	if v then
+		v = v.TranslateActivity
+		if v then return v( ply, ... ) end
+	end
+end )
+
+hook.Add( "GetFallDamage", "Improvements", function( ply, ... )
+	local c = ply:GetModel()
+	local v = __PLAYER_MODEL__[ c ]
+	if v then
+		v = v.GetFallDamage
+		if v then return v( ply, ... ) end
+	end
+end )
+
+hook.Add( "CalcView", "Improvements", function( ply, ... )
+	local c = ply:GetModel()
+	local v = __PLAYER_MODEL__[ c ]
+	if v then
+		v = v.CalcView
+		if v then return v( ply, ... ) end
 	end
 end )
 
@@ -115,3 +180,5 @@ function GetVelocity( ent )
 	end
 	return Vector( 0, 0, 0 )
 end
+
+for _, n in ipairs( file.Find( "Player/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Player/" .. n ) end ) end
