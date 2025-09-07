@@ -12,6 +12,19 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 		ply:SetSlowWalkSpeed( ply:GetSequenceGroundSpeed( ply:LookupSequence "walk_all" ) )
 		ply:SetJumpPower( ( 2 * GetConVarNumber "sv_gravity" * 220 ) ^ .5 )
 		ply:SetViewOffsetDucked( ply:GetViewOffset() )
+		local flPitch, flYaw = ply:GetPoseParameter "aim_pitch", ply:GetPoseParameter "aim_yaw"
+		if CLIENT then
+			flPitch = math.Remap( flPitch, 0, 1, ply:GetPoseParameterRange( ply:LookupPoseParameter "aim_pitch" ) )
+			flYaw = math.Remap( flYaw, 0, 1, ply:GetPoseParameterRange( ply:LookupPoseParameter "aim_yaw" ) )
+		end
+		local ang = ply:GetAimVector():Angle()
+		if ply:GetNW2Int "DR_ThreatAware" == DIRECTOR_THREAT_COMBAT then
+			ply:SetPoseParameter( "aim_pitch", flPitch + .8 * math.Clamp( math.AngleDifference( ang.p, ply:GetAngles().p + flPitch ), -20 * FrameTime(), 20 * FrameTime() ) )
+			ply:SetPoseParameter( "aim_yaw", flYaw + .6 * math.AngleDifference( ang.y, ply:GetAngles().y + flYaw ) )
+		else
+			ply:SetPoseParameter( "aim_pitch", flPitch + .6 * math.Clamp( math.AngleDifference( ang.p, ply:GetAngles().p + flPitch ), -20 * FrameTime(), 20 * FrameTime() ) )
+			ply:SetPoseParameter( "aim_yaw", flYaw + .6 * math.AngleDifference( ang.y, ply:GetAngles().y + flYaw ) )
+		end
 		if SERVER then
 			for _, wep in ipairs( ply:GetWeapons() ) do if wep:GetClass() != "hands" then ply:DropWeapon( wep ) end end
 			if ply:KeyDown( IN_ATTACK ) && CurTime() > ( ply.MDL_flNextShot || 0 ) && ( ply.MDL_bPlanted || CurTime() > ( ply.MDL_flNextIdleVolleyTime || 0 ) ) then
@@ -62,6 +75,47 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			if ply.MDL_bPlanted then
 				ply.MDL_flDontOnlyMoveTime = CurTime() + ply:SequenceDuration( ply:LookupSequence "unplant" )
 				return ACT_INVALID
+			elseif ply:KeyDown( IN_ATTACK2 ) && CurTime() > ( ply.MDL_flNextMelee || 0 ) then
+				if ply:KeyDown( IN_SPEED ) then
+				else
+					//We Allow Ourselves to Use Shared Randoms Because
+					//We Dont Really Care What Animation is Going on
+					//Since They All Hit The Same
+					local s = ply:LookupSequence( table.Random { "meleeleft", "meleert", "melee_02" } )
+					ply:EmitSound "NPC_Hunter.MeleeAnnounce"
+					if SERVER then
+						timer.Simple( .5, function()
+							if !IsValid( ply ) then return end
+							local vMins, vMaxs = ply:OBBMins(), ply:OBBMaxs()
+							vMins.z = vMins.x
+							vMaxs.z = vMaxs.x
+							local tr = util.TraceHull {
+								mins = vMins,
+								maxs = vMaxs,
+								filter = ply,
+								start = ply:EyePos(),
+								endpos = ply:EyePos() + ply:GetAimVector() * vMaxs.x * 6,
+							}
+							if tr.Hit then
+								local ent = tr.Entity
+								if IsValid( ent ) then
+									local dmg = DamageInfo()
+									dmg:SetDamage( 40 )
+									dmg:SetDamageType( DMG_SLASH )
+									dmg:SetAttacker( ply )
+									dmg:SetInflictor( ply )
+									ent:TakeDamageInfo( dmg )
+								end
+								ply:EmitSound "NPC_Hunter.MeleeHit"
+								ply:EmitSound "NPC_Hunter.TackleHit"
+							end
+						end )
+					end
+					ply:AddVCDSequenceToGestureSlot( GESTURE_SLOT_ATTACK_AND_RELOAD, s, 0, true )
+					ply.MDL_flDontMoveTime = CurTime() + ply:SequenceDuration( s )
+					ply.MDL_flNextMelee = ply.MDL_flDontMoveTime
+					return ACT_INVALID
+				end
 			end
 		else
 			ply.MDL_bWasOnGround = nil
