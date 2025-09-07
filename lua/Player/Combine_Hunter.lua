@@ -89,7 +89,7 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 		if s == "CL_EVENT_EJECTBRASS1" || s == "AE_CITIZEN_HEAL" then ply:EmitSound "NPC_Hunter.Footstep"
 		elseif s == "COMBINE_AE_ALTFIRE" then ply:EmitSound "NPC_Hunter.BackFootstep" end
 	end,
-	PlayerSpawn = function( ply )
+	PlayerSpawnAny = function( ply )
 		timer.Simple( 0, function()
 			local f = 20000
 			ply:SetHealth( f )
