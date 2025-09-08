@@ -3,7 +3,7 @@ if !IsMounted "ep2" then return end
 player_manager.AddValidModel( "Combine_Hunter", "models/hunter.mdl" )
 
 local Combine_Hunter_Health = CreateConVar( "Combine_Hunter_Health", 40000, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
-local Combine_Hunter_Melee_Damage = CreateConVar( "Combine_Hunter_Melee_Damage", 512, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
+local Combine_Hunter_Melee_Damage = CreateConVar( "Combine_Hunter_Melee_Damage", 1024, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
 
 __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 	bCantSlide = true,
@@ -26,7 +26,7 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			flYaw = math.Remap( flYaw, 0, 1, ply:GetPoseParameterRange( ply:LookupPoseParameter "aim_yaw" ) )
 		end
 		local ang = ply:GetAimVector():Angle()
-		if ply:GetNW2Int "DR_ThreatAware" == DIRECTOR_THREAT_COMBAT then
+		if ply:GetNW2Int "DR_ThreatAware" != DIRECTOR_THREAT_NULL then
 			ply:SetPoseParameter( "aim_pitch", flPitch + .8 * math.Clamp( math.AngleDifference( ang.p, ply:GetAngles().p + flPitch ), -20 * FrameTime(), 20 * FrameTime() ) )
 			ply:SetPoseParameter( "aim_yaw", flYaw + .6 * math.AngleDifference( ang.y, ply:GetAngles().y + flYaw ) )
 		else
@@ -35,7 +35,7 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 		end
 		if SERVER then
 			for _, wep in ipairs( ply:GetWeapons() ) do if wep:GetClass() != "hands" && wep:GetClass() != "gmod_tool" then ply:DropWeapon( wep ) end end
-			if ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK ) && CurTime() > ( ply.MDL_flNextShot || 0 ) && ( ply.MDL_bPlanted || CurTime() > ( ply.MDL_flNextIdleVolleyTime || 0 ) ) then
+			if !ply:GetNW2Bool( "CTRL_bInCover" ) && ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK ) && CurTime() > ( ply.MDL_flNextShot || 0 ) && ( ply.MDL_bPlanted || CurTime() > ( ply.MDL_flNextIdleVolleyTime || 0 ) ) then
 				local fs = ply.MDL_flIdleShots
 				if fs then fs = fs - 1 ply.MDL_flIdleShots = fs else ply.MDL_flIdleShots = math.Rand( 1, 3 ) end
 				ply.MDL_bShoot = !ply.MDL_bShoot
@@ -87,9 +87,9 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 				ply.MDL_flDontOnlyMoveTime = CurTime() + ply:SequenceDuration( ply:LookupSequence "unplant" )
 				return ACT_INVALID
 			elseif ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK2 ) && CurTime() > ( ply.MDL_flNextMelee || 0 ) then
-				if ply:KeyDown( IN_SPEED ) then
+				if ply:KeyDown( IN_SPEED ) then //TODO: Charge
 				else
-					//We Allow Ourselves to Use Shared Randoms Because
+					//We Allow Ourselves to Use Non-Shared Randoms Because
 					//We Dont Really Care What Animation is Going on
 					//Since They All Hit The Same
 					local s = ply:LookupSequence( table.Random { "meleeleft", "meleert", "melee_02" } )
@@ -146,7 +146,7 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			bSprinting && ACT_RUN ||
 			(
 				f >= ply:GetWalkSpeed() * .8
-				|| ply:GetNW2Int "DR_ThreatAware" == DIRECTOR_THREAT_COMBAT
+				|| ply:GetNW2Int "DR_ThreatAware" != DIRECTOR_THREAT_NULL
 			) && ply:GetSequenceActivity( ply:LookupSequence "prowl_all" )
 			|| ACT_WALK
 		) || ACT_IDLE
