@@ -2,6 +2,9 @@ if !IsMounted "ep2" then return end
 
 player_manager.AddValidModel( "Combine_Hunter", "models/hunter.mdl" )
 
+local Combine_Hunter_Health = CreateConVar( "Combine_Hunter_Health", 40000, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
+local Combine_Hunter_Melee_Damage = CreateConVar( "Combine_Hunter_Melee_Damage", 512, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
+
 __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 	bCantSlide = true,
 	bAllDirectionalSprint = true,
@@ -11,7 +14,12 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 		ply:SetWalkSpeed( ply:GetSequenceGroundSpeed( ply:LookupSequence "prowl_all" ) )
 		ply:SetSlowWalkSpeed( ply:GetSequenceGroundSpeed( ply:LookupSequence "walk_all" ) )
 		ply:SetJumpPower( ( 2 * GetConVarNumber "sv_gravity" * 220 ) ^ .5 )
-		ply:SetViewOffsetDucked( ply:GetViewOffset() )
+		local v = Vector( 0, 0, 88 )
+		ply:SetViewOffset( v )
+		ply:SetViewOffsetDucked( v )
+		local vMins, vMaxs = Vector( -18, -18, 0 ), Vector( 18, 18, 100 )
+		ply:SetHull( vMins, vMaxs )
+		ply:SetHullDuck( vMins, vMaxs )
 		local flPitch, flYaw = ply:GetPoseParameter "aim_pitch", ply:GetPoseParameter "aim_yaw"
 		if CLIENT then
 			flPitch = math.Remap( flPitch, 0, 1, ply:GetPoseParameterRange( ply:LookupPoseParameter "aim_pitch" ) )
@@ -26,18 +34,21 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			ply:SetPoseParameter( "aim_yaw", flYaw + .6 * math.AngleDifference( ang.y, ply:GetAngles().y + flYaw ) )
 		end
 		if SERVER then
-			for _, wep in ipairs( ply:GetWeapons() ) do if wep:GetClass() != "hands" then ply:DropWeapon( wep ) end end
-			if ply:KeyDown( IN_ATTACK ) && CurTime() > ( ply.MDL_flNextShot || 0 ) && ( ply.MDL_bPlanted || CurTime() > ( ply.MDL_flNextIdleVolleyTime || 0 ) ) then
+			for _, wep in ipairs( ply:GetWeapons() ) do if wep:GetClass() != "hands" && wep:GetClass() != "gmod_tool" then ply:DropWeapon( wep ) end end
+			if ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK ) && CurTime() > ( ply.MDL_flNextShot || 0 ) && ( ply.MDL_bPlanted || CurTime() > ( ply.MDL_flNextIdleVolleyTime || 0 ) ) then
 				local fs = ply.MDL_flIdleShots
 				if fs then fs = fs - 1 ply.MDL_flIdleShots = fs else ply.MDL_flIdleShots = math.Rand( 1, 3 ) end
 				ply.MDL_bShoot = !ply.MDL_bShoot
 				local f = ents.Create "hunter_flechette"
 				f:SetPos( ply:GetBonePosition( ply:LookupBone( ply.MDL_bShoot && "MiniStrider.low_eye_bone" || "MiniStrider.top_eye_bone" ) ) )
-				local d = ply:GetAimVector()
-				f:SetAngles( d:Angle() )
+				local d = ply:GetAngles()
+				local a = ply:GetAimVector():Angle()
+				d.p = math.ApproachAngle( d.p, a.p, 45 )
+				d.y = math.ApproachAngle( d.y, a.y, 60 )
+				f:SetAngles( d )
 				f:SetOwner( ply )
 				f:Spawn()
-				f:SetVelocity( d * GetConVarNumber "hunter_flechette_speed" )
+				f:SetVelocity( d:Forward() * GetConVarNumber "hunter_flechette_speed" )
 				ply:EmitSound "NPC_Hunter.FlechetteShoot"
 				ply.MDL_flNextShot = CurTime() + .1
 				if !ply.MDL_bPlanted then if ply.MDL_flIdleShots <= 0 then ply.MDL_flNextIdleVolleyTime = CurTime() + math.Rand( .33, .66 ) ply.MDL_flIdleShots = nil end end
@@ -75,7 +86,7 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			if ply.MDL_bPlanted then
 				ply.MDL_flDontOnlyMoveTime = CurTime() + ply:SequenceDuration( ply:LookupSequence "unplant" )
 				return ACT_INVALID
-			elseif ply:KeyDown( IN_ATTACK2 ) && CurTime() > ( ply.MDL_flNextMelee || 0 ) then
+			elseif ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK2 ) && CurTime() > ( ply.MDL_flNextMelee || 0 ) then
 				if ply:KeyDown( IN_SPEED ) then
 				else
 					//We Allow Ourselves to Use Shared Randoms Because
@@ -86,26 +97,30 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 					if SERVER then
 						timer.Simple( .5, function()
 							if !IsValid( ply ) then return end
-							local vMins, vMaxs = ply:OBBMins(), ply:OBBMaxs()
-							vMins.z = vMins.x
-							vMaxs.z = vMaxs.x
+							local vMins, vMaxs, v, bHit = ply:OBBMins(), ply:OBBMaxs(), ply:GetAimVector()
+							vMins.z = vMins.z + 8
+							v.z = 0
+							v:Normalize()
 							local tr = util.TraceHull {
 								mins = vMins,
 								maxs = vMaxs,
-								filter = ply,
-								start = ply:EyePos(),
-								endpos = ply:EyePos() + ply:GetAimVector() * vMaxs.x * 6,
+								filter = function( ent )
+									if ent == ply then return end
+									if IsValid( ent ) then
+										local dmg = DamageInfo()
+										dmg:SetDamage( Combine_Hunter_Melee_Damage:GetFloat() )
+										dmg:SetDamageType( DMG_SLASH )
+										dmg:SetAttacker( ply )
+										dmg:SetInflictor( ply )
+										ent:TakeDamageInfo( dmg )
+									end
+									bHit = true
+								end,
+								start = ply:GetPos(),
+								endpos = ply:GetPos() + v * vMaxs.x * 8,
+								mask = MASK_SOLID
 							}
-							if tr.Hit then
-								local ent = tr.Entity
-								if IsValid( ent ) then
-									local dmg = DamageInfo()
-									dmg:SetDamage( 40 )
-									dmg:SetDamageType( DMG_SLASH )
-									dmg:SetAttacker( ply )
-									dmg:SetInflictor( ply )
-									ent:TakeDamageInfo( dmg )
-								end
+							if tr.Hit || bHit then
 								ply:EmitSound "NPC_Hunter.MeleeHit"
 								ply:EmitSound "NPC_Hunter.TackleHit"
 							end
@@ -140,19 +155,20 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 	PlayerFootstep = function() return true end,
 	PlayerHandleAnimEvent = function( ply, event )
 		local s = util.GetAnimEventNameByID( event )
-		if s == "CL_EVENT_EJECTBRASS1" || s == "AE_CITIZEN_HEAL" then ply:EmitSound "NPC_Hunter.Footstep"
-		elseif s == "COMBINE_AE_ALTFIRE" then ply:EmitSound "NPC_Hunter.BackFootstep" end
+		if s == "CL_EVENT_EJECTBRASS1" || s == "AE_CITIZEN_HEAL" || s == "AE_HUNTER_FOOTSTEP_LEFT" || s == "AE_HUNTER_FOOTSTEP_RIGHT" then ply:EmitSound "NPC_Hunter.Footstep"
+		elseif s == "COMBINE_AE_ALTFIRE" || s == "AE_HUNTER_FOOTSTEP_BACK" then ply:EmitSound "NPC_Hunter.BackFootstep" end
 	end,
 	PlayerSpawnAny = function( ply )
 		timer.Simple( 0, function()
-			local f = 20000
+			local f = Combine_Hunter_Health:GetInt()
 			ply:SetHealth( f )
 			ply:SetMaxHealth( f )
+			ply:SetNPCClass( CLASS_COMBINE )
 		end )
 	end,
 	GetFallDamage = function() return 0 end,
 	StartCommand = function( ply, cmd )
-		if CurTime() <= ( ply.MDL_flDontMoveTime || 0 ) then
+		if CurTime() <= ( ply.MDL_flDontMoveTime || 0 ) || ( ply.MDL_bPlanted && cmd:KeyDown( IN_JUMP ) ) then
 			cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 			cmd:SetButtons( 0 )
