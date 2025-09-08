@@ -113,21 +113,21 @@ hook.Add( "PlayerFootstep", "Improvements", function( ply, ... )
 	end
 end )
 
-hook.Add( "PlayerSpawn", "Improvements", function( ply, ... )
+hook.Add( "PlayerSpawn", "Improvements", function( ply )
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if v then
 		v = v.PlayerSpawnAny
-		if v then return v( ply, ... ) end
-	end
+		if v then return v( ply ) else ply:SetNPCClass( CLASS_HUMAN ) end
+	else ply:SetNPCClass( CLASS_HUMAN ) end
 end )
 
-hook.Add( "PlayerInitialSpawn", "Improvements", function( ply, ... )
+hook.Add( "PlayerInitialSpawn", "Improvements", function( ply )
 	timer.Simple( 0, function()
 		if !IsValid( ply ) then return end
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if v then
 			v = v.PlayerSpawnAny
-			if v then return v( ply, ... ) end
+			if v then return v( ply ) end
 		end
 	end )
 end )
@@ -136,8 +136,8 @@ hook.Add( "PlayerHandleAnimEvent", "Improvements", function( ply, ... )
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if v then
 		v = v.PlayerHandleAnimEvent
-		if v then return v( ply, ... ) end
-	end
+		if v then return v( ply, ... ) else ply:SetNPCClass( CLASS_HUMAN ) end
+	else ply:SetNPCClass( CLASS_HUMAN ) end
 end )
 
 hook.Add( "TranslateActivity", "Improvements", function( ply, ... )
