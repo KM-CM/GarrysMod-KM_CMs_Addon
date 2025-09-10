@@ -8,7 +8,7 @@ concommand.Add( "-drop", function( ply ) ply:DropWeapon() end )
 ACCELERATION_NORMAL = 5
 ACCELERATION_ACTUAL = ACCELERATION_NORMAL
 
-HUMAN_RUN_SPEED, HUMAN_PROWL_SPEED, HUMAN_WALK_SPEED = 300, 200, 75
+HUMAN_RUN_SPEED, HUMAN_PROWL_SPEED, HUMAN_WALK_SPEED, HUMAN_JUMP_HEIGHT = 300, 200, 75, 64
 
 RunConsoleCommand( "sv_accelerate", ACCELERATION_NORMAL )
 RunConsoleCommand( "sv_friction", "4" )
