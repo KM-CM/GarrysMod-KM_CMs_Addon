@@ -257,7 +257,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		//Trash
 		//if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
-		if !Either( v, v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
+		if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
 			if cmd:GetForwardMove() <= 0 || b then
 				ply:SetNW2Bool( "CTRL_bSprinting", false )
 				cmd:RemoveKey( IN_SPEED )
@@ -279,7 +279,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		else ply:SetNW2Bool( "CTRL_bSprinting", false ) end
 	else
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
-		if CEntity_WaterLevel( ply ) <= 0 && !Either( v, v.bAllowMovingWhileInAir, ply.CTRL_bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
+		if CEntity_WaterLevel( ply ) <= 0 && !Either( v == nil, ply.CTRL_bAllowMovingWhileInAir, v && v.bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
 			//cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 		end
