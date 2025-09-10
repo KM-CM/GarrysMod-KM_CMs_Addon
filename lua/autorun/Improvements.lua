@@ -121,6 +121,10 @@ function SetHumanPlayer( ply )
 	ply:SetWalkSpeed( HUMAN_PROWL_SPEED )
 	ply:SetSlowWalkSpeed( HUMAN_WALK_SPEED )
 	ply:SetJumpPower( ( 2 * GetConVarNumber "sv_gravity" * HUMAN_JUMP_HEIGHT ) ^ .5 )
+	ply:SetDuckSpeed( .25 )
+	ply:SetUnDuckSpeed( .25 )
+	ply:SetViewOffset( Vector( 0, 0, 56 ) )
+	ply:SetViewOffsetDucked( Vector( 0, 0, 24 ) )
 end
 
 hook.Add( "PlayerSpawn", "Improvements", function( ply )
