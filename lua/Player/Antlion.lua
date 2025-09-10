@@ -1,7 +1,7 @@
-player_manager.AddValidModel( "Antlion", "models/antlion.mdl" )
+player_manager.AddValidModel( "Antlion_Soldier", "models/antlion.mdl" )
 
-local Antlion_Health = CreateConVar( "Antlion_Health", 600, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
-local Antlion_Melee_Damage = CreateConVar( "Antlion_Melee_Damage", 640, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
+local Antlion_Soldier_Health = CreateConVar( "Antlion_Soldier_Health", 600, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
+local Antlion_Soldier_Melee_Damage = CreateConVar( "Antlion_Soldier_Melee_Damage", 640, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_CHEAT )
 
 IN_NOT_USE = bit.bnot( IN_USE )
 
@@ -55,7 +55,7 @@ __PLAYER_MODEL__[ "models/antlion.mdl" ] = {
 								if ent == ply then return end
 								if IsValid( ent ) then
 									local dmg = DamageInfo()
-									dmg:SetDamage( Antlion_Melee_Damage:GetFloat() )
+									dmg:SetDamage( Antlion_Soldier_Melee_Damage:GetFloat() )
 									dmg:SetDamageType( DMG_SLASH )
 									dmg:SetAttacker( ply )
 									dmg:SetInflictor( ply )
@@ -97,7 +97,7 @@ __PLAYER_MODEL__[ "models/antlion.mdl" ] = {
 	end,
 	PlayerSpawnAny = function( ply )
 		timer.Simple( 0, function()
-			local f = Antlion_Health:GetInt()
+			local f = Antlion_Soldier_Health:GetInt()
 			ply:SetHealth( f )
 			ply:SetMaxHealth( f )
 			ply:SetNPCClass( CLASS_ANTLION )
