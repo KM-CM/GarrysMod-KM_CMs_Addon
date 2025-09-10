@@ -9,7 +9,6 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	if self.vCover then
 		local vec = self.vCover
-		self.vActualCover = vec
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
 			local pCover = self.pCover
@@ -115,9 +114,10 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				if tAllies then
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then self.vCover = nil return end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
 					end
 				end
+				self.vActualCover = vec
 				self.vCover = vec
 				return
 			end

@@ -54,7 +54,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 				if tAllies then
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then self.vCover = nil return end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
 					end
 				end
 				return vec, !util.TraceLine( {
@@ -80,7 +80,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 				if tAllies then
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then self.vCover = nil return end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
 					end
 				end
 				return vec

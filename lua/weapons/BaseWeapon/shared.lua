@@ -177,8 +177,9 @@ if CLIENT then
 					local flBreathe = RealTime() * 18
 					local flVelocity = CEntity_GetVelocity( ply ):Length()
 					local flSpeed = CPlayer_GetRunSpeed( ply )
-					vTarget = vTarget - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * flVelocity / flSpeed, 0, math_cos( flBreathe ) * flVelocity / flSpeed )
-					vTargetAngle = vTargetAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * flVelocity / flSpeed, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * flVelocity / flSpeed, 0)
+					local f = flVelocity / flSpeed
+					vTarget = vTarget - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * f, 0, math_cos( flBreathe ) * f )
+					vTargetAngle = vTargetAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
 				else
 					local flVelocity = CEntity_GetVelocity( ply ):Length()
 					local flSpeed = CPlayer_GetWalkSpeed( ply )

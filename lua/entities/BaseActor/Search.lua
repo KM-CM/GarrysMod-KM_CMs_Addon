@@ -70,7 +70,8 @@ function ENT:SearchNodes( vPos, flSpacing )
 			local v = area:GetCorner( 0 ) //NORTH_WEST
 			local flCornerX, flCornerY = v.x, v.y
 			local flSizeX, flSizeY = area:GetSizeX(), area:GetSizeY()
-			t = {}
+			t = area:GetCenter()
+			t = { { t, t:DistToSqr( vPos ) } }
 			for x = flCornerX, flCornerX + flSizeX, flSpacing do
 				for y = flCornerY, flCornerY + flSizeY, flSpacing do
 					local v = Vector( x, y )
@@ -85,7 +86,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 				end
 			end
 			table.SortByMember( t, 2 )
-			if t then return table.remove( t )[ 1 ] else return area:GetCenter() end
+			if t then return table.remove( t )[ 1 ] end
 		end
 	end
 end
