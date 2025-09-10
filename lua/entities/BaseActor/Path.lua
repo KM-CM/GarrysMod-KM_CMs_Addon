@@ -102,11 +102,11 @@ function ENT:ComputeVehiclePath( Path, vGoal )
 	local MyTable = CEntity_GetTable( self )
 	local f = MyTable.flPathTolerance
 	f = f * f
-	Path:MoveCursorToClosestPosition( self:GetPos() )
-	if Path:GetPositionOnPath( Path:GetCursorPosition() ):DistToSqr( self:GetPos() ) <= f && Path:GetEnd():DistToSqr( vGoal ) <= f then return true end
+	local veh = MyTable.GAME_pVehicle
+	Path:MoveCursorToClosestPosition( veh:GetPos() )
+	if Path:GetPositionOnPath( Path:GetCursorPosition() ):Distance2DSqr( veh:GetPos() ) <= f && Path:GetEnd():DistToSqr( vGoal ) <= f then return true end
 	local loco = MyTable.loco
 	local flStepHeight = loco:GetStepHeight()
-	local veh = MyTable.GAME_pVehicle
 	local VehTable = CEntity_GetTable( veh )
 	local t = veh.TRAVERSES
 	local bDoCheck, bDisAllowWater, bDisAllowGround, bAllowWater = true
