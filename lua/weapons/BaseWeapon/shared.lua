@@ -257,7 +257,7 @@ if CLIENT then
 					vTarget = vTarget + MyTable.vSprintArm
 					vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle
 				else
-					if CEntity_GetNW2Int( ply, "CTRL_Peek" ) != COVER_BLINDFIRE_UP && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
+					if CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CEntity_GetNW2Int( ply, "DR_ThreatAware" ) != DIRECTOR_THREAT_COMBAT && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
 						vTargetAngle.x = vTargetAngle.x - 11.25
 						vTarget.z = vTarget.z + 2.25
 						local flVelocity = CEntity_GetVelocity( ply ):Length()
