@@ -198,7 +198,7 @@ hook.Add( "Tick", "Director", function()
 				local d = DamageInfo()
 				d:SetAttacker( ply )
 				d:SetInflictor( ply )
-				d:SetDamage( 0 )
+				d:SetDamage( 1 )
 				d:SetDamageType( DMG_DROWN )
 				ply:TakeDamageInfo( d )
 				continue
@@ -283,7 +283,6 @@ hook.Add( "Tick", "Director", function()
 				end
 			end
 		end
-		ply:SetNW2Int( "DR_Threat", ply.DR_Threat )
 		ply:SetNW2Int( "DR_ThreatAware", ply.DR_ThreatAware )
 		//Lower Here, if You Even Read The Comment Above
 		ply.DR_tMusicEntities = tMusicEntities
@@ -358,6 +357,14 @@ hook.Add( "Tick", "Director", function()
 			else mus:Tick() tShutMeUp[ mus ] = true end //OtherWise, Play It so It Doesnt Get Cut Off
 		end
 		ply.DR_tShutMeUp = tShutMeUp
+	end
+end )
+
+hook.Add( "PostCleanupMap", "Director", function()
+	for _, ply in player_Iterator() do
+		table.Empty( ply.DR_tMusic )
+		table.Empty( ply.DR_tShutMeUp )
+		ply:ConCommand "stopsound"
 	end
 end )
 
