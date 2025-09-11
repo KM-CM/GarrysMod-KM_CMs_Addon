@@ -126,6 +126,8 @@ function SetHumanPlayer( ply )
 	ply:SetCrouchedWalkSpeed( 1 )
 	ply:SetViewOffset( Vector( 0, 0, 56 ) )
 	ply:SetViewOffsetDucked( Vector( 0, 0, 24 ) )
+	ply:SetHull( Vector( -16, -16, 0 ), Vector( 16, 16, 72 ) )
+	ply:SetHullDuck( Vector( -16, -16, 0 ), Vector( 16, 16, 32 ) )
 end
 
 hook.Add( "PlayerSpawn", "Improvements", function( ply )
@@ -134,7 +136,7 @@ hook.Add( "PlayerSpawn", "Improvements", function( ply )
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if v then
 			v = v.PlayerSpawnAny
-			if v then return v( ply ) else ply:SetNPCClass( CLASS_HUMAN ) end
+			if v then return v( ply ) else SetHumanPlayer( ply ) end
 		else SetHumanPlayer( ply ) end
 	end )
 end )
@@ -145,7 +147,7 @@ hook.Add( "PlayerInitialSpawn", "Improvements", function( ply )
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if v then
 			v = v.PlayerSpawnAny
-			if v then return v( ply ) end
+			if v then return v( ply ) else SetHumanPlayer( ply ) end
 		else SetHumanPlayer( ply ) end
 	end )
 end )
