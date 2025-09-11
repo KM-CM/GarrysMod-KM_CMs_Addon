@@ -23,8 +23,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flHeight, flWidth = ScrH(), ScrW()
 		//I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
 		local flRadius = flSpread * flWidth * ( 90 / MyTable.flFoV ) * .5
-		local flX = flWidth * .5
-		local flY = flHeight * .5
+		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
 		local co = MyTable.CrosshairColorOutLine
 		local f = MyTable.flCrosshairOutLine * flHeight
 		local flStart, flEnd = flRadius, flRadius + f
@@ -44,7 +43,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 	Rifle = function( MyTable, self )
 		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
 		local flHeight, flWidth = ScrH(), ScrW()
-		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flCenterWidth, flCenterHeight = MyTable.GatherCrosshairPosition( self, MyTable )
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface.SetDrawColor( 255, 255, 255, 255 )
@@ -60,7 +59,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 	SubMachineGun = function( MyTable, self )
 		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
 		local flHeight, flWidth = ScrH(), ScrW()
-		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flCenterWidth, flCenterHeight = MyTable.GatherCrosshairPosition( self, MyTable )
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface.SetDrawColor( 255, 255, 255, 255 )
@@ -76,7 +75,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 	Pistol = function( MyTable, self )
 		local flSpreadX, flSpreadY = MyTable.GatherCrosshairSpread( self, MyTable )
 		local flHeight, flWidth = ScrH(), ScrW()
-		local flCenterHeight, flCenterWidth = flHeight * .5, flWidth * .5
+		local flCenterWidth, flCenterHeight = MyTable.GatherCrosshairPosition( self, MyTable )
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface.SetDrawColor( 255, 255, 255, 255 )
@@ -97,17 +96,19 @@ SWEP.Primary_flDelay = 1
 SWEP.Secondary_flDelay = 1
 
 local CEntity = FindMetaTable "Entity"
+local CEntity_IsOnGround = CEntity.IsOnGround
 local CEntity_GetTable = CEntity.GetTable
 local CEntity_GetNW2Bool = CEntity.GetNW2Bool
 local developer = GetConVar "developer"
 local CPlayer = FindMetaTable "Player"
+local CPlayer_IsSprinting = CPlayer.IsSprinting
 local CPlayer_KeyDown = CPlayer.KeyDown
 SWEP.bDontDrawCrosshairDuringZoom = true
 function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	local ply = LocalPlayer()
-	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" ) || CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) || ( MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
+	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" ) || CEntity_IsOnGround( ply ) && CPlayer_IsSprinting( ply ) || CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) || ( MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
 	if v != nil then return v( MyTable, self ) end
 end

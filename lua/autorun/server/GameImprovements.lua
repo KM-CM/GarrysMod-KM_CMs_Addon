@@ -195,6 +195,8 @@ local ents_Create = ents.Create
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if !ply:Alive() then return end
 
+	ply:SetLadderClimbSpeed( ply:IsSprinting() && ply:GetRunSpeed() || ply:IsWalking() && ply:GetSlowWalkSpeed() || ply:GetWalkSpeed() )
+
 	local p = ply:GetWeapon "Hands"
 	if !IsValid( p ) then p = CPlayer_Give( ply, "Hands" ) end
 	local veh = ply.GAME_pVehicle
@@ -504,13 +506,16 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	end
 	if bGunUsesCoverStance then
 		ply:SetNW2Bool( "CTRL_bInCover", true )
+		ply:SetNW2Bool( "CTRL_bGunUsesCoverStance", true )
 	elseif bInCover then
 		//cmd:RemoveKey( IN_JUMP )
 		ply:SetNW2Bool( "CTRL_bInCover", true ) 
 		ply.CTRL_bInCover = true
+		ply:SetNW2Bool( "CTRL_bGunUsesCoverStance", false )
 	else
 		ply:SetNW2Bool( "CTRL_bInCover", false )
 		ply.CTRL_bInCover = nil
+		ply:SetNW2Bool( "CTRL_bGunUsesCoverStance", false )
 	end
 	ply:SetNW2Int( "CTRL_Variants", VARIANTS )
 	ply:SetNW2Int( "CTRL_Peek", PEEK )

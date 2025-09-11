@@ -82,7 +82,13 @@ if CLIENT then
 	local vFinalAngle = Vector( 0, 0, 0 )
 	local vTarget = Vector( 0, 0, 0 )
 	local vTargetAngle = Vector( 0, 0, 0 )
-	local aAim = Angle( 0, 0, 0 )
+	local vViewFinal = Vector( 0, 0, 0 )
+	local vViewFinalAngle = Vector( 0, 0, 0 )
+	local vViewTarget = Vector( 0, 0, 0 )
+	local vViewTargetAngle = Vector( 0, 0, 0 )
+	local vPleaseOffsetTheViewModel = Vector( 0, 0, 0 )
+	local vPleaseOffsetTheViewModelAngle = Vector( 0, 0, 0 )
+	local aAim, aViewAim = Angle( 0, 0, 0 ), Angle( 0, 0, 0 )
 	local flLandTime, flJumpTime = 0, 0
 	SWEP.ViewModelFOV = 62
 	SWEP.flViewModelX = 0
@@ -99,9 +105,11 @@ if CLIENT then
 	SWEP.vSprintArmAngle = Vector( -10.554, 34.167, -20 )
 	SWEP.flAimMultiplier = 1
 	SWEP.flFoV = 99
+	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
 	local math_sin = math.sin
 	local math_Clamp = math.Clamp
+	local math_AngleDifference = math.AngleDifference
 	local math_NormalizeAngle = math.NormalizeAngle
 	local CEntity_WaterLevel = CEntity.WaterLevel
 	local CPlayer_GetWalkSpeed = CPlayer.GetWalkSpeed
@@ -111,24 +119,90 @@ if CLIENT then
 		f = f * 3.2258
 		return ( 1 - f ) ^ 2 * a + 2 * ( 1 - f ) * f * b + ( f ^ 2 ) * c
 	end
+	local BEZIER_MIMICRY_RATIO = .5
 	local math_Remap = math.Remap
+	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", 99 ) end end
+	local CPlayer_IsSprinting = CPlayer.IsSprinting
+	local CPlayer_Crouching = CPlayer.Crouching
+	local CEntity_GetNW2Int = CEntity.GetNW2Int
 	function SWEP:CalcView( ply, pos, ang, fov )
+		vPleaseOffsetTheViewModel, vPleaseOffsetTheViewModelAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
 		local MyTable = CEntity_GetTable( self )
+		vViewTarget, vViewTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
+		if CEntity_IsOnGround( ply ) && ( bSprinting || CPlayer_IsSprinting( ply ) ) then
+			local flVelocity = CEntity_GetVelocity( ply ):Length()
+			if flVelocity > 10 then
+				local flBreathe = RealTime() * 18
+				local f = flVelocity / CPlayer_GetRunSpeed( ply ) * 4
+				local v = Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
+				vTarget = vTarget - v
+				vViewTarget = vViewTarget - v
+				local v = Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+				vTargetAngle = vTargetAngle - v
+				vViewTargetAngle = vViewTargetAngle - v
+			end
+		end
+		local p = CEntity_GetNW2Int( ply, "CTRL_Peek" )
+		if p == COVER_FIRE_LEFT then
+			vViewTargetAngle.z = vViewTargetAngle.z - 11.25
+		elseif p == COVER_FIRE_RIGHT then
+			vViewTargetAngle.z = vViewTargetAngle.z + 11.25
+		elseif p == COVER_BLINDFIRE_LEFT then
+			vViewTargetAngle.z = vViewTargetAngle.z - 22.5
+		elseif p == COVER_BLINDFIRE_RIGHT then
+			vViewTargetAngle.z = vViewTargetAngle.z + 22.5
+		end
+		local bLeft, bRight = CPlayer_KeyDown( ply, IN_MOVELEFT ), CPlayer_KeyDown( ply, IN_MOVERIGHT )
+		if bLeft && bRight then
+		elseif bLeft then
+			vViewTargetAngle.z = vViewTargetAngle.z + MOVE_LEFT_ROLL
+			vPleaseOffsetTheViewModelAngle.z = vPleaseOffsetTheViewModelAngle.z + MOVE_LEFT_ROLL
+		elseif bRight then
+			vViewTargetAngle.z = vViewTargetAngle.z + MOVE_RIGHT_ROLL
+			vPleaseOffsetTheViewModelAngle.z = vPleaseOffsetTheViewModelAngle.z + MOVE_RIGHT_ROLL
+		end
+		local f = MyTable.vBezier
+		if f then vViewTarget = vViewTarget + f * BEZIER_MIMICRY_RATIO end
+		f = MyTable.vBezierAngle
+		if f then f = f.x vViewTargetAngle.x = vViewTargetAngle.x + f * BEZIER_MIMICRY_RATIO end
+		vViewFinal = LerpVector( 5 * FrameTime(), vViewFinal, vViewTarget )
+		vViewFinalAngle = LerpVector( 5 * FrameTime(), vViewFinalAngle, vViewTargetAngle )
+		ang:RotateAroundAxis( ang:Right(), vViewFinalAngle.x )
+		ang:RotateAroundAxis( ang:Up(), vViewFinalAngle.y )
+		ang:RotateAroundAxis( ang:Forward(), vViewFinalAngle.z )
+		pos = pos + vViewFinal.z * ang:Up()
+		pos = pos + vViewFinal.y * ang:Forward()
+		pos = pos + vViewFinal.x * ang:Right()
+		aViewAim = LerpAngle( 5 * FrameTime(), aViewAim, ply:EyeAngles() )
+		MyTable.aLastViewEyePosition = aViewAim - ply:EyeAngles()
+		MyTable.aLastViewEyePosition.y = math_AngleDifference( aViewAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
+		local flMultiplier = MyTable.flAimMultiplier || 0
+		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
+		local flSwayAngleNeg = -flSwayAngle
+		ang:RotateAroundAxis( ang:Right(), -math_Clamp( flSwayAngle * MyTable.aLastViewEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
+		ang:RotateAroundAxis( ang:Up(), -math_Clamp( flSwayAngleNeg * MyTable.aLastViewEyePosition.y / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
+		local flSwayVector = MyTable.flSwayVector * flMultiplier
+		local flSwayVectorNeg = -flSwayVector
+		pos = pos - math_Clamp( ( flSwayVectorNeg * MyTable.aLastViewEyePosition.p / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Up()
+		pos = pos - math_Clamp( ( flSwayVectorNeg * MyTable.aLastViewEyePosition.y / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Right()
 		local v = MyTable.flCustomZoomFoV
 		if v then
 			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, fov, v )
 			MyTable.flFoV = f
 			return pos, ang, f
 		else MyTable.flFoV = fov end
+		return pos, ang, fov
 	end
-	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", 99 ) end end
-	local CEntity_GetNW2Int = CEntity.GetNW2Int
+	function SWEP:GatherCrosshairPosition( MyTable )
+		local t = LocalPlayer():GetEyeTrace().HitPos:ToScreen()
+		return t.x, t.y
+	end
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
 		local bSprinting = CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )
 		local bSliding = CEntity_GetNW2Bool( ply, "CTRL_bSliding" )
-		local bInCover = CEntity_GetNW2Bool( ply, "CTRL_bInCover" )
+		local bInCover = CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" )
 		local bZoom = !bSprinting && !bSliding && !bInCover && CPlayer_KeyDown( ply, IN_ZOOM )
 		local vAim
 		if bZoom then vAim = MyTable.vViewModelAim if !vAim then bZoom = nil end end
@@ -156,37 +230,51 @@ if CLIENT then
 					vTarget.z = vTarget.z - 10
 				end
 			else
-				if CEntity_GetNW2Int( ply, "CTRL_Variants" ) == COVER_VARIANTS_RIGHT then
-					vTargetAngle.x = vTargetAngle.x + 22.5
-					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x + 2
-				else
-					vTargetAngle.x = vTargetAngle.x + 22.5
-					vTarget.z = vTarget.z - 10
-				end
+				vTargetAngle.x = vTargetAngle.x + 22.5
+				vTarget.z = vTarget.z - 10
 			end
 		else
+			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
+				local p = CEntity_GetNW2Int( ply, "CTRL_Peek" )
+				if p == COVER_FIRE_LEFT then
+				elseif p == COVER_FIRE_RIGHT then
+				elseif p == COVER_BLINDFIRE_UP then
+					vTargetAngle.z = vTargetAngle.z + 180
+					vTarget.z = vTarget.z - 8
+					vTarget.x = vTarget.x - 18
+				elseif p == COVER_BLINDFIRE_LEFT then
+					vTarget.x = vTarget.x - 18
+				elseif p == COVER_BLINDFIRE_RIGHT then
+					vTarget.x = vTarget.x + 4
+				end
+			end
 			local bOnGround = CEntity_IsOnGround( ply )
 			if bSliding || CPlayer_InVehicle( ply ) then
 				bOnGroundLast = true
 			elseif bOnGround then
 				bOnGroundLast = true
-				if bSprinting then
+				if bSprinting || CPlayer_IsSprinting( ply ) then
 					vTarget = vTarget + MyTable.vSprintArm
 					vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle
-					local flBreathe = RealTime() * 18
-					local flVelocity = CEntity_GetVelocity( ply ):Length()
-					local flSpeed = CPlayer_GetRunSpeed( ply )
-					local f = flVelocity / flSpeed
-					vTarget = vTarget - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * f, 0, math_cos( flBreathe ) * f )
-					vTargetAngle = vTargetAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
 				else
-					local flVelocity = CEntity_GetVelocity( ply ):Length()
-					local flSpeed = CPlayer_GetWalkSpeed( ply )
-					if flVelocity > 10 then
-						local flBreathe = RealTime() * 16
-						vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * flVelocity / flSpeed, 0, 0 )
-						vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * flVelocity / flSpeed, ( -math_cos( flBreathe * .5 ) * 1.2 ) * flVelocity / flSpeed, 0 )
+					if CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
+						vTargetAngle.x = vTargetAngle.x - 11.25
+						vTarget.z = vTarget.z + 2.25
+						local flVelocity = CEntity_GetVelocity( ply ):Length()
+						if flVelocity > 10 then
+							local flBreathe = RealTime() * 18
+							local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * 4
+							vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
+							vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+						end
+					else
+						local flVelocity = CEntity_GetVelocity( ply ):Length()
+						if flVelocity > 10 then
+							local flBreathe = RealTime() * 16
+							local f = flVelocity / CPlayer_GetWalkSpeed( ply )
+							vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
+							vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+						end
 					end
 				end
 			else
@@ -206,12 +294,19 @@ if CLIENT then
 					local pt = BezierY( f, 0, -4.36, 10 )
 					local yw = xx
 					local rl = BezierY( f, 0, -10.82, -5 )
-					vTarget = vTarget + Vector( xx, yy, zz )
-					vTargetAngle = vTargetAngle + Vector( pt, yw, rl )
+					local v = Vector( xx, yy, zz )
+					MyTable.vBezier = v
+					vTarget = vTarget + v * 2
+					local v = Vector( pt, yw, rl )
+					MyTable.vBezierAngle = v
+					vTargetAngle = vTargetAngle + v * ( 1 / BEZIER_MIMICRY_RATIO )
 				elseif !bOnGround then
 					local flBreathe = RealTime() * 30
-					vTarget = vTarget + Vector( math_cos( flBreathe * .5 ) * .0625, 0, -5 + ( math_sin( flBreathe / 3 ) * .0625 ) )
-					vTargetAngle = vTargetAngle + Vector( 10 - ( math_sin( flBreathe / 3 ) * .25 ), math_cos( flBreathe * .5 ) * .25, -5 )
+					MyTable.vBezier = Vector( 0, 0, -5 )
+					MyTable.vBezierAngle = Vector( 10, 0, -5 )
+					local f = ( 1 / BEZIER_MIMICRY_RATIO )
+					vTarget = vTarget + Vector( math_cos( flBreathe * .5 ) * .0625, 0, -5 * f + ( math_sin( flBreathe / 3 ) * .0625 ) )
+					vTargetAngle = vTargetAngle + Vector( 10 * f - ( math_sin( flBreathe / 3 ) * .25 ), math_cos( flBreathe * .5 ) * .25, -5 )
 				elseif RealTime() <= flLandTime then
 					local f = flLandTime - RealTime()
 					local xx = BezierY( f, 0, -4, 0 )
@@ -220,15 +315,20 @@ if CLIENT then
 					local pt = BezierY( f, 0, -4.36, 10 )
 					local yw = xx
 					local rl = BezierY( f, 0, -10.82, -5 )
-					vTarget = vTarget + Vector( xx, yy, zz )
-					vTargetAngle = vTargetAngle + Vector( pt, yw, rl )
-				end
-			end
+					local v = Vector( xx, yy, zz )
+					MyTable.vBezier = v
+					vTarget = vTarget + v * 2
+					local v = Vector( pt, yw, rl )
+					MyTable.vBezierAngle = v
+					vTargetAngle = vTargetAngle + v * ( 1 / BEZIER_MIMICRY_RATIO )
+				else MyTable.vBezier = nil MyTable.vBezierAngle = nil end
+			else MyTable.vBezier = nil MyTable.vBezierAngle = nil end
 		end
 		if MyTable.aLastEyePosition == nil then MyTable.aLastEyePosition = Angle( 0, 0, 0 ) end
+		vTarget, vTargetAngle = vTarget + vPleaseOffsetTheViewModel, vTargetAngle + vPleaseOffsetTheViewModelAngle
 		local flAnimSpeed = 5
-		vFinal = LerpVector( flAnimSpeed * FrameTime(), vFinal, vTarget )
-		vFinalAngle = LerpVector( flAnimSpeed * FrameTime(), vFinalAngle, vTargetAngle )
+		vFinal = LerpVector( 5 * FrameTime(), vFinal, vTarget )
+		vFinalAngle = LerpVector( 5 * FrameTime(), vFinalAngle, vTargetAngle )
 		pos = pos + ang:Forward() * MyTable.flViewModelX + ang:Right() * MyTable.flViewModelY + ang:Up() * MyTable.flViewModelZ
 		ang:RotateAroundAxis( ang:Right(), vFinalAngle.x )
 		ang:RotateAroundAxis( ang:Up(), vFinalAngle.y )
@@ -238,7 +338,7 @@ if CLIENT then
 		pos = pos + vFinal.x * ang:Right()
 		aAim = LerpAngle( 5 * FrameTime(), aAim, ply:EyeAngles() )
 		MyTable.aLastEyePosition = aAim - ply:EyeAngles()
-		MyTable.aLastEyePosition.y = math.AngleDifference( aAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
+		MyTable.aLastEyePosition.y = math_AngleDifference( aAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
 		local flMultiplier
 		if bZoom then
 			flMultiplier = vFinal:Distance( vTarget ) / vTarget:Length()
@@ -263,7 +363,7 @@ sound.Add {
 	name = "HumanSlideLoop",
 	channel = CHAN_STATIC,
 	volume = 1.0,
-	level = 80,
+	level = 70,
 	sound = "physics/flesh/flesh_scrape_rough_loop.wav"
 }
 

@@ -123,6 +123,7 @@ function SetHumanPlayer( ply )
 	ply:SetJumpPower( ( 2 * GetConVarNumber "sv_gravity" * HUMAN_JUMP_HEIGHT ) ^ .5 )
 	ply:SetDuckSpeed( .25 )
 	ply:SetUnDuckSpeed( .25 )
+	ply:SetCrouchedWalkSpeed( 1 )
 	ply:SetViewOffset( Vector( 0, 0, 56 ) )
 	ply:SetViewOffsetDucked( Vector( 0, 0, 24 ) )
 end
