@@ -249,23 +249,25 @@ if CLIENT then
 				end
 			end
 			local bOnGround = CEntity_IsOnGround( ply )
-			if bSliding || CPlayer_InVehicle( ply ) then
+			if CPlayer_InVehicle( ply ) then
 				bOnGroundLast = true
 			elseif bOnGround then
 				bOnGroundLast = true
-				if bSprinting || CPlayer_IsSprinting( ply ) then
+				if !bSliding && bSprinting || CPlayer_IsSprinting( ply ) then
 					vTarget = vTarget + MyTable.vSprintArm
 					vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle
 				else
-					if CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CEntity_GetNW2Int( ply, "DR_ThreatAware" ) != DIRECTOR_THREAT_COMBAT && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
+					if bSliding || CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CurTime() > self:GetNextPrimaryFire() && CurTime() > self:GetNextSecondaryFire() && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
 						vTargetAngle.x = vTargetAngle.x - 11.25
 						vTarget.z = vTarget.z + 2.25
-						local flVelocity = CEntity_GetVelocity( ply ):Length()
-						if flVelocity > 10 then
-							local flBreathe = RealTime() * 18
-							local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * 4
-							vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
-							vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+						if !bSliding then
+							local flVelocity = CEntity_GetVelocity( ply ):Length()
+							if flVelocity > 10 then
+								local flBreathe = RealTime() * 18
+								local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * 4
+								vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
+								vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+							end
 						end
 					else
 						local flVelocity = CEntity_GetVelocity( ply ):Length()
