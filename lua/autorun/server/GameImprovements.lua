@@ -472,6 +472,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			ply.CTRL_flCoverMoveTime = CurTime() + ply:GetUnDuckSpeed()
 			if bZoom then ply.CTRL_bPeekZoom = true end
 		end
+		if !bZoom then ply.CTRL_bPeekZoom = nil end
 		if ply.CTRL_vCover && ply:GetPos():DistToSqr( ply.CTRL_vCover ) > 9216/*96*/ then
 			ply.CTRL_flCoverMoveTime = nil
 			ply.CTRL_bMovingLeft = nil
