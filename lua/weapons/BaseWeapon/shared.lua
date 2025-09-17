@@ -86,8 +86,6 @@ if CLIENT then
 	local vViewFinalAngle = Vector( 0, 0, 0 )
 	local vViewTarget = Vector( 0, 0, 0 )
 	local vViewTargetAngle = Vector( 0, 0, 0 )
-	local vPleaseOffsetTheViewModel = Vector( 0, 0, 0 )
-	local vPleaseOffsetTheViewModelAngle = Vector( 0, 0, 0 )
 	local aAim, aViewAim = Angle( 0, 0, 0 ), Angle( 0, 0, 0 )
 	local flLandTime, flJumpTime = 0, 0
 	SWEP.ViewModelFOV = 62
@@ -126,7 +124,6 @@ if CLIENT then
 	local CPlayer_Crouching = CPlayer.Crouching
 	local CEntity_GetNW2Int = CEntity.GetNW2Int
 	function SWEP:CalcView( ply, pos, ang, fov )
-		vPleaseOffsetTheViewModel, vPleaseOffsetTheViewModelAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
 		local MyTable = CEntity_GetTable( self )
 		vViewTarget, vViewTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
 		if CEntity_IsOnGround( ply ) && ( bSprinting || CPlayer_IsSprinting( ply ) ) then
@@ -156,10 +153,8 @@ if CLIENT then
 		if bLeft && bRight then
 		elseif bLeft then
 			vViewTargetAngle.z = vViewTargetAngle.z + MOVE_LEFT_ROLL
-			vPleaseOffsetTheViewModelAngle.z = vPleaseOffsetTheViewModelAngle.z + MOVE_LEFT_ROLL
 		elseif bRight then
 			vViewTargetAngle.z = vViewTargetAngle.z + MOVE_RIGHT_ROLL
-			vPleaseOffsetTheViewModelAngle.z = vPleaseOffsetTheViewModelAngle.z + MOVE_RIGHT_ROLL
 		end
 		local f = MyTable.vBezier
 		if f then vViewTarget = vViewTarget + f * BEZIER_MIMICRY_RATIO end
@@ -327,7 +322,7 @@ if CLIENT then
 			else MyTable.vBezier = nil MyTable.vBezierAngle = nil end
 		end
 		if MyTable.aLastEyePosition == nil then MyTable.aLastEyePosition = Angle( 0, 0, 0 ) end
-		vTarget, vTargetAngle = vTarget + vPleaseOffsetTheViewModel, vTargetAngle + vPleaseOffsetTheViewModelAngle
+		vTarget, vTargetAngle = vTarget, vTargetAngle
 		local flAnimSpeed = 5
 		vFinal = LerpVector( 5 * FrameTime(), vFinal, vTarget )
 		vFinalAngle = LerpVector( 5 * FrameTime(), vFinalAngle, vTargetAngle )
