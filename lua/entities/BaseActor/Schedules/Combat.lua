@@ -12,7 +12,9 @@ end
 function ENT:DLG_Suppressed() end
 
 //See The Code, I have No Easy Way of Explaining This One
-ENT.flSuppressionTraceFraction = .66
+ENT.flSuppressionTraceFraction = .8
+//Basically The Same But Used for Stack Ups
+ENT.flStackUpTraceFraction = .33
 
 //Try to Guess from Where This Enemy Might Shoot Us from
 function ENT:CalcEnemyShootPositions( enemy )
@@ -371,13 +373,13 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 		dir:Normalize()
 		if !util.TraceLine( {
 			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 2,
+			endpos = v + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil return end
 		if !util.TraceLine( {
 			start = o,
-			endpos = o + dir * self.vHullMaxs.x * 2,
+			endpos = o + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then sched.bDuck = nil
@@ -385,8 +387,8 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 		self:Stand( ( sched.bDuck == nil || sched.bDuck ) && 0 || 1 )
 		self.vDesAim = dir
 		if self:CanExpose() then
-			if self:MaybeCoverMove( tEnemies ) then return end
 			if CurTime() > ( sched.flSuppressed || 0 ) then
+				if self:MaybeCoverMove( tEnemies ) then return end
 				local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
 				if IsValid( enemy ) then
 					local sched = self:SetSchedule "RangeAttack"
@@ -404,18 +406,36 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 				end
 			end
 		else sched.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .5 ), 0, 4 ) end
-	else self:SetSchedule "TakeCover" return end
+	else
+		local vec = self:GetPos()
+		local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
+		if IsValid( enemy ) then
+			local sched = self:SetSchedule "RangeAttack"
+			sched.vFrom = v
+			sched.Enemy = enemy
+		else
+			local vFrom, vTo, enemy = self:FindSuppressEnemy( vec, tEnemies, sched.bDuck )
+			if IsValid( enemy ) then
+				local sched = self:SetSchedule "RangeAttack"
+				sched.vFrom = vFrom
+				sched.vTo = vTo
+				sched.Enemy = enemy
+				sched.bSuppressing = true
+			else self:SetSchedule "TakeCover" end
+		end
+		return
+	end
 end )
 
 function ENT:DLG_FiringAtAnExposedTarget( enemy ) end
 function ENT:DLG_Suppressing( enemy ) end
 
 Actor_RegisterSchedule( "RangeAttack", function( self, sched )
-	self.pActualCover = self.pCover
 	self.vActualCover = self.vCover
+	self.bSuppressing = true
 	local enemy, trueenemy = self:SetupEnemy( sched.Enemy )
 	if !IsValid( enemy ) || !sched.vFrom then return {} end
-	if !self:CanExpose() then self:DLG_Suppressed() return {} end
+	if !self:CanExpose() then self:SetSchedule "TakeCover" self:DLG_Suppressed() return end
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
 	local c = self:GetWeaponClipPrimary()
@@ -455,7 +475,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				filter = { self, enemy, trueenemy }
 			}
 		end
-		if trStand.Hit && ( !trDuck || trDuck.Hit ) then return {} end
+		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule "TakeCover" return end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
@@ -470,7 +490,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-			if CurTime() > sched.Time then return { true } end
+			if CurTime() > sched.Time then self:SetSchedule "TakeCover" return end
 			if !sched.bWasInShootPosition then self:DLG_Suppressing( enemy ) end
 			sched.bWasInShootPosition = true
 			if !trDuck || trDuck && trDuck.Hit then
@@ -522,22 +542,32 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				end
 			end
 			if IsValid( pEnemy ) then
-				if self:CanExpose() then
-					if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-					local flDist = self.flWalkSpeed * 4
+				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+				local flDist = self.flWalkSpeed * 4
+				flDist = flDist * flDist
+				if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
+					local flDist = self.flProwlSpeed * 4
 					flDist = flDist * flDist
-					if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
-						local flDist = self.flProwlSpeed * 4
-						flDist = flDist * flDist
-						if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
-							self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-						else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-					else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-				else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+					if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
+						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+					else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+				else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 			else
 				local goal = sched.Path:GetCurrentGoal()
-				if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
-				self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+				if goal then
+					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
+					//self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+				end
+				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+				local flDist = self.flWalkSpeed * 4
+				flDist = flDist * flDist
+				if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
+					local flDist = self.flProwlSpeed * 4
+					flDist = flDist * flDist
+					if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
+						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+					else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+				else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 			end
 		end
 	else
@@ -558,7 +588,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				filter = { self, enemy, trueenemy }
 			}
 		end
-		if trStand.Hit && ( !trDuck || trDuck.Hit ) then return {} end
+		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule "TakeCover" return end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
@@ -574,7 +604,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		if IsValid( w ) then self:SetActiveWeapon( w ) end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
 			if !sched.flTime then sched.flTime = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-			if CurTime() > sched.flTime then return { true } end
+			if CurTime() > sched.flTime then self:SetSchedule "TakeCover" return end
 			if !sched.bWasInShootPosition then self:DLG_FiringAtAnExposedTarget( enemy ) end
 			sched.bWasInShootPosition = true
 			if !trDuck || trDuck && trDuck.Hit then
@@ -601,18 +631,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 					local b = true
 					if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-						local flMultiplier = 1
-						if tAllies then
-							for ent in pairs( tAllies ) do
-								if ent.Schedule && ent.Schedule.m_sName == "TakeCover" && !util.TraceLine( {
-									start = self:GetShootPos(),
-									endpos = ent:GetPos() + ent:OBBCenter(),
-									mask = MASK_SHOT_HULL,
-									filter = { self, ent }
-								} ).Hit then flMultiplier = flMultiplier + 2 end
-							end
-						end
-						local flThreshold = ent:Health() * flMultiplier * .1
+						local flThreshold = ent:Health() * .1
 						for other, am in pairs( ent.GAME_tSuppressionAmount ) do
 							if other != self && am > flThreshold then b = nil break end
 						end
@@ -626,25 +645,32 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				end
 			end
 			if IsValid( pEnemy ) then
-				if self:CanExpose() then
-					if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-					local flDist = self.flWalkSpeed * 4
+				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+				local flDist = self.flWalkSpeed * 4
+				flDist = flDist * flDist
+				if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
+					local flDist = self.flProwlSpeed * 4
 					flDist = flDist * flDist
-					if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bDuck then
-						local flDist = self.flProwlSpeed * 4
-						flDist = flDist * flDist
-						if self:GetPos():DistToSqr( self.vCover ) > flDist then
-							self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-						else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-					else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-				else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+					if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
+						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+					else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+				else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 			else
 				local goal = sched.Path:GetCurrentGoal()
 				if goal then
 					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-					self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+					//self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
 				end
-				self:MoveAlongPathToCover( sched.Path )
+				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+				local flDist = self.flWalkSpeed * 4
+				flDist = flDist * flDist
+				if self:GetPos():DistToSqr( sched.vFrom ) > flDist || sched.bDuck then
+					local flDist = self.flProwlSpeed * 4
+					flDist = flDist * flDist
+					if self:GetPos():DistToSqr( sched.vFrom ) > flDist then
+						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+					else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
+				else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
 			end
 		end
 	end

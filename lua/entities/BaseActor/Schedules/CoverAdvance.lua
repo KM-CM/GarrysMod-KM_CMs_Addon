@@ -5,23 +5,26 @@ local math_abs = math.abs
 
 local navmesh_GetNearestNavArea = navmesh.GetNearestNavArea
 
-function ENT:FindAdvanceCover( vCover, tEnemies )
+function ENT:FindAdvanceCover( vCover, tEnemies, flCombatStateOverride, flBattleLine )
 	local Path = Path "Follow"
 	local enemy = self.Enemy
 	if !IsValid( enemy ) then return end
 	self:ComputeFlankPath( Path, enemy )
-	local _, _, t = self:FindSuppressEnemy( vCover, tEnemies, self.bCoverDuck )
-	//If We can Hit Someone from Here - Dont Bother
-	local flAdvance = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
-	local flTarget = IsValid( t ) && flAdvance || self:FindPathBattleLine( Path, tEnemies )
+	local flAdvance
+	if flCombatStateOverride then
+		flAdvance = self.flCoverMoveDistance * flCombatStateOverride
+	else
+		//If We can Hit Someone from Here - Dont Bother
+		flAdvance = self.flCoverMoveDistance * math_min( self.flCombatState, self.flCombatStateSmall )
+	end
+	local flTarget = IsValid( self:FindSuppressEnemy( vCover, tEnemies, self.bCoverDuck ) ) && flAdvance || ( flBattleLine || self:FindPathBattleLine( Path, tEnemies ) )
 	if flTarget == nil then return end
 	local flAdvanceSqr = flAdvance * flAdvance
 	local vPos = Path:GetPositionOnPath( flTarget )
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return end
 	local vEnemy = enemy:GetPos()
-	local o, v = Vector( 0, 0, self.vHullMaxs.z )
-	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = Vector( 0, 0, self.vHullDuckMaxs.z ) end
+	local o, v = Vector( 0, 0, self.vHullMaxs.z ), self:GatherCoverBounds()
 	local tAllies, f = self:GetAlliesByClass(), self:BoundingRadius()
 	f = f * f
 	if v then
@@ -32,7 +35,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 2,
+				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
@@ -44,7 +47,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 				end
 				return vec, !util.TraceLine( {
 					start = vec + o,
-					endpos = vec + o + dir * self.vHullMaxs.x * 2,
+					endpos = vec + o + dir * self.vHullMaxs.x * 4,
 					mask = MASK_SHOT_HULL,
 					filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 				} ).Hit
@@ -58,7 +61,7 @@ function ENT:FindAdvanceCover( vCover, tEnemies )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 2,
+				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then

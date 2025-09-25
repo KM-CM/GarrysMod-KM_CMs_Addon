@@ -7,7 +7,7 @@ ENT.PrintName = "#env_projectedtexture"
 function ENT:UpdateTransmitState() return TRANSMIT_ALWAYS end
 
 function ENT:SetupDataTables()
-	//Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT Stored as a 0-255 Integer! In `lightcolor`, This is Converted from 0-255 to 0-1!
+	//Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT Stored as a 0-255 Integer! In `lightcolor`, This is Remapped from 0-255 to 0-1!
 	self:NetworkVar( "Float", 0, "Brightness", { KeyName = "raw.brightness" } )
 	//Sprite Size if `SpriteDisabled` isnt On
 	self:NetworkVar( "Float", 1, "SpriteSize", { KeyName = "raw.spritesize" } )
@@ -18,24 +18,12 @@ function ENT:SetupDataTables()
 	//Doesnt Spawn a Sprite
 	self:NetworkVar( "Bool", 1, "SpriteDisabled", { KeyName = "raw.spritedisabled" } )
 	/*
-	0: Use Splinter Cell: Blacklist (Modified Unreal Engine 2) Inspired Shadows -
-	   Every 0.1 Second, a Trace is Traced from Our Position
-	   to Our Forward with The Length Being Our Distance, Distance to The Hit Position is Calculated,
-	   and The Far Z (Distance) Becomes That Value.
-
-	   The Trace Itself Filters All Related to The Projected Texture Entities,
-	   and Anything Non-Environment (NPCs, Players and NextBots - Props are Hit),
-	   and has a Mask of `MASK_VISIBLE_AND_NPCS` (Filter is Prioritized).
-
-	   These Shadows are Extremely Light, Relatively Realistic,
-	   and Do Not Pierce Walls as Easily as when The Shadows are Completely Disabled,
-	   But They can be a LITTLE Bit Weird Sometimes.
-
-	1: Use EXTREMELY EXPENSIVE Shadows Drawn by Vulcan ( Doesnt Render AT ALL on Weak Platforms! ).
+	0: Use Splinter Cell: Blacklist ( Modified Unreal Engine 2 ) Inspired Shadows ( Recommended )
+	1: Use EXTREMELY EXPENSIVE Shadows Drawn by Vulcan ( Doesnt Render AT ALL on Weak Platforms! )
 	*/
 	self:NetworkVar( "Bool", 2, "Shadows", { KeyName = "raw.shadows" } )
 	//The Texture of The Light
-	self:NetworkVar( "String", 0 ,"Texture", {KeyName = "raw.texture" } )
+	self:NetworkVar( "String", 0 ,"Texture", { KeyName = "raw.texture" } )
 	//The Light Color
 	self:NetworkVar( "Vector", 0 ,"LightColor", { KeyName = "raw.lightcolor" } )
 	//Minimum Distance. Clamped if Less Than 10.
@@ -60,7 +48,7 @@ if CLIENT then
 	end
 
 	function ENT:Update()
-		if #self:GetTexture() <= 0 then self:SetTexture( "effects/flashlight/soft" ) end
+		if #self:GetTexture() <= 0 then self:SetTexture "effects/flashlight/soft" end
 		local pt = self.ProjectedTexture
 		if !pt then self.ProjectedTexture = ProjectedTexture() pt = self.ProjectedTexture end
 		pt:SetPos( self:GetPos() )
@@ -90,27 +78,27 @@ else
 	function ENT:Initialize() self:Update() end
 	function ENT:Think()
 		self:Update()
-		self:NextThink( CurTime() + 0.01 )
+		self:NextThink( CurTime() + .01 )
 		return true
 	end
-	//ENT.flShadowDist = nil
+	local util_TraceLine = util.TraceLine
+	local math = math
+	local math_cos = math.cos
+	local math_acos = math.acos
+	local math_Clamp = math.Clamp
 	function ENT:Update()
 		if !self:GetShadows() || self:GetComputeTrueDistance() then
 			local t = { [ self ] = true, [ self:GetOwner() ] = true }
-			self.flShadowDist = util.TraceLine( {
+			local tr = util_TraceLine {
 				start = self:GetPos(),
 				endpos = self:GetPos() + self:GetForward() * self:GetDistance(),
-				filter = function( ent )
-					if t[ ent ] || !ent.OBBMins || !ent.OBBMaxs || !ent.GetModelScale || ( ent:GetPos() + ent:OBBCenter() ):DistToSqr( self:GetPos() ) <= 4096/*64*/ then return false end
-					local vMins, vMaxs = ent:OBBMins(), ent:OBBMaxs()
-					if !vMins || !vMaxs then return false end
-					local flModelScale = ent:GetModelScale()
-					if !flModelScale then return false end
-					return ( vMins:Length() + vMaxs:Length() ) * ent:GetModelScale() > 128
-				end,
+				filter = function( ent ) return t[ ent ] == nil end,
 				mask = MASK_VISIBLE_AND_NPCS
-			} ).HitPos:Distance( self:GetPos() ) + 50
-			self:SetTrueDistance( self.flShadowDist )
+			}
+			local f = tr.HitNormal:Dot( -self:GetForward() )
+			f = ( f != 0 && ( tr.HitPos:Distance( self:GetPos() ) / math_cos( math_acos( math_Clamp( f, -1, 1 ) ) ) ) || tr.HitPos:Distance( self:GetPos() ) ) + 128
+			self.flShadowDist = f
+			self:SetTrueDistance( f )
 		end
 		if self:GetSpriteDisabled() then if IsValid( self.Sprite ) then self.Sprite:Remove() end else
 			if !IsValid( self.Sprite ) then

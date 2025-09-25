@@ -33,8 +33,8 @@ function ENT:SearchNodes( vPos, flSpacing )
 	if !vPos then vPos = self:GetPos() end
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return {} end
-	if !flSpacing then flSpacing = self:BoundingRadius() end
-	local tQueue, tVisited = { { area, 0 } }, {}
+	if !flSpacing then flSpacing = self:BoundingRadius() * .5 end
+	local tQueue, tVisited = { { area, 0, self:GetPos() } }, {}
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
 	local flOff = math.max( math.abs( self:OBBMaxs().x ), math.abs( self:OBBMins().x ) ) * 1.5
@@ -56,7 +56,8 @@ function ENT:SearchNodes( vPos, flSpacing )
 			if v then return v[ 1 ] else t = nil end
 		end
 		if !table.IsEmpty( tQueue ) then
-			local area, dist = unpack( table.remove( tQueue ) )
+			local area, dist, vPrev = unpack( table.remove( tQueue ) )
+			local vCenter = area:GetCenter()
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 				local new = t.area
 				local id = new:GetID()
@@ -65,13 +66,13 @@ function ENT:SearchNodes( vPos, flSpacing )
 				if bDisAllowWater && area:IsUnderwater() then continue end
 				local d = area:ComputeAdjacentConnectionHeightChange( new )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
-				table.insert( tQueue, { new, t.dist + dist } )
+				table.insert( tQueue, { new, t.dist + dist, vCenter } )
 			end
 			local v = area:GetCorner( 0 ) //NORTH_WEST
 			local flCornerX, flCornerY = v.x, v.y
 			local flSizeX, flSizeY = area:GetSizeX(), area:GetSizeY()
 			t = area:GetCenter()
-			t = { { t, t:DistToSqr( vPos ) } }
+			t = { { t, t:DistToSqr( vPrev ) } }
 			for x = flCornerX, flCornerX + flSizeX, flSpacing do
 				for y = flCornerY, flCornerY + flSizeY, flSpacing do
 					local v = Vector( x, y )
@@ -82,7 +83,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 						mask = MASK_SOLID,
 						filter = tFilter
 					} ).Hit then continue end
-					table.insert( t, { v, v:DistToSqr( vPos ) } )
+					table.insert( t, { v, v:DistToSqr( vPrev ) } )
 				end
 			end
 			table.SortByMember( t, 2 )

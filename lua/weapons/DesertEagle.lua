@@ -12,8 +12,8 @@ SWEP.Primary.ClipSize = 7
 SWEP.Primary.DefaultClip = 7
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Pistol"
-SWEP.Primary_flSpreadX = .017
-SWEP.Primary_flSpreadY = .017
+SWEP.Primary_flSpreadX = .0094
+SWEP.Primary_flSpreadY = .0094
 SWEP.Primary_flDamage = 80
 SWEP.Primary_flDelay = .06
 SWEP.Secondary.ClipSize = -1
@@ -22,7 +22,12 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
-SWEP.vViewModelAim = Vector( -6.36, -12, 2.18 )
+
+SWEP.flViewModelX = -8
+SWEP.flViewModelY = -2
+SWEP.flViewModelZ = 1
+
+SWEP.vViewModelAim = Vector( -6.36 - SWEP.flViewModelY, -12 - SWEP.flViewModelX, 2.18 - SWEP.flViewModelZ )
 
 SWEP.__VIEWMODEL_FULLY_MODELED__ = true
 

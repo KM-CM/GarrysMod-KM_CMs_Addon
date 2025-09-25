@@ -32,8 +32,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 	local vToEnemy = vEnemy - vCover
 	vToEnemy.z = 0
 	vToEnemy:Normalize()
-	local o, v = Vector( 0, 0, self.vHullMaxs.z )
-	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = Vector( 0, 0, self.vHullDuckMaxs.z ) end
+	local o, v = Vector( 0, 0, self.vHullMaxs.z ), self:GatherCoverBounds()
 	local tAllies, f = self:GetAlliesByClass(), self:BoundingRadius()
 	f = f * f
 	if v then
@@ -47,7 +46,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 			if v:GetNormalized():Dot( vToEnemy ) > 0 then continue end
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 2,
+				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
@@ -59,7 +58,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 				end
 				return vec, !util.TraceLine( {
 					start = vec + o,
-					endpos = vec + o + dir * self.vHullMaxs.x * 2,
+					endpos = vec + o + dir * self.vHullMaxs.x * 4,
 					mask = MASK_SHOT_HULL,
 					filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 				} ).Hit
@@ -73,7 +72,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 2,
+				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then

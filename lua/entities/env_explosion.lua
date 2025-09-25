@@ -95,16 +95,16 @@ function ENT:Explode()
 		}
 		local p = ents.Create "prop_physics"
 		p:SetPos( tr.HitPos )
-		p:SetCollisionGroup( COLLISION_GROUP_WORLD )
 		p:SetModel "models/combine_helicopter/helicopter_bomb01.mdl"
 		p:SetNoDraw( true )
 		p:Spawn()
+		p.GAME_bFireBall = true
 		local f = ents.Create "env_fire_trail"
 		f:SetPos( p:GetPos() )
 		f:SetParent( p )
 		f:Spawn()
 		p:GetPhysicsObject():AddVelocity( VectorRand() * math.Rand( 0, flSpeed ) )
-		AddThinkToEntity( p, function( self ) if math.random( GetFlameStopChance( self ) * FrameTime() ) == 1 || self:WaterLevel() != 0 then self:Remove() return true end end )
+		AddThinkToEntity( p, function( self ) self:Ignite( 999999 ) if math.random( GetFlameStopChance( self ) * FrameTime() ) == 1 || self:WaterLevel() != 0 then self:Remove() return true end end )
 	end
 	for i = 1, math.max( 5, flRange * .1 ) do //Scorches
 		local dir = VectorRand()

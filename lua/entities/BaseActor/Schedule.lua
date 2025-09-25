@@ -25,6 +25,9 @@ end
 ENT.tPreScheduleResetVariables = {}
 
 function ENT:SelectScheduleInternal( ... )
+	self.Schedule = nil
+	local p = self.GAME_pBehaviour
+	if p then if p:SelectSchedule( self, ... ) then return end end
 	local veh = self.GAME_pVehicle
 	if IsValid( veh ) then self:SetSchedule "Vehicle_Base"
 	else self:SelectSchedule( ... ) end

@@ -172,9 +172,11 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 			cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 			cmd:SetButtons( 0 )
+			return true
 		elseif CurTime() <= ( ply.MDL_flDontOnlyMoveTime || 0 ) then
 			cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
+			return true
 		end
 	end
 }

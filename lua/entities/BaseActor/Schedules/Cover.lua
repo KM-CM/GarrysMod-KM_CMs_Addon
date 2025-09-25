@@ -1,5 +1,10 @@
 ENT.tPreScheduleResetVariables.vActualCover = false
 
+function ENT:GatherCoverBounds()
+	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then return Vector( 0, 0, self.vHullDuckMaxs.z * .65625 ) end
+	return Vector( 0, 0, self.vHullMaxs.z )
+end
+
 include "CoverMove.lua"
 
 Actor_RegisterSchedule( "TakeCover", function( self, sched )
@@ -17,15 +22,13 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil return end
 			end
 		end
-		local v = Vector( 0, 0, self.vHullMaxs.z )
-		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = Vector( 0, 0, self.vHullDuckMaxs.z ) end
-		v = vec + v
+		local v = vec + self:GatherCoverBounds()
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
 		if !util.TraceLine( {
 			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 2,
+			endpos = v + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil return end
@@ -95,8 +98,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	else
 		self.vCover = nil
 		local vEnemy = enemy:GetPos()
-		local v = Vector( 0, 0, self.vHullMaxs.z )
-		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = Vector( 0, 0, self.vHullDuckMaxs.z ) end
+		local v = self:GatherCoverBounds()
 		local tAllies = self:GetAlliesByClass()
 		local f = self:BoundingRadius()
 		f = f * f
@@ -107,7 +109,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 2,
+				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then

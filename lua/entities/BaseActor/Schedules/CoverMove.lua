@@ -1,3 +1,5 @@
+local COVERED_MOVE_CHANCE, COVERED_NOT_MOVE_CHANCE = 3, 6
+
 function ENT:MaybeCoverMove( ... )
 	local tAllies = self:GetAlliesByClass()
 	if tAllies then
@@ -8,17 +10,38 @@ function ENT:MaybeCoverMove( ... )
 				if ent.bSuppressing then b = true break end
 			end
 		end
-		if math.random( i && ( b && 2 || 3 ) || 3 ) == 1 then return self:DoCoverMove( ... ) end
+		if math.random( i && ( b && COVERED_MOVE_CHANCE || COVERED_NOT_MOVE_CHANCE ) || COVERED_NOT_MOVE_CHANCE ) == 1 then return self:DoCoverMove( ... ) end
 	else
-		if math.random( 3 ) == 1 then return self:DoCoverMove( ... ) end
+		if math.random( COVERED_NOT_MOVE_CHANCE ) == 1 then return self:DoCoverMove( ... ) end
 	end
 end
 
+local math = math
 local math_min = math.min
+local math_abs = math.abs
 function ENT:DoCoverMove( tEnemies )
+	local enemy = self.Enemy
+	if !IsValid( enemy ) then return end
 	local a = self.flCombatState
 	local n = math_min( a, self.flCombatStateSmall )
 	if n > 0 then
+		local p = Path "Follow"
+		//self:ComputeFlankPath( p, enemy )
+		self:ComputePath( p, enemy:GetPos() )
+		local i = self:FindPathStackUpLine( p, tEnemies )
+		if i && i > 512 then
+			p:MoveCursorTo( i )
+			local g = p:GetCurrentGoal()
+			if g then
+				local b = self:CreateBehaviour "CombatFormation"
+				b.Vector = p:GetPositionOnPath( i )
+				b.Direction = g.forward
+				b:AddParticipant( self )
+				b:GatherParticipants()
+				b:Initialize()
+				return
+			end
+		end
 		local vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
 		if vec then
 			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
@@ -81,15 +104,13 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
 			end
 		end
-		local v = Vector( 0, 0, self.vHullMaxs.z )
-		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = Vector( 0, 0, self.vHullDuckMaxs.z ) end
-		v = vec + v
+		local v = vec + self:GatherCoverBounds()
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
 		if !util.TraceLine( {
 			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 2,
+			endpos = v + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil self:SetSchedule "TakeCover" return end
@@ -99,224 +120,6 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			elseif sched.bAdvancing then self:DLG_Advancing()
 			elseif sched.bRetreating then self:DLG_Retreating() end
 			sched.bActed = true
-			local bSearch = true
-			//If We can Shoot Them, Almost Always Go for It, UnLess Retreating
-			if math.Rand( 0, 1.5 ) <= ( sched.bRetreating && 1 || .75 ) then
-				local vec, enemy = self:FindExposedEnemy( self.vCover, tEnemies, self.bCoverDuck )
-				if IsValid( enemy ) && math.Rand( 0, 1.5 ) <= ( sched.bRetreating && 1 || .75 ) then
-					sched.vFrom = vec
-					sched.pToShootEnemy = enemy
-					sched.bToShoot = true
-					bSearch = nil
-				end
-			end
-			//OtherWise, Consider Doing It
-			if bSearch && math.random( sched.bRetreating && 3 || 2 ) == 1 then
-				local vFrom, vTo, enemy = self:FindSuppressEnemy( self.vCover, tEnemies, self.bCoverDuck )
-				if IsValid( enemy ) then
-					sched.vFrom = vFrom
-					sched.vTo = vTo
-					sched.pToShootEnemy = enemy
-					sched.bSuppressing = true
-					sched.bToShoot = true
-				end
-			end
-		end
-		if sched.bToShoot then
-			local enemy = sched.pToShootEnemy
-			if !IsValid( enemy ) then sched.bToShoot = nil return end
-			local enemy, trueenemy = self:SetupEnemy( enemy )
-			if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-			if sched.bSuppressing then
-				local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
-				if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
-				local v = sched.vTo
-				local trStand, trDuck = util.TraceLine {
-					start = sched.vFrom + vStand,
-					endpos = v,
-					mask = MASK_SHOT_HULL,
-					filter = { self, enemy, trueenemy }
-				}
-				if vDuck then
-					trDuck = util.TraceLine {
-						start = sched.vFrom + vDuck,
-						endpos = v,
-						mask = MASK_SHOT_HULL,
-						filter = { self, enemy, trueenemy }
-					}
-				end
-				if trStand.Hit && ( !trDuck || trDuck.Hit ) then sched.bToShoot = nil return end
-				if !sched.Path then sched.Path = Path "Follow" end
-				self:ComputePath( sched.Path, sched.vFrom )
-				local flHealth = enemy:Health()
-				local ws, w = 0 //Weapon Strength
-				for wep in pairs( self.tWeapons ) do
-					local t = wep.Primary_flDelay || 0
-					if t <= 0 then continue end
-					local d = wep.Primary_flDamage || 0
-					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
-					if nws < ws then w, ws = wep, nws end
-				end
-				if IsValid( w ) then self:SetActiveWeapon( w ) end
-				if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
-					if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-					if CurTime() > sched.Time then return { true } end
-					if !sched.bWasInShootPosition then self:DLG_Suppressing( enemy ) end
-					sched.bWasInShootPosition = true
-					if !trDuck || trDuck && trDuck.Hit then
-						self:Stand( 1 )
-					elseif trDuck then
-						self:Stand( sched.bDuck && 0 || 1 )
-					end
-					self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
-					if self:CanAttackHelper( v ) then self:RangeAttack() end
-				else
-					local tNearestEnemies = {}
-					for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
-					table.SortByMember( tNearestEnemies, 2, true )
-					local tAllies, pEnemy = self:GetAlliesByClass()
-					for _, d in ipairs( tNearestEnemies ) do
-						local ent = d[ 1 ]
-						local v = ent:GetPos() + ent:OBBCenter()
-						local tr = util.TraceLine {
-							start = self:GetShootPos(),
-							endpos = v,
-							mask = MASK_SHOT_HULL,
-							filter = { self, ent }
-						}
-						if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
-							local b = true
-							if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-								local flMultiplier = 1
-								if tAllies then
-									for ent in pairs( tAllies ) do
-										if ent.Schedule && ent.Schedule.m_sName == "TakeCover" && !util.TraceLine( {
-											start = self:GetShootPos(),
-											endpos = ent:GetPos() + ent:OBBCenter(),
-											mask = MASK_SHOT_HULL,
-											filter = { self, ent }
-										} ).Hit then flMultiplier = flMultiplier + 2 end
-									end
-								end
-								local flThreshold = ent:Health() * flMultiplier * .1
-								for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-									if other != self && am > flThreshold then b = nil break end
-								end
-							end
-							if b then
-								self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
-								pEnemy = ent
-								if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then self:RangeAttack() end
-								break
-							end
-						end
-					end
-					if IsValid( pEnemy ) then
-						if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-						self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 )
-					else
-						local goal = sched.Path:GetCurrentGoal()
-						if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
-						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-					end
-				end
-			else
-				local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
-				if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
-				local v = enemy:GetPos() + enemy:OBBCenter()
-				local trStand, trDuck = util.TraceLine {
-					start = sched.vFrom + vStand,
-					endpos = v,
-					mask = MASK_SHOT_HULL,
-					filter = { self, enemy, trueenemy }
-				}
-				if vDuck then
-					trDuck = util.TraceLine {
-						start = sched.vFrom + vDuck,
-						endpos = v,
-						mask = MASK_SHOT_HULL,
-						filter = { self, enemy, trueenemy }
-					}
-				end
-				if trStand.Hit && ( !trDuck || trDuck.Hit ) then sched.bToShoot = nil return end
-				if !sched.Path then sched.Path = Path "Follow" end
-				self:ComputePath( sched.Path, sched.vFrom )
-				local flHealth = enemy:Health()
-				local ws, w = 0 //Weapon Strength
-				for wep in pairs( self.tWeapons ) do
-					local t = wep.Primary_flDelay || 0
-					if t <= 0 then continue end
-					local d = wep.Primary_flDamage || 0
-					if d <= 0 then continue end
-					local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
-					if nws < ws then w, ws = wep, nws end
-				end
-				if IsValid( w ) then self:SetActiveWeapon( w ) end
-				if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
-					if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-					if CurTime() > sched.Time then return { true } end
-					if !sched.bWasInShootPosition then self:DLG_FiringAtAnExposedTarget( enemy ) end
-					sched.bWasInShootPosition = true
-					if !trDuck || trDuck && trDuck.Hit then
-						self:Stand( 1 )
-					elseif trDuck then
-						self:Stand( sched.bDuck && 0 || 1 )
-					end
-					self.vDesAim = ( enemy:GetPos() + enemy:OBBCenter() - self:GetShootPos() ):GetNormalized()
-					if self:CanAttackHelper( enemy:GetPos() + enemy:OBBCenter() ) then self:RangeAttack() end
-				else
-					local tNearestEnemies = {}
-					for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
-					table.SortByMember( tNearestEnemies, 2, true )
-					local tAllies, pEnemy = self:GetAlliesByClass()
-					for _, d in ipairs( tNearestEnemies ) do
-						local ent = d[ 1 ]
-						local v = ent:GetPos() + ent:OBBCenter()
-						local tr = util.TraceLine {
-							start = self:GetShootPos(),
-							endpos = v,
-							mask = MASK_SHOT_HULL,
-							filter = { self, ent }
-						}
-						if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
-							local b = true
-							if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-								local flMultiplier = 1
-								if tAllies then
-									for ent in pairs( tAllies ) do
-										if ent.Schedule && ent.Schedule.m_sName == "TakeCover" && !util.TraceLine( {
-											start = self:GetShootPos(),
-											endpos = ent:GetPos() + ent:OBBCenter(),
-											mask = MASK_SHOT_HULL,
-											filter = { self, ent }
-										} ).Hit then flMultiplier = flMultiplier + 2 end
-									end
-								end
-								local flThreshold = ent:Health() * flMultiplier * .1
-								for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-									if other != self && am > flThreshold then b = nil break end
-								end
-							end
-							if b then
-								self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
-								pEnemy = ent
-								if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then self:RangeAttack() end
-								break
-							end
-						end
-					end
-					if IsValid( pEnemy ) then
-						if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
-						self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 )
-					else
-						local goal = sched.Path:GetCurrentGoal()
-						if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
-						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-					end
-				end
-			end
-			return
 		end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )

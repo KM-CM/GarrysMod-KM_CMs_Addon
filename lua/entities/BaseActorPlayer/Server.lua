@@ -40,9 +40,7 @@ ENT.flTopSpeed = HUMAN_RUN_SPEED
 ENT.flProwlSpeed = HUMAN_PROWL_SPEED
 ENT.flWalkSpeed = HUMAN_WALK_SPEED
 
-ENT.iMotionActivity = -1
-
-function ENT:BodyUpdate() if self:GetSequence() == self.CalcSeqOverride then self:BodyMoveXY() else self:FrameAdvance() end end
+function ENT:BodyUpdate() self:BodyMoveXY() end
 
 DEFINE_BASECLASS "BaseActor"
 function ENT:Initialize()
@@ -57,15 +55,10 @@ function ENT:Behaviour()
 	local act, seq = hook.Run( "CalcMainActivity", self, self.loco:GetVelocity() )
 	if !self.CalcIdeal then self.CalcIdeal = -1 end
 	local act = self:TranslateActivity( self.CalcIdeal )
-	//if self:GetActivity() != act then self:StartActivity( act ) end
 	if seq == nil || seq == -1 then self.CalcSeqOverride = self:SelectWeightedSequence( act ) end
-	if self:GetSequence() != self.CalcSeqOverride then
-		self:ResetSequence( self.CalcSeqOverride )
-		self:SetSequence( self.CalcSeqOverride )
-	end
-	local flMax, vel = self:GetSequenceGroundSpeed( self.CalcSeqOverride ), self.loco:GetVelocity()
-	self:SetPlaybackRate( vel:Length() / flMax )
-	hook.Run( "UpdateAnimation", self, vel, flMax )
+	hook.Run( "UpdateAnimation", self, self.loco:GetVelocity(), self:GetSequenceGroundSpeed( self.CalcSeqOverride ) )
+	self:PromoteSequence( self.CalcSeqOverride, self:GetPlaybackRate() )
+	self:AnimationSystemTick()
 	self.loco:SetGravity( sv_gravity:GetFloat() )
 	self.loco:SetJumpHeight( self:CalcJumpHeight() )
 	if self.CalcIdeal == ACT_MP_CROUCH_IDLE || self.CalcIdeal == ACT_MP_CROUCHWALK then

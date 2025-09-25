@@ -20,9 +20,9 @@ ENT.iState = NPC_STATE_NONE
 function ENT:GetNPCState() return self.iState end
 function ENT:SetNPCState( i ) self.iState = i end
 
-ENT.ShootBone = "ValveBiped.Bip01_R_Hand"
-function ENT:GetShootPos() return self:GetBonePosition( self:LookupBone( self.ShootBone ) ) end
-function ENT:EyePos() return self:GetShootPos() end
+ENT.sEyeBone = "ValveBiped.Bip01_Head1"
+function ENT:EyePos() return self:GetBonePosition( self.sEyeBone ) end
+function ENT:GetShootPos() return self:EyePos() end
 
 function ENT:GetHull() return self.vHullMins, self.vHullMaxs end
 function ENT:GetHullDuck() return self.vHullDuckMins, self.vHullDuckMaxs end

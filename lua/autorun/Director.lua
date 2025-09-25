@@ -2,24 +2,33 @@
 Do NOT Use CSoundPatch::ChangePitch UnTil It is Implemented,
 Because when It is ( and if It is ) - It Might Break!*/
 
-function Director_RegisterMusicSound( Name, Path )
-	sound.Add {
-		name = "MUS_" .. Name,
-		sound = "Music/" .. Path,
-		level = 0,
-		volume = 1,
-		channel = CHAN_STATIC
-	}
-end
+local sound_Add = sound.Add
+sound_Add {
+	name = "FlashlightOn",
+	sound = "buttons/lightswitch2.wav",
+	level = 40,
+	volume = 1,
+	channel = CHAN_AUTO
+}
+sound_Add {
+	name = "FlashlightOff",
+	sound = "buttons/lightswitch2.wav",
+	level = 40,
+	volume = 1,
+	channel = CHAN_AUTO
+}
 function Director_RegisterNonStandardMusicSound( Name, Path )
-	sound.Add {
-		name = "MUS_" .. Name,
+	Name = "MUS_" .. Name
+	sound_Add {
+		name = Name,
 		sound = Path,
 		level = 0,
 		volume = 1,
 		channel = CHAN_STATIC
 	}
+	return Name, Path
 end
+function Director_RegisterMusicSound( Name, Path ) return Director_RegisterNonStandardMusicSound( Name, "Music/" .. Path ) end
 
 DIRECTOR_THREAT_NULL = 0 //Nothing
 DIRECTOR_THREAT_HEAT = 1 //Hostiles Nearby
@@ -370,9 +379,8 @@ end )
 
 end //SERVER
 
-for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end
-
-local CEntity = FindMetaTable( "Entity" )
+//Do This Here so It'll be Shared
+local CEntity = FindMetaTable "Entity"
 local CEntity_LookupSequence = CEntity.LookupSequence
 local CEntity_GetTable = CEntity.GetTable
 local CEntity_GetNW2Bool = CEntity.GetNW2Bool
@@ -385,3 +393,18 @@ hook.Add( "CalcMainActivity", "GameImprovements", function( ply, vel )
 		return a, s
 	end
 end )
+
+function Director_CreateSimpleMusicPlayer( iCat, sName, sPath, flLength )
+	local sActualName = Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" )
+	local t = {
+		Tick = function( self )
+			if !self.tHandles.Main then
+				self:Play( "Main", sActualName, 1, flLength )
+			end
+		end
+	}
+	DIRECTOR_MUSIC_TABLE[ iCat ][ sName ] = t
+	return t
+end
+
+for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end

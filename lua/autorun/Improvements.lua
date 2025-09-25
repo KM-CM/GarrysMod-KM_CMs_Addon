@@ -125,7 +125,7 @@ function SetHumanPlayer( ply )
 	ply:SetUnDuckSpeed( .25 )
 	ply:SetCrouchedWalkSpeed( 1 )
 	ply:SetViewOffset( Vector( 0, 0, 56 ) )
-	ply:SetViewOffsetDucked( Vector( 0, 0, 24 ) )
+	ply:SetViewOffsetDucked( Vector( 0, 0, 28 ) )
 	ply:SetHull( Vector( -16, -16, 0 ), Vector( 16, 16, 72 ) )
 	ply:SetHullDuck( Vector( -16, -16, 0 ), Vector( 16, 16, 32 ) )
 end

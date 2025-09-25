@@ -124,6 +124,29 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 	*/
 end
 
+hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
+	if ent:IsPlayer() then dmg:SetDamageForce( vector_origin ) end
+end )
+
+hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
+	if IsValid( ply.GAME_pFlashlight ) then ply:EmitSound "FlashlightOff" ply.GAME_pFlashlight:Remove() else
+		local pt = ents.Create "env_projectedtexture"
+		pt:SetPos( ply:EyePos() )
+		pt:SetAngles( ply:EyeAngles() )
+		pt:SetOwner( ply )
+		pt:SetParent( ply )
+		pt:SetKeyValue( "lightfov", "60" )
+		pt:SetKeyValue( "lightcolor", "255 255 255 512" )
+		pt:SetKeyValue( "NearZ", "1" )
+		pt:SetKeyValue( "FarZ", "2048" )
+		pt:Input( "SpotlightTexture", nil, nil, "effects/flashlight001" )
+		pt:Spawn()
+		ply:EmitSound "FlashlightOn"
+		ply.GAME_pFlashlight = pt
+	end
+	return false
+end)
+
 __TRACER_COLOR__ = {
 	Bullet = "255 48 0 1024",
 	AR2Tracer = "48 255 255 1024"
@@ -149,6 +172,7 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 		pt:SetKeyValue( "spritedisabled", "1" )
 		pt:SetKeyValue( "farz", "256" )
 		pt:Input( "SpotlightTexture", _, _, "effects/flashlight/soft" )
+		pt:SetOwner( GetOwner( ent ) )
 		pt:Spawn()
 		timer.Simple( .1, function() if IsValid( pt ) then pt:Remove() end end )
 		return OldCallBack( atk, tr, dmg )
@@ -160,10 +184,54 @@ local PersistAll = CreateConVar( "PersistAll", 1, FCVAR_SERVER_CAN_EXECUTE + FCV
 
 hook.Add( "PhysgunPickup", "GameImprovements", function() return true end )
 
+local CEntity = FindMetaTable "Entity"
+local CEntity_IsOnFire = CEntity.IsOnFire
+local CEntity_Ignite = CEntity.Ignite
+
+function PhysicsCollide( ent, Data )
+	local pOther = Data.HitEntity
+	if CEntity_IsOnFire( ent ) || CEntity_IsOnFire( pOther ) then
+		CEntity_Ignite( ent, 10 )
+		CEntity_Ignite( pOther, 10 )
+	end
+end
+
+local CEntity_WaterLevel = CEntity.WaterLevel
+local CEntity_Extinguish = CEntity.Extinguish
+
+local util_TraceLine = util.TraceLine
+
 local ents = ents
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
 	for _, ent in ents_Iterator() do
+		if !ent.GAME_bPhysCollideHook then ent:AddCallback( "PhysicsCollide", function( ... ) PhysicsCollide( ... ) end ) ent.GAME_bPhysCollideHook = true end
+		if CEntity_WaterLevel( ent ) > 0 then CEntity_Extinguish( ent ) elseif CEntity_IsOnFire( ent ) then CEntity_Ignite( ent, 999999 ) end
+		if CEntity_IsOnFire( ent ) && math.random( ( ent.GAME_bFireBall && 200000 || ( 400000 / ent:BoundingRadius() ) ) * FrameTime() ) == 1 then
+			for _ = 0, 3 do
+				local dir = VectorRand()
+				local tr = util_TraceLine {
+					start = ent:GetPos() + ent:OBBCenter(),
+					endpos = ent:GetPos() + ent:OBBCenter() + VectorRand() * math.Rand( 0, ent:BoundingRadius() ),
+					mask = MASK_SOLID,
+					filter = ent
+				}
+				if tr.Entity == ent then continue end
+				local p = ents.Create "prop_physics"
+				p:SetPos( tr.HitPos )
+				p:SetModel "models/combine_helicopter/helicopter_bomb01.mdl"
+				p:SetNoDraw( true )
+				p:Spawn()
+				p.GAME_bFireBall = true
+				local f = ents.Create "env_fire_trail"
+				f:SetPos( p:GetPos() )
+				f:SetParent( p )
+				f:Spawn()
+				p:GetPhysicsObject():AddVelocity( VectorRand() * math.Rand( 0, ent:BoundingRadius() * 24 ) )
+				AddThinkToEntity( p, function( ent ) CEntity_Ignite( ent, 999999 ) if math.random( GetFlameStopChance( ent ) * FrameTime() ) == 1 || ent:WaterLevel() != 0 then ent:Remove() return true end end )
+				break
+			end
+		end
 		if PersistAll:GetBool() && ent:MapCreationID() != -1 && !ent:IsPlayer() && ( !ent:IsWeapon() || ent:IsWeapon() && ( !IsValid( ent:GetOwner() ) || IsValid( ent:GetOwner() ) && !ent:GetOwner():IsPlayer() ) ) then ent:SetPersistent( true ) end
 		local tSuppressionAmount = {}
 		if ent.GAME_tSuppressionAmount then
@@ -179,13 +247,8 @@ hook.Add( "Think", "GameImprovements", function()
 	end
 end )
 
-local FixBunnyHop = CreateConVar( "FixBunnyHop", 1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "Fixes Bunny Hopping by Not Allowing The Player to Jump The a Few MilliSeconds After He Hit The Ground", 0, 1 )
-local FixBunnyHopLength = CreateConVar( "FixBunnyHopLength", .1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY, "The Amount of FixBunnyHop", 0, 1 )
-local tFixBunnyHop = {}
-local CEntity = FindMetaTable "Entity"
 local CEntity_IsOnGround = CEntity.IsOnGround
 local math_max = math.max
-local util_TraceLine = util.TraceLine
 local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_Remove = CEntity.Remove
 local CPlayer = FindMetaTable "Player"
@@ -243,49 +306,41 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		ply.GAME_sRestoreGun = nil
 	end
 
-	if FixBunnyHop:GetBool() then
-		if bGround then
-			if CurTime() <= ( tFixBunnyHop[ ply ] || 0 ) then
-				cmd:RemoveKey( IN_JUMP )
-			else tFixBunnyHop[ ply ] = nil end
-		else tFixBunnyHop[ ply ] = CurTime() + FixBunnyHopLength:GetFloat() end
-	else tFixBunnyHop[ ply ] = nil end
-
 	if ply:GetNW2Bool "CTRL_bSliding" then cmd:RemoveKey( IN_ATTACK ) cmd:RemoveKey( IN_ATTACK2 ) end
 
-	if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
+	//if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 
-	if ply:IsOnGround() then
-		//Trash
-		//if cmd:KeyDown( IN_DUCK ) && cmd:KeyDown( IN_JUMP ) then cmd:RemoveKey( IN_DUCK ) cmd:RemoveKey( IN_JUMP ) end
-		local v = __PLAYER_MODEL__[ ply:GetModel() ]
-		if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
-			if cmd:GetForwardMove() <= 0 || b then
-				ply:SetNW2Bool( "CTRL_bSprinting", false )
-				cmd:RemoveKey( IN_SPEED )
-			else
-				cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
-				if cmd:GetSideMove() < 0 then
-					cmd:SetSideMove( -cmd:GetForwardMove() )
-				elseif cmd:GetSideMove() > 0 then
-					cmd:SetSideMove( cmd:GetForwardMove() )
-				end
-				local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
-				ply:SetNW2Bool( "CTRL_bSprinting", b )
-				if b then
-					cmd:RemoveKey( IN_ATTACK )
-					cmd:RemoveKey( IN_ATTACK2 )
-					cmd:RemoveKey( IN_ZOOM )
-				end
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
+		if cmd:GetForwardMove() <= 0 || b then
+			ply:SetNW2Bool( "CTRL_bSprinting", false )
+			cmd:RemoveKey( IN_SPEED )
+		else
+			cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
+			if cmd:GetSideMove() < 0 then
+				cmd:SetSideMove( -cmd:GetForwardMove() )
+			elseif cmd:GetSideMove() > 0 then
+				cmd:SetSideMove( cmd:GetForwardMove() )
 			end
-		else ply:SetNW2Bool( "CTRL_bSprinting", false ) end
+			local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
+			ply:SetNW2Bool( "CTRL_bSprinting", b )
+			if b then
+				cmd:RemoveKey( IN_ATTACK )
+				cmd:RemoveKey( IN_ATTACK2 )
+				cmd:RemoveKey( IN_ZOOM )
+			end
+		end
 	else
+		ply:SetNW2Bool( "CTRL_bSprinting", false )
+		if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+	end
+	if !ply:IsOnGround() then
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if CEntity_WaterLevel( ply ) <= 0 && !Either( v == nil, ply.CTRL_bAllowMovingWhileInAir, v && v.bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
 			//cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 		end
-		ply:SetNW2Bool( "CTRL_bSprinting", false )
+		//ply:SetNW2Bool( "CTRL_bSprinting", false )
 	end
 
 	local bInCover

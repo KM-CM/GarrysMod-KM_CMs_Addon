@@ -94,6 +94,7 @@ __PLAYER_MODEL__[ "models/antlion.mdl" ] = {
 	PlayerFootstep = function() return true end,
 	PlayerHandleAnimEvent = function( ply, event )
 		local s = util.GetAnimEventNameByID( event )
+		if s == "AE_CITIZEN_HEAL" || s == "CL_EVEN_EJECTBRASS1" then ply:EmitSound "NPC_Antlion.Footstep" end
 	end,
 	PlayerSpawnAny = function( ply )
 		timer.Simple( 0, function()
@@ -110,6 +111,7 @@ __PLAYER_MODEL__[ "models/antlion.mdl" ] = {
 			cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 			cmd:SetButtons( 0 )
+			return true
 		end
 	end
 }
@@ -240,6 +242,7 @@ __PLAYER_MODEL__[ "models/antlion_worker.mdl" ] = {
 	PlayerFootstep = function() return true end,
 	PlayerHandleAnimEvent = function( ply, event )
 		local s = util.GetAnimEventNameByID( event )
+		if s == "AE_CITIZEN_HEAL" || s == "CL_EVEN_EJECTBRASS1" then ply:EmitSound "NPC_Antlion.Footstep" end
 	end,
 	PlayerSpawnAny = function( ply )
 		timer.Simple( 0, function()
@@ -256,6 +259,7 @@ __PLAYER_MODEL__[ "models/antlion_worker.mdl" ] = {
 			cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 			cmd:SetButtons( 0 )
+			return true
 		end
 	end
 }

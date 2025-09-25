@@ -16,6 +16,8 @@ if SERVER then
 	include "CombatState.lua"
 	include "Script.lua"
 	include "Search.lua"
+	include "Behaviour.lua"
+	include "Animation.lua"
 end
 
 scripted_ents.Register( ENT, "BaseActor" )
