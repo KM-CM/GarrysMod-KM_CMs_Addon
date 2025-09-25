@@ -128,8 +128,8 @@ hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
 	if ent:IsPlayer() then dmg:SetDamageForce( vector_origin ) end
 end )
 
-hook.Add( "PlayerDeath", "GameImprovements", function( ply ) if IsVAlid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
-hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsVAlid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
+hook.Add( "PlayerDeath", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
+hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
 
 hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
 	if IsValid( ply.GAME_pFlashlight ) then ply:EmitSound "FlashlightOff" ply.GAME_pFlashlight:Remove() else
@@ -675,4 +675,5 @@ if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 function CPlayer:GetNPCClass() return self.m_iClass || CLASS_HUMAN end
 function CPlayer:Classify() return self:GetNPCClass() end
 function CPlayer:SetNPCClass( i ) self.m_iClass = i end
+
 
