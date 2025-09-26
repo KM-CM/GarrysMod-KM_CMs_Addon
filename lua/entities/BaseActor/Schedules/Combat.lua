@@ -1,6 +1,7 @@
 //TODO: Break Down The File into Files with The Name of The Schedule Like TakeCoverAdvance.lua
 
 ENT.tPreScheduleResetVariables.bSuppressing = false
+ENT.tPreScheduleResetVariables.bWantsCover = false
 
 function ENT:RangeAttack()
 	if self.bHoldFire then return end //No, This is Not Included by Default...
@@ -441,6 +442,36 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+	local tAllies = self:GetAlliesByClass()
+	if !self.vCover then
+		if table.Count( tAllies ) > 1 then
+			local bNoEnemy = true
+			for ent in pairs( self.tEnemies ) do
+				local v = ent:GetPos() + ent:OBBCenter()
+				local tr = util.TraceLine {
+					start = self:GetShootPos(),
+					endpos = v,
+					mask = MASK_SHOT_HULL,
+					filter = { self, ent }
+				}
+				if ( !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction ) && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
+					local b
+					if ent.GAME_tSuppressionAmount then
+						local flThreshold, flSoFar = ent:Health() * .1, 0
+						for other, am in pairs( ent.GAME_tSuppressionAmount ) do
+							if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+							flSoFar = flSoFar + am
+							if flSoFar > flThreshold then continue end
+						end
+						if flSoFar <= flThreshold then bNoEnemy = nil break end
+					else bNoEnemy = true break end
+					if b then bNoEnemy = nil break end
+				end
+			end
+			if bNoEnemy then self:SetSchedule "TakeCover" return end
+		end
+	end
+	self.bSuppressing = true
 	if sched.bSuppressing then
 		local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
@@ -489,8 +520,22 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			if nws < ws then w, ws = wep, nws end
 		end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
-			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-			if CurTime() > sched.Time then self:SetSchedule "TakeCover" return end
+			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
+			elseif sched.Time == -1 then
+				local b = true
+				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end
+				if b then
+					self:SetSchedule "TakeCover"
+					return
+				end
+			elseif CurTime() > sched.Time then
+				local b = true
+				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end
+				if b then
+					self:SetSchedule "TakeCover"
+					return
+				end
+			end
 			if !sched.bWasInShootPosition then self:DLG_Suppressing( enemy ) end
 			sched.bWasInShootPosition = true
 			if !trDuck || trDuck && trDuck.Hit then
@@ -516,23 +561,15 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				}
 				if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 					local b = true
-					if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-						local flMultiplier = 1
-						if tAllies then
-							for ent in pairs( tAllies ) do
-								if ent.Schedule && !util.TraceLine( {
-									start = self:GetShootPos(),
-									endpos = ent:GetPos() + ent:OBBCenter(),
-									mask = MASK_SHOT_HULL,
-									filter = { self, ent }
-								} ).Hit then flMultiplier = flMultiplier + 2 end
-							end
-						end
-						local flThreshold = ent:Health() * flMultiplier * .1
+					if ent.GAME_tSuppressionAmount then
+						local flThreshold, flSoFar = ent:Health() * .1, 0
 						for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-							if other != self && am > flThreshold then b = nil break end
+							if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+							flSoFar = flSoFar + am
+							if flSoFar > flThreshold then continue end
 						end
-					end
+						if flSoFar > flThreshold then continue end
+					else b = true end
 					if b then
 						self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
 						pEnemy = ent
@@ -603,8 +640,22 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		end
 		if IsValid( w ) then self:SetActiveWeapon( w ) end
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
-			if !sched.flTime then sched.flTime = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax ) end
-			if CurTime() > sched.flTime then self:SetSchedule "TakeCover" return end
+			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
+			elseif sched.Time == -1 then
+				local b = true
+				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end
+				if b then
+					self:SetSchedule "TakeCover"
+					return
+				end
+			elseif CurTime() > sched.Time then
+				local b = true
+				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end
+				if b then
+					self:SetSchedule "TakeCover"
+					return
+				end
+			end
 			if !sched.bWasInShootPosition then self:DLG_FiringAtAnExposedTarget( enemy ) end
 			sched.bWasInShootPosition = true
 			if !trDuck || trDuck && trDuck.Hit then

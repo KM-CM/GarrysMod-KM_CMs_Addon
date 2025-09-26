@@ -12,6 +12,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	if table.IsEmpty( tEnemies ) then return {} end
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
+	self.bWantsCover = true
 	if self.vCover then
 		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
@@ -53,18 +54,15 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			}
 			if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 				local b = true
-				if !tr.Hit && ent.GAME_tSuppressionAmount then
-					local flThreshold, flTotal = ent:Health() * .1, 0
+				if ent.GAME_tSuppressionAmount then
+					local flThreshold, flSoFar = ent:Health() * .1, 0
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-						if other != self then
-							flTotal = flTotal + am
-							if flTotal > flThreshold then
-								b = nil
-								break
-							end
-						end
+						if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+						flSoFar = flSoFar + am
+						if flSoFar > flThreshold then continue end
 					end
-				end
+					if flSoFar > flThreshold then continue end
+				else b = true end
 				if b then
 					self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
 					pEnemy = ent

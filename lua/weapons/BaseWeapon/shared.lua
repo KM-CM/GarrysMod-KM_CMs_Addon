@@ -216,13 +216,14 @@ if CLIENT then
 				if f == COVER_VARIANTS_RIGHT then
 					vTargetAngle.x = vTargetAngle.x + 22.5
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x + 4
+					vTarget.x = vTarget.x + 4 + self.flViewModelX
 				elseif f == COVER_VARIANTS_LEFT then
 					vTargetAngle.x = vTargetAngle.x + 22.5
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x - 18 + self.flViewModelX
+					vTarget.x = vTarget.x - 18 - self.flViewModelX
 				else
 					vTargetAngle.x = vTargetAngle.x + 22.5
+					vTarget.x = vTarget.x - 12 - self.flViewModelX
 					vTarget.z = vTarget.z - 10
 				end
 			else
@@ -236,12 +237,12 @@ if CLIENT then
 				elseif p == COVER_FIRE_RIGHT then
 				elseif p == COVER_BLINDFIRE_UP then
 					vTargetAngle.z = vTargetAngle.z + 180
-					vTarget.z = vTarget.z - 8
-					vTarget.x = vTarget.x - 18
+					vTarget.z = vTarget.z + self.flViewModelZ
+					vTarget.x = vTarget.x - ( 18 + self.flViewModelY )
 				elseif p == COVER_BLINDFIRE_LEFT then
-					vTarget.x = vTarget.x - 18
+					vTarget.x = vTarget.x - 18 - self.flViewModelX
 				elseif p == COVER_BLINDFIRE_RIGHT then
-					vTarget.x = vTarget.x + 4
+					vTarget.x = vTarget.x + 4 + self.flViewModelX
 				end
 			end
 			local bOnGround = CEntity_IsOnGround( ply )

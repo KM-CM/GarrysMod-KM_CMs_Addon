@@ -12,21 +12,6 @@ Internally Made as a Replacement for `env_explosion`.
 AddCSLuaFile()
 DEFINE_BASECLASS "base_point"
 
-ENT.PrintName = "#env_explosion"
-if CLIENT then language.Add( "env_explosion", "Explosion" ) return end
-
-ENT.flMagnitude = 100
-
-function ENT:KeyValue( Key, Value )
-	Key = string.lower( Key )
-	if Key == "imagnitude" || k == "magnitude" then self.flMagnitude = tonumber( v ) || 100 end
-end
-function ENT:AcceptInput( Key, _, _, Value )
-	if string.lower( Key || "" ) == "explode" then
-		self:Explode()
-	end
-end
-
 sound.Add {
 	name = "BaseExplosionEffect.Sound",
 	sound = {
@@ -55,6 +40,21 @@ sound.Add {
 	level = 150,
 	channel = CHAN_STATIC
 }
+
+ENT.PrintName = "#env_explosion"
+if CLIENT then language.Add( "env_explosion", "Explosion" ) return end
+
+ENT.flMagnitude = 100
+
+function ENT:KeyValue( Key, Value )
+	Key = string.lower( Key )
+	if Key == "imagnitude" || k == "magnitude" then self.flMagnitude = tonumber( v ) || 100 end
+end
+function ENT:AcceptInput( Key, _, _, Value )
+	if string.lower( Key || "" ) == "explode" then
+		self:Explode()
+	end
+end
 
 ENT.SMOKE_TRANSPARENCY = 200
 ENT.SMOKE_SPEED = .1

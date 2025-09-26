@@ -13,6 +13,7 @@ function ENT:SearchAreas()
 	local bDisAllowWater = !self.bCanSwim
 	return function()
 		if !table.IsEmpty( tQueue ) then
+			table.SortByMember( tQueue, 2 )
 			local area, dist = unpack( table.remove( tQueue ) )
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 				local new = t.area
@@ -56,6 +57,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 			if v then return v[ 1 ] else t = nil end
 		end
 		if !table.IsEmpty( tQueue ) then
+			table.SortByMember( tQueue, 2 )
 			local area, dist, vPrev = unpack( table.remove( tQueue ) )
 			local vCenter = area:GetCenter()
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do

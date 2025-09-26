@@ -8,3 +8,5 @@ __BEHAVIOUR__ = __BEHAVIOUR__ || {}
 local __BEHAVIOUR__ = __BEHAVIOUR__
 
 function Actor_RegisterBehaviour( Name, Data ) __BEHAVIOUR__[ Name ] = Data end
+
+__ALARMS__ = __ALARMS__ || {}

@@ -46,7 +46,7 @@ function ENT:DoCoverMove( tEnemies )
 		if vec then
 			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
 			local sched = self:SetSchedule "TakeCoverMove"
-			if a < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = a > .33 end
+			if a < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
 			self.vCover = vec
 			self.pCover = pCover
 			self.bCoverDuck = bDuck
@@ -57,7 +57,7 @@ function ENT:DoCoverMove( tEnemies )
 		if vec then
 			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
 			local sched = self:SetSchedule "TakeCoverMove"
-			if a > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = a < -.33 end
+			if a > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end
 			self.vCover = vec
 			self.pCover = pCover
 			self.bCoverDuck = bDuck
@@ -140,12 +140,15 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			}
 			if !tr.Hit || tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
 				local b = true
-				if !tr.Hit && CurTime() > self.flWeaponPrimaryVolleyTime && ent.GAME_tSuppressionAmount then
-					local flThreshold = ent:Health() * .1
+				if ent.GAME_tSuppressionAmount then
+					local flThreshold, flSoFar = ent:Health() * .1, 0
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-						if other != self && am > flThreshold then b = nil break end
+						if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+						flSoFar = flSoFar + am
+						if flSoFar > flThreshold then continue end
 					end
-				end
+					if flSoFar > flThreshold then continue end
+				else b = true end
 				if b then
 					self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
 					pEnemy = ent

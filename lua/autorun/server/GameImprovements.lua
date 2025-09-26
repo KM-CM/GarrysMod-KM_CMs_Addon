@@ -91,7 +91,7 @@ function EntityUniqueIdentifier( ent )
 	return ent.__UNIQUE_IDENTIFIER__
 end
 
-local tIgnoreRagneAttackDisp = { [ D_NU ] = true, [ D_LI ] = true }
+//local tIgnoreRangeAttackDisp = { [ D_NU ] = true, [ D_LI ] = true }
 local util_ScreenShake, util_DistanceToLine = util.ScreenShake, util.DistanceToLine
 RANGE_ATTACK_SUPPRESSION_BOUND_SIZE = 512
 function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
@@ -104,11 +104,7 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 		else ent.GAME_tSuppressionAmount = { [ Owner ] = flDamage } end
 		local f = ent.GAME_OnRangeAttacked
 		if f == nil then if ent.GAME_flSuppression then ent.GAME_flSuppression = ent.GAME_flSuppression + flDamage end else f( ent, Owner, vStart, vEnd, flDamage ) end
-		/*if ent:IsPlayer() then
-			local f = RecipientFilter()
-			f:AddPlayer( ent )
-			util_ScreenShake( ent:GetPos(), flAmplitude, flFrequency, flDuration, 256, true, f )
-		else*/if ent.__ACTOR__ then
+		if ent.__ACTOR__ then
 			if ent == Owner || Owner.Disposition && Owner:Disposition( ent ) == D_LI || ent.Disposition && ent:Disposition( Owner ) == D_LI then continue end
 			local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
 			if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
@@ -117,16 +113,12 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 	/*Too Cheaty - Makes Silencers Almost Completely UseLess
 	local ang = ( vEnd - vStart ):Angle()
 	for ent in pairs( __ACTOR_LIST__ ) do
-		if ent == Owner || Owner.Disposition && tIgnoreRagneAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRagneAttackDisp[ ent:Disposition( Owner ) ] then continue end
+		if ent == Owner || Owner.Disposition && tIgnoreRangeAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRangeAttackDisp[ ent:Disposition( Owner ) ] then continue end
 		local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
 		if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
 	end
 	*/
 end
-
-hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
-	if ent:IsPlayer() then dmg:SetDamageForce( vector_origin ) end
-end )
 
 hook.Add( "PlayerDeath", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
 hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
@@ -148,7 +140,13 @@ hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
 		ply.GAME_pFlashlight = pt
 	end
 	return false
-end)
+end )
+
+hook.Add( "PlayerHurt", "GameImprovements", function( ply, _, flHealth, flDamage )
+	local b = !ply.GAME_bSecondHurtViewPunch
+	ply.GAME_bSecondHurtViewPunch = b
+	ply:ViewPunch( Angle( 0, 0, flDamage * math.Remap( flHealth, 0, ply:GetMaxHealth(), .05, .01 ) * ( b && 1 || -1 ) ) )
+end )
 
 __TRACER_COLOR__ = {
 	Bullet = "255 48 0 1024",
@@ -165,20 +163,38 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	local OldCallBack = Data.Callback || function() return { damage = true, effects = true } end
 	local flDamage = Data.Damage
 	local col = __TRACER_COLOR__[ Data.TracerName || "Bullet" ] || __TRACER_COLOR__[ "Bullet" ]
+	local pOwner = GetOwner( ent )
 	Data.Callback = function( atk, tr, dmg )
 		DispatchRangeAttack( atk, tr.StartPos, tr.HitPos, flDamage )
-		local pt = ents.Create "env_projectedtexture"
-		pt:SetPos( tr.StartPos )
-		pt:SetAngles( ( tr.HitPos - tr.StartPos ):GetNormalized():Angle() )
-		pt:SetKeyValue( "lightfov", "110" )
-		pt:SetKeyValue( "lightcolor", col )
-		pt:SetKeyValue( "spritedisabled", "1" )
-		pt:SetKeyValue( "farz", "256" )
-		pt:Input( "SpotlightTexture", _, _, "effects/flashlight/soft" )
-		pt:SetOwner( GetOwner( ent ) )
-		pt:Spawn()
-		timer.Simple( .1, function() if IsValid( pt ) then pt:Remove() end end )
-		return OldCallBack( atk, tr, dmg )
+		local pTarget, vTargetVelocity, dDamage = tr.Entity
+		local bTarget = IsValid( pTarget )
+		if bTarget then
+			vTargetVelocity = ent:GetVelocity()
+			dDamage = DamageInfo()
+			dDamage:SetAttacker( pOwner )
+			//Prevents WALK and STEP MoveType KnockBack
+			//dDamage:SetInflictor( ent )
+			dDamage:SetDamage( dmg:GetDamage() )
+			dDamage:SetDamageType( DMG_BULLET )
+			dDamage:SetDamagePosition( tr.HitPos )
+		end
+		local t = OldCallBack( atk, tr, dDamage )
+		if t.damage && bTarget then pTarget:TakeDamageInfo( dDamage ) end
+		local b = t.effects
+		if b then
+			local pt = ents.Create "env_projectedtexture"
+			pt:SetPos( tr.StartPos )
+			pt:SetAngles( ( tr.HitPos - tr.StartPos ):GetNormalized():Angle() )
+			pt:SetKeyValue( "lightfov", "110" )
+			pt:SetKeyValue( "lightcolor", col )
+			pt:SetKeyValue( "spritedisabled", "1" )
+			pt:SetKeyValue( "farz", "256" )
+			pt:Input( "SpotlightTexture", _, _, "effects/flashlight/soft" )
+			pt:SetOwner( GetOwner( ent ) )
+			pt:Spawn()
+			timer.Simple( .1, function() if IsValid( pt ) then pt:Remove() end end )
+		end
+		return { damage = false, effects = b }
 	end
 	return true
 end )
@@ -675,5 +691,3 @@ if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 function CPlayer:GetNPCClass() return self.m_iClass || CLASS_HUMAN end
 function CPlayer:Classify() return self:GetNPCClass() end
 function CPlayer:SetNPCClass( i ) self.m_iClass = i end
-
-
