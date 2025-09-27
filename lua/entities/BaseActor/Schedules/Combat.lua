@@ -1,23 +1,23 @@
-//TODO: Break Down The File into Files with The Name of The Schedule Like TakeCoverAdvance.lua
+// TODO: Break Down The File into Files with The Name of The Schedule Like TakeCoverAdvance.lua
 
 ENT.tPreScheduleResetVariables.bSuppressing = false
 ENT.tPreScheduleResetVariables.bWantsCover = false
 
 function ENT:RangeAttack()
-	if self.bHoldFire then return end //No, This is Not Included by Default...
+	if self.bHoldFire then return end // No, This is Not Included by Default...
 	self:WeaponPrimaryVolley()
 	return true
 end
 
-//Small Suppressed, Does NOT want Someone Else to Help Yet
+// Small Suppressed, Does NOT want Someone Else to Help Yet
 function ENT:DLG_Suppressed() end
 
-//See The Code, I have No Easy Way of Explaining This One
+// See The Code, I have No Easy Way of Explaining This One
 ENT.flSuppressionTraceFraction = .8
-//Basically The Same But Used for Stack Ups
+// Basically The Same But Used for Stack Ups
 ENT.flStackUpTraceFraction = .33
 
-//Try to Guess from Where This Enemy Might Shoot Us from
+// Try to Guess from Where This Enemy Might Shoot Us from
 function ENT:CalcEnemyShootPositions( enemy )
 	local vPos = enemy:GetPos()
 	local dir = ( self:GetPos() - vPos ):GetNormalized()
@@ -389,6 +389,45 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 		self.vDesAim = dir
 		if self:CanExpose() then
 			if CurTime() > ( sched.flSuppressed || 0 ) then
+				local flAlarm, vPos, pAlarm = math.huge, self:GetShootPos(), NULL // NULL because ent.pAlarm ( if nil ) == pAlarm ( which is nil )
+				local t = __ALARMS__[ self:Classify() ]
+				if t then
+					for ent in pairs( t ) do
+						if !IsValid( ent ) || ent.bIsOn then continue end
+						local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
+						// Don't go out of audible range, even if an ally alarm. Why?
+						// Because it's not funny to run kilometers away from the battlefield to it like an idiot
+						if d >= flAlarm || Either( ent.flAudibleDistSqr == 0, self:Visible( ent ), d >= ent.flAudibleDistSqr ) then continue end
+						local b
+						if tAllies then for ent in pairs( tAllies ) do if ent != self && IsValid( ent ) && ent.pAlarm == pAlarm then b = true break end end end
+						if b then continue end
+						pAlarm, flAlarm = ent, d
+					end
+				end
+				if IsValid( pAlarm ) then
+					local s = self:SetSchedule "PullAlarm"
+					s.pAlarm = pAlarm
+					self.pAlarm = pAlarm
+					return
+				end
+				t = __ALARMS__[ CLASS_NONE ]
+				if t then
+					for ent in pairs( t ) do
+						if !IsValid( ent ) || ent.bIsOn then continue end
+						local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
+						if d >= flAlarm || Either( ent.flAudibleDistSqr == 0, self:Visible( ent ), d >= ent.flAudibleDistSqr ) then continue end
+						local b
+						if tAllies then for ent in pairs( tAllies ) do if ent != self && IsValid( ent ) && ent.pAlarm == pAlarm then b = true break end end end
+						if b then continue end
+						pAlarm, flAlarm = ent, d
+					end
+				end
+				if IsValid( pAlarm ) then
+					local s = self:SetSchedule "PullAlarm"
+					s.pAlarm = pAlarm
+					self.pAlarm = pAlarm
+					return
+				end
 				if self:MaybeCoverMove( tEnemies ) then return end
 				local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
 				if IsValid( enemy ) then
@@ -510,7 +549,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
-		local ws, w = 0 //Weapon Strength
+		local ws, w = 0 // Weapon Strength
 		for wep in pairs( self.tWeapons ) do
 			local t = wep.Primary_flDelay || 0
 			if t <= 0 then continue end
@@ -593,7 +632,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				local goal = sched.Path:GetCurrentGoal()
 				if goal then
 					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-					//self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+					// self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
 				end
 				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 				local flDist = self.flWalkSpeed * 4
@@ -629,7 +668,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
-		local ws, w = 0 //Weapon Strength
+		local ws, w = 0 // Weapon Strength
 		for wep in pairs( self.tWeapons ) do
 			local t = wep.Primary_flDelay || 0
 			if t <= 0 then continue end
@@ -710,7 +749,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				local goal = sched.Path:GetCurrentGoal()
 				if goal then
 					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-					//self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+					// self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
 				end
 				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 				local flDist = self.flWalkSpeed * 4

@@ -4,7 +4,7 @@ ENT.flVehiclePressureEndDistance = 1024
 
 local VECTOR_UP = Vector( 0, 0, 1 )
 
-//TODO: Implement
+// TODO: Implement
 function ENT:_VehicleRunAway( self, sched, veh, enemy ) veh:Stay() end
 
 Actor_RegisterSchedule( "Vehicle_Base", function( self, sched )

@@ -1,8 +1,8 @@
-//ENT.Weapon = NULL
+// ENT.Weapon = NULL
 ENT.tWeapons = {}
 
 function ENT:GetActiveWeapon() return self.Weapon end
-//See Lower for SetActiveWeapon
+// See Lower for SetActiveWeapon
 
 function ENT:GetWeapons()
 	local t = {}
@@ -11,7 +11,7 @@ function ENT:GetWeapons()
 end
 
 function ENT:IsWeaponActive() return IsValid( self.Weapon ) end
-function ENT:HasWeapon() return !table.IsEmpty( self.tWeapons ) end //HasWeapon(s)
+function ENT:HasWeapon() return !table.IsEmpty( self.tWeapons ) end // HasWeapon(s)
 
 function ENT:Give( sWeaponClass )
 	local wep = ents.Create( sWeaponClass )

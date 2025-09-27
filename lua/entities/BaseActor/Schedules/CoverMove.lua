@@ -26,7 +26,7 @@ function ENT:DoCoverMove( tEnemies )
 	local n = math_min( a, self.flCombatStateSmall )
 	if n > 0 then
 		local p = Path "Follow"
-		//self:ComputeFlankPath( p, enemy )
+		// self:ComputeFlankPath( p, enemy )
 		self:ComputePath( p, enemy:GetPos() )
 		local i = self:FindPathStackUpLine( p, tEnemies )
 		if i && i > 512 then

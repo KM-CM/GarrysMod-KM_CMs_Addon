@@ -10,9 +10,9 @@ function ENT:Stay() end
 function ENT:Turn( vDirection ) end
 function ENT:TurnLeft() end
 function ENT:TurnRight() end
-function ENT:AimWeapon( vAim ) end //Global Vector, NOT Direction
-function ENT:CanWeapon() end //Can We have a Weapon?
-function ENT:HasWeapon() end //Do We have a Weapon?
+function ENT:AimWeapon( vAim ) end // Global Vector, NOT Direction
+function ENT:CanWeapon() end // Can We have a Weapon?
+function ENT:HasWeapon() end // Do We have a Weapon?
 function ENT:DoesWeaponHit( v ) end
 function ENT:FireWeapon() end
 function ENT:GetShootPos() end
@@ -21,7 +21,7 @@ function ENT:GetForwardDirection() return self:GetForward() end
 local __VEHICLE_TABLE_LOCAL__ = __VEHICLE_TABLE__
 local bit_band = bit.band
 function ENT:Initialize()
-	//Yes, Seriously...
+	// Yes, Seriously...
 	local f = self.TRAVERSES
 	if bit_band( f, TRAVERSES_WATER ) != 0 then __VEHICLE_TABLE_LOCAL__[ TRAVERSES_WATER ][ self ] = true end
 	if bit_band( f, TRAVERSES_GROUND ) != 0 then __VEHICLE_TABLE_LOCAL__[ TRAVERSES_GROUND ][ self ] = true end

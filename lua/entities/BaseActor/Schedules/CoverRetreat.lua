@@ -46,7 +46,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 			if v:GetNormalized():Dot( vToEnemy ) > 0 then continue end
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
+				endpos = p + dir * self.vHullMaxs.x * 4, // Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
@@ -72,7 +72,7 @@ function ENT:FindRetreatCover( vCover, tEnemies )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
+				endpos = p + dir * self.vHullMaxs.x * 4, // Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then

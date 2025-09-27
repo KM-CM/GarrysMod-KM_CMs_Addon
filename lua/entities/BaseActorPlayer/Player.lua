@@ -1,4 +1,4 @@
-//Player-Specific Shit Goes Here
+// Player-Specific Shit Goes Here
 
 ENT.tGestureSlotToLayer = {}
 function ENT:AnimRestartGesture( slot, activity, autokill ) self.tGestureSlotToLayer[ slot ] = self:RestartGesture( activity, autokill ) end
@@ -11,8 +11,8 @@ function ENT:GetRunSpeed() return CEntity_GetTable( self ).flTopSpeed end
 function ENT:GetWalkSpeed() return CEntity_GetTable( self ).flProwlSpeed end
 function ENT:GetSlowWalkSpeed() return CEntity_GetTable( self ).flWalkSpeed end
 
-//I Do Not Know Why I Cut That Comment, But IIRC We're Using a Hook
-//:TranslateWeaponActivity Used to be Here, But was Moved to a Separate File (TranslateActivity.lua) Due to The Sheer Size of The Table
+// I Do Not Know Why I Cut That Comment, But IIRC We're Using a Hook
+// :TranslateWeaponActivity Used to be Here, But was Moved to a Separate File (TranslateActivity.lua) Due to The Sheer Size of The Table
 
 local FL = FL_DUCKING + FL_ANIMDUCKING
 function ENT:Crouching() return self:IsFlagSet( FL ) end

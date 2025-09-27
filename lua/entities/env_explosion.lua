@@ -1,4 +1,4 @@
-/*////////////////////////////////////////////////////////
+/*// // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
 A Traditional Explosion.
 
@@ -7,7 +7,7 @@ Napalm, Name The Entity in Format `env_explosion_*`.
 
 Internally Made as a Replacement for `env_explosion`.
 
-////////////////////////////////////////////////////////*/
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // */
 
 AddCSLuaFile()
 DEFINE_BASECLASS "base_point"
@@ -72,7 +72,7 @@ function ENT:Explode()
 	local flDamage = flMagnitude * 32
 	util_BlastDamage( self, GetOwner( self ), self:GetPos(), flDist, flDamage )
 	util_ScreenShake( self:GetPos(), flMagnitude * 256, flMagnitude * .001, math.min( 12, flMagnitude * .2 ), flMagnitude * 64 )
-	for _ = 1, math.max( 5, flRange * .2 ) do //Effects
+	for _ = 1, math.max( 5, flRange * .2 ) do // Effects
 		local dir = VectorRand()
 		local tr = util_TraceLine {
 			start = self:GetPos() + dir * 50,
@@ -82,11 +82,11 @@ function ENT:Explode()
 		local ed = EffectData()
 		ed:SetOrigin( tr.HitPos - Vector( 0, 0, 24 ) )
 		ed:SetNormal( VectorRand() )
-		ed:SetFlags( 4 ) //A Brighter Kaboom
+		ed:SetFlags( 4 ) // A Brighter Kaboom
 		util_Effect( "Explosion", ed )
 	end
 	local flSpeed = flDist * self.FIRE_SPEED
-	for _ = 1, math.max( 5, flRange * math.Rand( .03, .06 ) ) do //Fire
+	for _ = 1, math.max( 5, flRange * math.Rand( .03, .06 ) ) do // Fire
 		local dir = VectorRand()
 		local tr = util_TraceLine {
 			start = self:GetPos() + dir * 50,
@@ -106,7 +106,7 @@ function ENT:Explode()
 		p:GetPhysicsObject():AddVelocity( VectorRand() * math.Rand( 0, flSpeed ) )
 		AddThinkToEntity( p, function( self ) self:Ignite( 999999 ) if math.random( GetFlameStopChance( self ) * FrameTime() ) == 1 || self:WaterLevel() != 0 then self:Remove() return true end end )
 	end
-	for i = 1, math.max( 5, flRange * .1 ) do //Scorches
+	for i = 1, math.max( 5, flRange * .1 ) do // Scorches
 		local dir = VectorRand()
 		util.Decal( "Scorch", self:GetPos() + dir * 50, self:GetPos() + dir * 50 + VectorRand() * flRange )
 	end

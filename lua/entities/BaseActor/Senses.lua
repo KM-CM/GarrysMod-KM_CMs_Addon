@@ -1,4 +1,4 @@
-//ENT.Enemy = NULL
+// ENT.Enemy = NULL
 function ENT:SetEnemy( e ) self:UpdateEnemyMemory( e, e:GetPos() ) end
 function ENT:GetEnemy() return self.Enemy end
 
@@ -15,7 +15,7 @@ end
 ENT.bCantSeeUnderWater = true
 ENT.bVisNot360 = true
 ENT.flVisionYaw = 99
-ENT.flVisionPitch = 33 //Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
+ENT.flVisionPitch = 33 // Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
 function ENT:CanSee( vec )
 	local veh, ent
 	if isentity( vec ) then
@@ -42,10 +42,10 @@ function ENT:CanSee( vec )
 	} ).Hit
 end
 
-ENT.tEnemies = {} //Entity ( Even InValid, will be Filtered ) -> true
-ENT.tBullseyes = {} //EntityUniqueIdentifier -> { BaseActorBullseye ( Even InValid ), Source Entity ( Even InValid ), Entity ( Even InValid ) }
+ENT.tEnemies = {} // Entity ( Even InValid, will be Filtered ) -> true
+ENT.tBullseyes = {} // EntityUniqueIdentifier -> { BaseActorBullseye ( Even InValid ), Source Entity ( Even InValid ), Entity ( Even InValid ) }
 
-//function ENT:UpdateEnemyMemory( enemy, vec ) self:SetupBullseye( enemy, vec, enemy:GetAngles() ) end
+// function ENT:UpdateEnemyMemory( enemy, vec ) self:SetupBullseye( enemy, vec, enemy:GetAngles() ) end
 function ENT:UpdateEnemyMemory( enemy, vec, ang ) self:SetupBullseye( enemy, vec || enemy:GetPos(), ang || enemy:GetAngles() ) end
 
 function ENT:SetupBullseye( enemy, vec, ang )
@@ -56,8 +56,8 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	if !ang then ang = ( enemy.GetAimVector && enemy:GetAimVector() || enemy:GetForward() ):Angle() end
 	local ent = enemy
 	if ent.__ACTOR_BULLSEYE__ then
-		//We Dont want to Create Billions of Bullseyes for Others' Bullseyes so They Create Them for Our Bullseyes and Then Recursion
-		//( Because That is Literally Stupid I have No Idea Why I Clarified That It's Obvious )
+		// We Dont want to Create Billions of Bullseyes for Others' Bullseyes so They Create Them for Our Bullseyes and Then Recursion
+		// ( Because That is Literally Stupid I have No Idea Why I Clarified That It's Obvious )
 		while ent.__ACTOR_BULLSEYE__ && IsValid( ent.Enemy ) do
 			ent = ent.Enemy
 		end
@@ -133,8 +133,8 @@ NOTE: This Does NOT Grant The Actors Free Knowledge! tVisionStrength is Only Use
 How Much We've Spotted Something, NOT to Decide if We can or cant See Something.
 
 The Formula is 1 / SecondsToLoseCompletely*/
-ENT.flLoseSpeed = .2 //5
-ENT.tVisionStrength = {} //Entity ( Even InValid, will be Filtered ) -> Float [ 0, 1 ]
+ENT.flLoseSpeed = .2 // 5
+ENT.tVisionStrength = {} // Entity ( Even InValid, will be Filtered ) -> Float [ 0, 1 ]
 function ENT:Look()
 	if CurTime() <= self.flNextLookTime then return end
 	self.flNextLookTime = CurTime() + math.Rand( .08, .12 )
@@ -183,7 +183,7 @@ function ENT:Look()
 					if !ent.FLARE_tFoundByClass || !ent.FLARE_tFoundByClass[ self:Classify() ] then
 						local f = tOldVisionStrength[ ent ]
 						if f && f >= 1 then
-							if ent:Classify() == self:Classify() then //Go Over to Ally Flares to Help
+							if ent:Classify() == self:Classify() then // Go Over to Ally Flares to Help
 								if ent:GetPos():DistToSqr( self:GetPos() ) > 9437184/*3072*/ then
 									self:SetupBullseye( ent, util_TraceLine( {
 										start = ent:GetPos() + ent:OBBCenter(),

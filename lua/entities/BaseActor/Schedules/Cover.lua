@@ -107,7 +107,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			dir:Normalize()
 			if util.TraceLine( {
 				start = p,
-				endpos = p + dir * self.vHullMaxs.x * 4, //Dont Check Often, so Give Them More Range to Consider "Cover"
+				endpos = p + dir * self.vHullMaxs.x * 4, // Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then

@@ -4,7 +4,7 @@ local _r = debug.getregistry()
 local CActorBehaviour = _r.ActorBehaviour || {}
 _r.ActorBehaviour = CActorBehaviour
 
-//Contains All Currently Running Behaviours
+// Contains All Currently Running Behaviours
 __ACTOR_BEHAVIOURS__ = __ACTOR_BEHAVIOURS__ || {}
 local __ACTOR_BEHAVIOURS__ = __ACTOR_BEHAVIOURS__
 
@@ -24,7 +24,7 @@ function CActorBehaviour:Initialize() end
 
 function CActorBehaviour:GatherParticipants() end
 
-//Dont Return Anything to Let The Entity's Default Behaviour Run
+// Dont Return Anything to Let The Entity's Default Behaviour Run
 function CActorBehaviour:SelectSchedule( self, ent, prev, ret ) return true end
 
 function CActorBehaviour:Remove()

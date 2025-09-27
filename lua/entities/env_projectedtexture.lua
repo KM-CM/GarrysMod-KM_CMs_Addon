@@ -7,32 +7,32 @@ ENT.PrintName = "#env_projectedtexture"
 function ENT:UpdateTransmitState() return TRANSMIT_ALWAYS end
 
 function ENT:SetupDataTables()
-	//Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT Stored as a 0-255 Integer! In `lightcolor`, This is Remapped from 0-255 to 0-1!
+	// Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT Stored as a 0-255 Integer! In `lightcolor`, This is Remapped from 0-255 to 0-1!
 	self:NetworkVar( "Float", 0, "Brightness", { KeyName = "raw.brightness" } )
-	//Sprite Size if `SpriteDisabled` isnt On
+	// Sprite Size if `SpriteDisabled` isnt On
 	self:NetworkVar( "Float", 1, "SpriteSize", { KeyName = "raw.spritesize" } )
-	//`Shadows`, Mode 1: The Distance to The Trace"s `HitPos`
+	// `Shadows`, Mode 1: The Distance to The Trace"s `HitPos`
 	self:NetworkVar( "Float", 2, "TrueDistance", { KeyName = "raw.truedistance" } )
-	//`Shadows`, Mode 1: Compute Shadow Distance Anyway
+	// `Shadows`, Mode 1: Compute Shadow Distance Anyway
 	self:NetworkVar( "Bool", 0, "ComputeTrueDistance", { KeyName = "raw.computetruedistance" } )
-	//Doesnt Spawn a Sprite
+	// Doesnt Spawn a Sprite
 	self:NetworkVar( "Bool", 1, "SpriteDisabled", { KeyName = "raw.spritedisabled" } )
 	/*
 	0: Use Splinter Cell: Blacklist ( Modified Unreal Engine 2 ) Inspired Shadows ( Recommended )
 	1: Use EXTREMELY EXPENSIVE Shadows Drawn by Vulcan ( Doesnt Render AT ALL on Weak Platforms! )
 	*/
 	self:NetworkVar( "Bool", 2, "Shadows", { KeyName = "raw.shadows" } )
-	//The Texture of The Light
+	// The Texture of The Light
 	self:NetworkVar( "String", 0 ,"Texture", { KeyName = "raw.texture" } )
-	//The Light Color
+	// The Light Color
 	self:NetworkVar( "Vector", 0 ,"LightColor", { KeyName = "raw.lightcolor" } )
-	//Minimum Distance. Clamped if Less Than 10.
+	// Minimum Distance. Clamped if Less Than 10.
 	self:NetworkVar( "Int", 0 , "MinDistance", { KeyName = "raw.mindistance" } )
-	//How Far Does The Light Go?
+	// How Far Does The Light Go?
 	self:NetworkVar( "Int", 1 , "Distance", { KeyName = "raw.distance" } )
-	//The Amount of Degrees to Light Up Vertically
+	// The Amount of Degrees to Light Up Vertically
 	self:NetworkVar( "Int", 2 , "VerFOV", { KeyName = "raw.verfov" } )
-	//The Amount of Degrees to Light Up Horizontally
+	// The Amount of Degrees to Light Up Horizontally
 	self:NetworkVar( "Int", 3 , "HorFOV", { KeyName = "raw.horfov" } )
 end
 

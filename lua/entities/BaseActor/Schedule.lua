@@ -4,7 +4,7 @@ _reg.CActorSchedule = CActorSchedule
 
 CActorSchedule.__index = CActorSchedule
 
-//ENT.Schedule = nil
+// ENT.Schedule = nil
 
 function ENT:SelectSchedule( Previous, PrevName, PrevReturn ) ErrorNoHaltWithStack "SelectSchedule Not Overriden" end
 
@@ -47,7 +47,9 @@ end
 
 ------ Include Default Schedules ------
 
-include "Schedules/IdleRoam.lua"
+include "Schedules/Vehicle/Base.lua"
+
+include "Schedules/Idle.lua"
 include "Schedules/Combat.lua"
 include "Schedules/Cover.lua"
-include "Schedules/Vehicle/Base.lua"
+include "Schedules/PullAlarm.lua"

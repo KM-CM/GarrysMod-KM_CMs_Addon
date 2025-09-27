@@ -11,7 +11,7 @@ list.Set( "NPC", "HumanTerrorist", {
 	Name = "#HumanTerrorist",
 	Class = "HumanTerrorist",
 	Category = "Humans",
-	Weapons = { //My Humble Terrorist WeaponSet!
+	Weapons = { // My Humble Terrorist WeaponSet!
 		"weapon_pistol", "USP", "DesertEagle",
 		"AK47", "weapon_pistol,AK47", "USP,AK47", "DesertEagle,AK47",
 		"MAC10", "weapon_pistol,MAC10", "USP,MAC10", "DesertEagle,MAC10",

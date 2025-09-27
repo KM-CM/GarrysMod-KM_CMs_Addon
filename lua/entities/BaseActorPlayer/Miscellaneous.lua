@@ -35,7 +35,7 @@ function ENT:MoveAlongPath( Path, flSpeed, flHeight, tFilter )
 		Which was a Mechanic I was Creating, But Instead Jumping Above EachOther*/
 		if tr.Hit && ( !IsValid( ent ) || self:Disposition( ent ) != D_LI ) then
 			if self:IsOnGround() then
-				local flNewHeight = 0 //NOT Related to flHeight!
+				local flNewHeight = 0 // NOT Related to flHeight!
 				local flMaxJumpLength = ( 2 * sv_gravity:GetFloat() * self.loco:GetJumpHeight() ) ^ .5
 				local bCantClimb = !self.bCanClimb
 				while true do

@@ -1,13 +1,13 @@
-//Whether We wanna Advance or Retreat, and How Fast
+// Whether We wanna Advance or Retreat, and How Fast
 ENT.flCombatState = 1
-//Same as Above, Except Caused Even by Small Amounts of GunFire
-//When You're Retreating Via This, Dont Shout "FALL BACK TO COVER!!!"
+// Same as Above, Except Caused Even by Small Amounts of GunFire
+// When You're Retreating Via This, Dont Shout "FALL BACK TO COVER!!!"
 ENT.flCombatStateSmall = 1
 
-//If an Ally This Close to Us is Falling Back, We will Also Do
+// If an Ally This Close to Us is Falling Back, We will Also Do
 ENT.flAllyRetreatShareDistance = 4096
 
-//Short-Term Suppression Does Not Get Shared Between Allies
+// Short-Term Suppression Does Not Get Shared Between Allies
 ENT.flCombatStateSuppressionShort = 0
 ENT.flCombatStateSuppressionShortMax = 16
 ENT.flCombatStateSuppressionShortRec = 4
@@ -37,7 +37,7 @@ function ENT:CalcCombatState()
 	flDistSqr = flDistSqr * flDistSqr
 	local vMe = CEntity_GetPos( self )
 	local flSupLong, flSupShort = MyTable.flCombatStateSuppressionLong, MyTable.flCombatStateSuppressionShort
-	//If Some of Us are Already Retreating, Join Them
+	// If Some of Us are Already Retreating, Join Them
 	local t = MyTable.GetAlliesByClass( self )
 	if t then
 		for ally in pairs( t ) do
@@ -46,12 +46,12 @@ function ENT:CalcCombatState()
 			local tAlly = CEntity_GetTable( ally )
 			local n = tAlly.flCombatStateSuppressionLong || 0
 			if n > flSupLong then flSupLong = n end
-			//local n = tAlly.flCombatStateSuppressionShort || 0
-			//if n > flSupShort then flSupShort = n end
+			// local n = tAlly.flCombatStateSuppressionShort || 0
+			// if n > flSupShort then flSupShort = n end
 		end
 	end
 	MyTable.flCombatStateSuppressionLong = flSupLong
-	//MyTable.flCombatStateSuppressionShort = flSupShort
+	// MyTable.flCombatStateSuppressionShort = flSupShort
 	local f = math_Clamp( math_Remap( flSupLong, 0, h * MyTable.flCombatStateSuppressionLongEffect, 1, -1 ), -1, 1 )
 	local fs = math_Clamp( math_Remap( flSupShort, 0, h * MyTable.flCombatStateSuppressionShortEffect, 1, -1 ), -1, 1 )
 	MyTable.flCombatState = f

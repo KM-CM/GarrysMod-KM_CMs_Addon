@@ -70,7 +70,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
 				table.insert( tQueue, { new, t.dist + dist, vCenter } )
 			end
-			local v = area:GetCorner( 0 ) //NORTH_WEST
+			local v = area:GetCorner( 0 ) // NORTH_WEST
 			local flCornerX, flCornerY = v.x, v.y
 			local flSizeX, flSizeY = area:GetSizeX(), area:GetSizeY()
 			t = area:GetCenter()

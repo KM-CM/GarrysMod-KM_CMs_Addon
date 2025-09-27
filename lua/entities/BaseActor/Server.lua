@@ -3,6 +3,8 @@ ENT.vHullMaxs = HULL_HUMAN_MAXS
 ENT.vHullDuckMins = HULL_HUMAN_DUCK_MINS
 ENT.vHullDuckMaxs = HULL_HUMAN_DUCK_MAXS
 
+ENT.flReach = 64
+
 function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
 	if flDuck < .5 then return end
 	local v = self.vDesAim:Angle()
@@ -69,7 +71,7 @@ local FL = FL_OBJECT + FL_NPC + FL_CLIENT + FL_FAKECLIENT
 function ENT:Initialize()
 	self:AddFlags( FL )
 	__ACTOR_LIST__[ self ] = true
-	self:SetNPCClass( self:GetNPCClass() ) //Required for Ally Searches to Work
+	self:SetNPCClass( self:GetNPCClass() ) // Required for Ally Searches to Work
 	self:AddCallback( "PhysicsCollide", function( self, Data )
 		local ent = Data.HitEntity
 		if !IsValid( ent ) then return end
@@ -99,7 +101,7 @@ function ENT:HandleKeyValue( Key, Value ) end
 
 local DEFAULT_KEY_VALUES = {
 	weapon = function( self, _, sWeapons )
-		//if sWeaponClass != nil && sWeaponClass != '' then self:Give( sWeaponClass ) end
+		// if sWeaponClass != nil && sWeaponClass != '' then self:Give( sWeaponClass ) end
 		for t in string.gmatch( sWeapons, "[^,]+" ) do self:Give( t ) end
 	end,
 	class = function( self, _, sClass )
@@ -173,10 +175,10 @@ end
 
 /*
 ENT.bCanClimbLadders = false
-//Note That This is NOT Climbing Ladders, It's Climbing ANYTHING, Like Left 4 Dead 2 Infected
+// Note That This is NOT Climbing Ladders, It's Climbing ANYTHING, Like Left 4 Dead 2 Infected
 ENT.bCanClimb = false
 
-ENT.bSimpleDuck = false //Can Only Duck Very Simply as The Name Suggests - Either Ducked, or Not Ducked
+ENT.bSimpleDuck = false // Can Only Duck Very Simply as The Name Suggests - Either Ducked, or Not Ducked
 ENT.bCanMove = false
 ENT.bCanMoveShoot = false
 ENT.bCanDuck = false
@@ -186,7 +188,7 @@ ENT.bCanDuckMoveShoot = false
 */
 
 function ENT:Crouching() return false end
-//Dont Worry, if bSimpleDuck is true, This will Only be Supplied with
-//Either a 0 or a 1, as Opposed to Any Value in The [ 0, 1 ] Range
+// Dont Worry, if bSimpleDuck is true, This will Only be Supplied with
+// Either a 0 or a 1, as Opposed to Any Value in The [ 0, 1 ] Range
 function ENT:SetCrouchTarget( flTarget ) end
 function ENT:GetCrouchTarget() return 1 end

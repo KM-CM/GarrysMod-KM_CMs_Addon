@@ -4,7 +4,7 @@ DEFINE_BASECLASS "base_anim"
 ENT.PrintName = "#Flare"
 if CLIENT then language.Add( "Flare", "Flare" ) end
 
-ENT.__FLARE__ = true //Dont Confuse with __FLARE_ACTIVE__
+ENT.__FLARE__ = true // Dont Confuse with __FLARE_ACTIVE__
 
 sound.Add {
 	name = "FlareBurn",
@@ -17,7 +17,7 @@ if !SERVER then return end
 
 function ENT:GetNPCClass() return self.iClass || -1 end
 ENT.Classify = ENT.GetNPCClass
-function ENT:SetNPCClass() end //Will Automatically Use GetOwner()'s Classify() Instead
+function ENT:SetNPCClass() end // Will Automatically Use GetOwner()'s Classify() Instead
 
 function ENT:Initialize()
 	self:SetModel "models/weapons/w_grenade.mdl"
@@ -44,7 +44,7 @@ function ENT:Think()
 	end
 	if IsValid( self.pSprite ) then
 		local spr = self.pSprite
-		//spr:SetKeyValue( "scale", math.Remap( CurTime(), self.flStartTime, self.flEndTime, 1, 0 ) )
+		// spr:SetKeyValue( "scale", math.Remap( CurTime(), self.flStartTime, self.flEndTime, 1, 0 ) )
 		spr:SetKeyValue( "renderamt", math.Remap( CurTime(), self.flStartTime, self.flEndTime, 1530, 0 ) )
 		spr:Fire( "ColorRedValue", 255 )
 		spr:Fire( "ColorGreenValue", 0 )

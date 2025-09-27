@@ -32,6 +32,8 @@ if CLIENT then language.Add( "SimpleSiren", "Siren" ) return end
 
 ENT.CATEGORIZE = { Siren = true }
 
+ENT.flAudibleDistSqr = 3981071.705535
+
 ENT.flRoundsPerMinuteLimit = 3400
 ENT.flRoundsPerMinute = 0
 ENT.flWailSpeedLimitMin = 128
@@ -86,5 +88,5 @@ end
 
 function ENT:OnRemove()
 	local pSound = self.pSound
-	pSound:Stop() //SHUT UP YOU'RE DEAD
+	pSound:Stop() // SHUT UP YOU'RE DEAD
 end

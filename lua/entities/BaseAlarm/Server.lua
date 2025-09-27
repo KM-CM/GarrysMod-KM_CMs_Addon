@@ -1,3 +1,8 @@
+ENT.__ALARM__ = true
+
+// 0 means audible when visible
+ENT.flAudibleDistSqr = 0
+
 function ENT:Initialize()
 	self:SetUseType( SIMPLE_USE )
 	local iClass = self:Classify()

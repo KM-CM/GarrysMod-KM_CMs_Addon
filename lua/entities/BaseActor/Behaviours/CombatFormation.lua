@@ -1,15 +1,15 @@
-//“ALL OF YOU BEHIND ME, WE'RE GOING IN!”
-// - A Hostile, 2011, Tom Clancy's Splinter Cell: Blacklist
+// “ALL OF YOU BEHIND ME, WE'RE GOING IN!”
+//  - A Hostile, 2011, Tom Clancy's Splinter Cell: Blacklist
 
-//A Simple One Person Wide Stack
+// A Simple One Person Wide Stack
 function ENT:DLG_CombatFormationStack() return self:DLG_CombatFormationGeneral() end
-//Used by SWAT; Stack Up by The Sides of The Lead
+// Used by SWAT; Stack Up by The Sides of The Lead
 function ENT:DLG_CombatFormationSide() return self:DLG_CombatFormationGeneral() end
-//Used Mid-Combat; Find Covers Around The Lead
-function ENT:DLG_CombatFormationCover() return self:DLG_CombatFormationGeneral() end //“WE'RE GOING IN, IN POSITION!”
+// Used Mid-Combat; Find Covers Around The Lead
+function ENT:DLG_CombatFormationCover() return self:DLG_CombatFormationGeneral() end // “WE'RE GOING IN, IN POSITION!”
 
-function ENT:DLG_CombatFormationReady() end //“BEHIND COVER AND IN POSITION!”
-function ENT:DLG_CombatFormationMove() end //“Harakha, Yalla!”
+function ENT:DLG_CombatFormationReady() end // “BEHIND COVER AND IN POSITION!”
+function ENT:DLG_CombatFormationMove() end // “Harakha, Yalla!”
 
 function ENT:DLG_CombatFormationGeneral() end
 
@@ -46,7 +46,7 @@ end )
 
 Actor_RegisterBehaviour( "CombatFormation", {
 	Initialize = function( self )
-		self.sType = "Stack" //Only This for Now
+		self.sType = "Stack" // Only This for Now
 	end,
 	GatherParticipants = function( self )
 		local pCurrent = next( self.m_tParticipants )
@@ -129,9 +129,9 @@ Actor_RegisterBehaviour( "CombatFormation", {
 					local ent = d[ 1 ]
 					local m, n = ent:OBBMaxs().x, ent:OBBMins().x
 					local d = m - n
-					iSoFar = iSoFar + d * .5 //The First Half of Our Bounding Box is Where We Stand
+					iSoFar = iSoFar + d * .5 // The First Half of Our Bounding Box is Where We Stand
 					tPositions[ ent ] = iSoFar
-					iSoFar = iSoFar + d //Add The Entirety of It Because ( d + d * .5 ) = 1.5
+					iSoFar = iSoFar + d // Add The Entirety of It Because ( d + d * .5 ) = 1.5
 				end
 				self.tPositions = tPositions
 			end
