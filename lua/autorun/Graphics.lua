@@ -1,10 +1,10 @@
-//This is Shared for a Reason, and Includes More Than Just Client Graphics
+// This is Shared for a Reason, and Includes More Than Just Client Graphics
 
-//Gets The Human Percieved Brightness of a Color
+// Gets The Human Percieved Brightness of a Color
 function GetBrightness( c ) return c[ 1 ] * .00083372549 + c[ 2 ] * .00280470588 + c[ 3 ] * .00028313725 end
-//Same as Above Except Uses Vector Colors
+// Same as Above Except Uses Vector Colors
 function GetBrightnessVC( v ) return v[ 1 ]  * .2126 + v[ 2 ] * .7152  + v[ 3 ] * .0722 end
-//Also Same as Above Except Uses Red/Green/Blue Floats
+// Also Same as Above Except Uses Red/Green/Blue Floats
 function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 + b * .00028313725 end
 
 if !CLIENT_DLL then return end
@@ -15,7 +15,7 @@ local LocalPlayer = LocalPlayer
 local EyePos = EyePos
 local vUpHuge = Vector( 0, 0, 999999 )
 
-//Similar to util.IsSkyboxVisibleFromPoint
+// Similar to util.IsSkyboxVisibleFromPoint
 function UTIL_IsUnderSkybox()
 	return util_TraceLine( {
 		start = EyePos(),
@@ -25,7 +25,7 @@ function UTIL_IsUnderSkybox()
 	} ).HitSky
 end
 
-//These Shall NOT be Overriden by ANYTHING!
+// These Shall NOT be Overriden by ANYTHING!
 local BLEED_MAX_COLOR_MULTIPLY = 1
 local BLEED_MAX_COLOR_ADD = .5
 
@@ -40,7 +40,7 @@ setfenv( VectorSum, { abs = math.abs } )
 function DrawBlur( flIntensity ) DrawBokehDOF( flIntensity, 0, 0 ) end
 
 local MAX_WATER_BLUR = 3
-//[ 0, 1 ], Not [ 0, MAX_WATER_BLUR ]!
+// [ 0, 1 ], Not [ 0, MAX_WATER_BLUR ]!
 local WATER_BLUR_CHANGE_SPEED_TO = .8
 local WATER_BLUR_CHANGE_SPEED_FROM = .2
 

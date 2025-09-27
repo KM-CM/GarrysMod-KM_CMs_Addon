@@ -87,11 +87,11 @@ __PLAYER_MODEL__[ "models/hunter.mdl" ] = {
 				ply.MDL_flDontOnlyMoveTime = CurTime() + ply:SequenceDuration( ply:LookupSequence "unplant" )
 				return ACT_INVALID
 			elseif ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && ply:KeyDown( IN_ATTACK2 ) && CurTime() > ( ply.MDL_flNextMelee || 0 ) then
-				if ply:KeyDown( IN_SPEED ) then //TODO: Charge
+				if ply:KeyDown( IN_SPEED ) then // TODO: Charge
 				else
-					//We Allow Ourselves to Use Non-Shared Randoms Because
-					//We Dont Really Care What Animation is Going on
-					//Since They All Hit The Same
+					// We Allow Ourselves to Use Non-Shared Randoms Because
+					// We Dont Really Care What Animation is Going on
+					// Since They All Hit The Same
 					local s = ply:LookupSequence( table.Random { "meleeleft", "meleert", "melee_02" } )
 					ply:EmitSound "NPC_Hunter.MeleeAnnounce"
 					if SERVER then

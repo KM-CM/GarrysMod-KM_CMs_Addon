@@ -1,6 +1,12 @@
+local CEntity = FindMetaTable "Entity"
+local CEntity_GetTable = CEntity.GetTable
+local CEntity_GetPos = CEntity.GetPos
+
 // ENT.Enemy = NULL
-function ENT:SetEnemy( e ) self:UpdateEnemyMemory( e, e:GetPos() ) end
-function ENT:GetEnemy() return self.Enemy end
+function ENT:SetEnemy( e ) local MyTable = CEntity_GetTable( self ) MyTable.UpdateEnemyMemory( e, CEntity_GetPos( e ), MyTable ) end
+function ENT:GetEnemy() return CEntity_GetTable( self ).Enemy end
+
+local IsValid = IsValid
 
 function ENT:SetupEnemy( enemy )
 	local ent = enemy
@@ -12,30 +18,49 @@ function ENT:SetupEnemy( enemy )
 	return enemy, ent
 end
 
+local util_TraceLine = util.TraceLine
+
+local math = math
+local math_abs = math.abs
+local math_AngleDifference = math.AngleDifference
+
+local table_insert = table.insert
+
+local MASK_VISIBLE_AND_NPCS = MASK_VISIBLE_AND_NPCS
+
+local isentity = isentity
+
+local CEntity_OBBCenter = CEntity.OBBCenter
+local CEntity_WaterLevel = CEntity.WaterLevel
+local CEntity_GetOwner = CEntity.GetOwner
+local CEntity_GetAngles = CEntity.GetAngles
+
 ENT.bCantSeeUnderWater = true
 ENT.bVisNot360 = true
 ENT.flVisionYaw = 99
 ENT.flVisionPitch = 33 // Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
-function ENT:CanSee( vec )
+function ENT:CanSee( vec, MyTable )
+	MyTable = MyTable || CEntity_GetTable( self )
 	local veh, ent
 	if isentity( vec ) then
-		veh = vec.GAME_pVehicle
-		if self.bCantSeeUnderWater && vec:WaterLevel() == 3 then return end
+		local TheirTable = CEntity_GetTable( vec )
+		veh = TheirTable.GAME_pVehicle
+		if MyTable.bCantSeeUnderWater && CEntity_WaterLevel( vec ) == 3 then return end
 		ent = vec
-		vec = vec:GetPos() + vec:OBBCenter()
+		vec = CEntity_GetPos( vec ) + CEntity_OBBCenter( vec )
 	end
-	if self.bVisNot360 then
-		local des, aim = ( vec - self:EyePos() ):Angle(), self:EyeAngles()
-		if math.abs( math.AngleDifference( des.y, aim.y ) ) > self.flVisionYaw then return end
-		if math.abs( math.AngleDifference( des.p, aim.p ) ) > self.flVisionPitch then return end
+	if MyTable.bVisNot360 then
+		local des, aim = ( vec - MyTable.GetShootPos( self ) ):Angle(), MyTable.aAim || CEntity_GetAngles( self )
+		if math_abs( math_AngleDifference( des.y, aim.y ) ) > MyTable.flVisionYaw then return end
+		if math_abs( math_AngleDifference( des.p, aim.p ) ) > MyTable.flVisionPitch then return end
 	end
 	local t = { self }
-	if IsValid( ent ) then table.insert( t, ent ) end
-	if IsValid( veh ) then table.insert( t, veh ) end
+	if IsValid( ent ) then table_insert( t, ent ) end
+	if IsValid( veh ) then table_insert( t, veh ) end
 	veh = self.GAME_pVehicle
-	if IsValid( veh ) then table.insert( t, veh ) end
-	return !util.TraceLine( {
-		start = self:EyePos(),
+	if IsValid( veh ) then table_insert( t, veh ) end
+	return !util_TraceLine( {
+		start = MyTable.GetShootPos( self ),
 		endpos = vec,
 		mask = MASK_VISIBLE_AND_NPCS,
 		filter = t
@@ -47,6 +72,8 @@ ENT.tBullseyes = {} // EntityUniqueIdentifier -> { BaseActorBullseye ( Even InVa
 
 // function ENT:UpdateEnemyMemory( enemy, vec ) self:SetupBullseye( enemy, vec, enemy:GetAngles() ) end
 function ENT:UpdateEnemyMemory( enemy, vec, ang ) self:SetupBullseye( enemy, vec || enemy:GetPos(), ang || enemy:GetAngles() ) end
+
+local EntityUniqueIdentifier = EntityUniqueIdentifier
 
 function ENT:SetupBullseye( enemy, vec, ang )
 	if vec then
@@ -91,6 +118,8 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	beye:SetMaxHealth( enemy:GetMaxHealth() )
 end
 
+local pairs = pairs
+
 function ENT:OnOtherKilled( ent )
 	local n, t = EntityUniqueIdentifier( ent ), self:GetAlliesByClass()
 	if t then
@@ -109,50 +138,75 @@ function ENT:OnOtherKilled( ent )
 	end
 end
 
-ENT.flMaxVisionRange = 9000
+ENT.flMaxVisionRange = 8192
 
-function ENT:GetVisionStrengthIncreaseSpeed( VecOrEnt )
+local math_Remap = math.Remap
+
+function ENT:GetVisionStrengthIncreaseSpeed( VecOrEnt, vEyePos )
 	if isentity( VecOrEnt ) then VecOrEnt = VecOrEnt:GetPos() + VecOrEnt:OBBCenter() end
-	return 3 * math.Remap( self:GetPos():Distance( VecOrEnt ), 0, self.flMaxVisionRange, 1, 0 )
+	return 3 * math_Remap( vEyePos:Distance( VecOrEnt ), 0, self.flMaxVisionRange, 1, 0 )
 end
 
-local util_TraceLine = util.TraceLine
 local HUGE_Z = Vector( 0, 0, 999999 )
 
-/*If We are in Combat with Multiple Enemies, and We See That There is
-No Enemy at One Position, We can Remove That Bullseye*/
+local ents_FindInPVS = ents.FindInPVS
+
+local table_Count = table.Count
+
+local math_Rand = math.Rand
+
+local math_Clamp = math.Clamp
+
+local CurTime = CurTime
+
+// If We are in Combat with Multiple Enemies, and We See That There is
+// No Enemy at One Position, We can Remove That Bullseye
 ENT.bCombatForgetHostiles = true
 ENT.flLastLookTime = 0
 ENT.flNextLookTime = 0
-/*If We've Seen Something, and Then It went Out of Sight, Dont Delete It Yet!
-Instead, Decrease The Vision Strength of It by This and Only Delete It when It's Zero.
-This Way, It's Harder for Enemies to Run Away, Since Every Half a Second They're Re-Noticed,
-as Opposed to having to Wait The Whole Spot Time Over and Over Again when They're a Pixel Out of LoS
-
-NOTE: This Does NOT Grant The Actors Free Knowledge! tVisionStrength is Only Used to Determine
-How Much We've Spotted Something, NOT to Decide if We can or cant See Something.
-
-The Formula is 1 / SecondsToLoseCompletely*/
+// If we've seen something, and then it went out of sight, don't delete the info about it yet!
+// Instead, decrease the vision strength ofit by this and only delete the info about it when it's zero.
+// This way, it's harder for enemies to run away, since every half a second they're re-noticed,
+// as opposed to having to wait the whole spot time over and over again when they're a pixel out of sight
+//
+// NOTE: This does NOT grant the Actors free knowledge! tVisionStrength is only used to determine
+// how much we've spotted something, NOT to decide if we can or can't see it.
+//
+// 1 / Seconds to lose completely
 ENT.flLoseSpeed = .2 // 5
-ENT.tVisionStrength = {} // Entity ( Even InValid, will be Filtered ) -> Float [ 0, 1 ]
-function ENT:Look()
-	if CurTime() <= self.flNextLookTime then return end
-	self.flNextLookTime = CurTime() + math.Rand( .08, .12 )
+ENT.tVisionStrength = {} // Entity ( Even invalid, will be filtered ) -> Float [ 0, 1 ]
+local ipairs = ipairs
+function ENT:Look( MyTable )
+	MyTable = MyTable || CEntity_GetTable( self )
+	if CurTime() <= MyTable.flNextLookTime then return end
+	MyTable.flNextLookTime = CurTime() + math_Rand( .08, .12 )
 	local tVisionStrength = {}
 	local tVisibleEnemies = {}
-	local iNumEnemies = table.Count( self.tEnemies )
+	local iNumEnemies = table_Count( MyTable.tEnemies )
 	local tEnemies = {}
-	local tOldVisionStrength = self.tVisionStrength
-	local flFrameTime = math.abs( CurTime() - self.flLastLookTime )
-	local flVisionDistSqr = self.flMaxVisionRange * self.flMaxVisionRange
-	local vEyePos = self:EyePos()
-	local tAllies = self:GetAlliesByClass()
-	for _, ent in ipairs( ents.FindInPVS( self ) ) do
-		if vEyePos:DistToSqr( ent:GetPos() + ent:OBBCenter() ) > flVisionDistSqr then continue end
-		if !ent.__FLARE_ACTIVE__ && !ent.__ACTOR_BULLSEYE__ && !self:IsHateDisposition( ent ) || !self:CanSee( ent ) then continue end
+	local tOldVisionStrength = MyTable.tVisionStrength
+	local flFrameTime = math_abs( CurTime() - MyTable.flLastLookTime )
+	local flVisionDistSqr = MyTable.flMaxVisionRange * MyTable.flMaxVisionRange
+	local vEyePos = MyTable.GetShootPos( self )
+	local tAllies = MyTable.GetAlliesByClass( self )
+	for _, ent in ipairs(
+		// This is the piece of shit that is necessary but absolutely CONSUMES the CPU!
+		// I am 100% sure, and I have tested it.
+		// If you add
+		// if true then ents_FindInPVS( self ) return end
+		// below
+		// MyTable.flNextLookTime = CurTime() + math_Rand( .08, .12 )
+		// it will not become less CPU consuming than it is already.
+		// So sadly, major optimizations cannot be done without making the Actors blinder,
+		// and that is not something that I will ever do
+		ents_FindInPVS( self )
+	) do
+		if vEyePos:DistToSqr( CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) ) > flVisionDistSqr then continue end
+		local TheirTable = CEntity_GetTable( ent )
+		if !TheirTable.__FLARE_ACTIVE__ && !TheirTable.__ACTOR_BULLSEYE__ && !MyTable.IsHateDisposition( self, ent ) || !MyTable.CanSee( self, ent ) then continue end
 		if tOldVisionStrength[ ent ] then
 			if ent.__ACTOR_BULLSEYE__ then
-				if tAllies && ent.Owner == self then
+				if tAllies && TheirTable.Owner == self then
 					local f = tOldVisionStrength[ ent ]
 					if f && f >= 1 then
 						if iNumEnemies > 1 then
@@ -176,7 +230,7 @@ function ENT:Look()
 							ent:Remove()
 							iNumEnemies = iNumEnemies - 1
 						end
-					else tVisionStrength[ ent ] = math.Clamp( f + self:GetVisionStrengthIncreaseSpeed( ent ) * flFrameTime, 0, 1 ) end
+					else tVisionStrength[ ent ] = math.Clamp( f + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 ) end
 				end
 			elseif ent.__FLARE_ACTIVE__ then
 				if ent.Classify then
@@ -186,30 +240,30 @@ function ENT:Look()
 							if ent:Classify() == self:Classify() then // Go Over to Ally Flares to Help
 								if ent:GetPos():DistToSqr( self:GetPos() ) > 9437184/*3072*/ then
 									self:SetupBullseye( ent, util_TraceLine( {
-										start = ent:GetPos() + ent:OBBCenter(),
-										endpos = ent:GetPos() + ent:OBBCenter() - HUGE_Z,
+										start = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ),
+										endpos = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) - HUGE_Z,
 										filter = ent,
 										mask = MASK_VISIBLE_AND_NPCS
-									} ).HitPos, ent:GetAngles() )
+									} ).HitPos, CEntity_GetAngles( ent ) )
 								end
 							else
-								local p = ent:GetOwner()
+								local p = CEntity_GetOwner( ent )
 								if IsValid( p ) then
 									self:SetupBullseye( p, util_TraceLine( {
-										start = ent:GetPos() + ent:OBBCenter(),
-										endpos = ent:GetPos() + ent:OBBCenter() - HUGE_Z,
+										start = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ),
+										endpos = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) - HUGE_Z,
 										filter = ent,
 										mask = MASK_VISIBLE_AND_NPCS
-									} ).HitPos, ent:GetAngles() )
+									} ).HitPos, CEntity_GetAngles( ent ) )
 								end
 							end
 							if ent.FLARE_tFoundByClass then ent.FLARE_tFoundByClass[ self:Classify() ] = true
 							else ent.FLARE_tFoundByClass = { [ self:Classify() ] = true } end
-						else tVisionStrength[ ent ] = math.Clamp( tOldVisionStrength[ ent ] + self:GetVisionStrengthIncreaseSpeed( ent ) * flFrameTime, 0, 1 ) end
+						else tVisionStrength[ ent ] = math_Clamp( tOldVisionStrength[ ent ] + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 ) end
 					end
 				end
 			else
-				tVisionStrength[ ent ] = math.Clamp( tOldVisionStrength[ ent ] + self:GetVisionStrengthIncreaseSpeed( ent ) * flFrameTime, 0, 1 )
+				tVisionStrength[ ent ] = math_Clamp( tOldVisionStrength[ ent ] + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 )
 				if tVisionStrength[ ent ] >= 1 then
 					tEnemies[ ent ] = true
 					tVisibleEnemies[ EntityUniqueIdentifier( ent ) ] = true
@@ -218,46 +272,49 @@ function ENT:Look()
 			end
 		else tVisionStrength[ ent ] = 0 end
 	end
-	local f = self.flLoseSpeed
+	local f = MyTable.flLoseSpeed
 	for ent, flt in pairs( tOldVisionStrength ) do
 		if !IsValid( ent ) || flt <= 0 || tVisionStrength[ ent ] then continue end
 		tVisionStrength[ ent ] = flt - f * FrameTime()
 	end
 	local tBullseyes = {}
-	for id, data in pairs( self.tBullseyes ) do
+	for id, data in pairs( MyTable.tBullseyes ) do
 		local ent = data[ 1 ]
 		if !IsValid( ent ) then continue end
 		tBullseyes[ id ] = data
 		if tVisibleEnemies[ id ] then continue end
 		tEnemies[ ent ] = true
 	end
-	self.tBullseyes = tBullseyes
+	MyTable.tBullseyes = tBullseyes
 	local ned, ne = math.huge
-	for ent in pairs( self.tEnemies ) do
+	for ent in pairs( MyTable.tEnemies ) do
 		if !IsValid( ent ) then continue end
-		local d = ent:GetPos():DistToSqr( self:GetPos() )
+		local d = ( CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) ):DistToSqr( vEyePos )
 		if d >= ned then continue end
 		ne, ned = ent, d
 	end
-	self.Enemy = ne
-	self.tEnemies = tEnemies
-	self.flLastLookTime = CurTime()
-	self.tVisionStrength = tVisionStrength
+	MyTable.Enemy = ne
+	MyTable.tEnemies = tEnemies
+	MyTable.flLastLookTime = CurTime()
+	MyTable.tVisionStrength = tVisionStrength
 end
 
 function ENT:OnHeardSomething( Other, Data )
-	local d = self:Disposition( Other )
-	if d == D_LI && Other.__ACTOR__ then
-		for _, d in pairs( Other.tBullseyes ) do
+	local MyTable = CEntity_GetTable( self )
+	local d = MyTable.Disposition( self, Other, MyTable )
+	if d == D_LI then
+		local OtherTable = CEntity_GetTable( Other )
+		if !OtherTable.__ACTOR__ then return end
+		for _, d in pairs( OtherTable.tBullseyes ) do
 			local beye = d[ 1 ]
 			if IsValid( beye ) then
 				local ent = d[ 2 ]
 				if IsValid( ent ) then
-					self:SetupBullseye( ent, beye:GetPos(), beye:GetAngles() )
+					MyTable.SetupBullseye( self, ent, CEntity_GetPos( beye ), CEntity_GetAngles( beye ), MyTable )
 				end
 			end
 		end
 	elseif d == D_HT || d == D_FR then
-		self:SetupBullseye( Other )
+		MyTable.SetupBullseye( self, Other, nil, nil, MyTable )
 	end
 end

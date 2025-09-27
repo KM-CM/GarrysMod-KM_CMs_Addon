@@ -18,7 +18,7 @@ local CEntity = FindMetaTable "Entity"
 local CEntity_GetOwner = CEntity.GetOwner
 SWEP.bDisAllowPrimaryInCover = true
 function SWEP:CanPrimaryAttack()
-	//Believe It or Not, Some People ( Including VALVe ) have The AUDACITY to Ignore This Check!
+	// Believe It or Not, Some People ( Including VALVe ) have The AUDACITY to Ignore This Check!
 	if CurTime() <= self:GetNextPrimaryFire() then return end
 	local owner = CEntity_GetOwner( self )
 	if CurTime() <= ( owner.CTRL_flCoverDontShootTime || 0 ) then return end

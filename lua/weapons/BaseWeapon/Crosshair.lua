@@ -21,7 +21,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 	Shotgun = function( MyTable, self )
 		local flSpread = MyTable.GatherCrosshairSpread( self, MyTable, true )
 		local flHeight, flWidth = ScrH(), ScrW()
-		//I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
+		// I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
 		local flRadius = flSpread * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
 		local co = MyTable.CrosshairColorOutLine

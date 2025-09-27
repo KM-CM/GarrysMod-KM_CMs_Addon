@@ -34,7 +34,7 @@ function AddThinkToEntity( self, func )
 	end )
 end
 
-//DO NOT EDIT THIS!
+// DO NOT EDIT THIS!
 hook_Add( "HandlePlayerDrivingNew", "Base", function( ply, plyTable, pVehicle )
 	if ( !pVehicle.HandleAnimation && pVehicle.GetVehicleClass ) then
 		local c = pVehicle:GetVehicleClass()

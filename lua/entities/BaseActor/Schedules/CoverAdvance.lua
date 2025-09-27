@@ -40,10 +40,12 @@ function ENT:FindAdvanceCover( vCover, tEnemies, flCombatStateOverride, flBattle
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
 				if tAllies then
+					local b
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then b = true break end
 					end
+					if b then continue end
 				end
 				return vec, !util.TraceLine( {
 					start = vec + o,
@@ -66,10 +68,12 @@ function ENT:FindAdvanceCover( vCover, tEnemies, flCombatStateOverride, flBattle
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
 				if tAllies then
+					local b
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then b = true break end
 					end
+					if b then continue end
 				end
 				return vec
 			end

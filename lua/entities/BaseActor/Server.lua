@@ -5,11 +5,15 @@ ENT.vHullDuckMaxs = HULL_HUMAN_DUCK_MAXS
 
 ENT.flReach = 64
 
+local CEntity = FindMetaTable "Entity"
+local CEntity_GetTable = CEntity.GetTable
+
 function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
 	if flDuck < .5 then return end
-	local v = self.vDesAim:Angle()
+	local MyTable = CEntity_GetTable( self )
+	local v = MyTable.vDesAim:Angle()
 	v.p = v.p + 35
-	self.vDesAim = v:Forward()
+	MyTable.vDesAim = v:Forward()
 end
 
 function ENT:MoveAlongPathToCover( ... ) return self:MoveAlongPath( ... ) end
@@ -33,38 +37,51 @@ function ENT:TranslateActivity( n ) return n end
 __ACTOR_LIST__ = __ACTOR_LIST__ || {}
 local __ACTOR_LIST__ = __ACTOR_LIST__
 
+local SafeRemoveEntity = SafeRemoveEntity
+
 function ENT:OnRemove()
 	__ACTOR_LIST__[ self ] = nil
-	for _, d in pairs( self.tBullseyes ) do SafeRemoveEntity( d[ 1 ] ) end
-	local iClass = self:GetNPCClass()
+	local MyTable = CEntity_GetTable( self )
+	for _, d in pairs( MyTable.tBullseyes ) do SafeRemoveEntity( d[ 1 ] ) end
+	local iClass = MyTable.GetNPCClass( self )
 	if iClass != CLASS_NONE then
-		local t = self.GetActorTableByClass()[ iClass ]
+		local t = MyTable.GetActorTableByClass()[ iClass ]
 		if t then t[ self ] = true end
 	end
 end
 
-function ENT:Tick() end
+function ENT:Tick( MyTable ) end
+
+local CEntity_GetPhysicsObject = CEntity.GetPhysicsObject
+local CEntity_GetParent = CEntity.GetParent
+local CEntity_PhysicsDestroy = CEntity.PhysicsDestroy
+local CEntity_WaterLevel = CEntity.WaterLevel
+local CEntity_GetPos = CEntity.GetPos
+local CEntity_GetAngles = CEntity.GetAngles
+
+local IsValid = IsValid
 
 ENT.bPhysics = false
 function ENT:Think()
-	if !self.bPhysics then
-		local phys = self:GetPhysicsObject()
+	local MyTable = CEntity_GetTable( self )
+	if !MyTable.bPhysics then
+		local phys = CEntity_GetPhysicsObject( self )
 		if IsValid( phys ) then
-			if IsValid( self:GetParent() ) then self:PhysicsDestroy() else
-				if self:WaterLevel() == 0 then
-					phys:SetPos( self:GetPos() )
-					phys:SetAngles( self:GetAngles() )
+			if IsValid( CEntity_GetParent( self ) ) then CEntity_PhysicsDestroy( self ) else
+				if CEntity_WaterLevel( self ) == 0 then
+					phys:SetPos( CEntity_GetPos( self ) )
+					phys:SetAngles( CEntity_GetAngles( self ) )
 				else
-					phys:UpdateShadow( self:GetPos(), self:GetAngles(), 0 )
+					phys:UpdateShadow( CEntity_GetPos( self ), CEntity_GetAngles( self ), 0 )
 				end
 			end
 		end
 	end
-	if IsValid( self.GAME_pVehicle ) then
+	if IsValid( MyTable.GAME_pVehicle ) then
 		self:SetActiveWeapon( NULL )
 		if self:GetCollisionGroup() != COLLISION_GROUP_WORLD then self:SetCollisionGroup( COLLISION_GROUP_WORLD ) end
 	else if self:GetCollisionGroup() != COLLISION_GROUP_NPC then self:SetCollisionGroup( COLLISION_GROUP_NPC ) end end
-	self:Tick()
+	MyTable.Tick( self, MyTable )
 end
 
 local FL = FL_OBJECT + FL_NPC + FL_CLIENT + FL_FAKECLIENT
@@ -130,7 +147,6 @@ ENT.flSuppressionMax = 2
 ENT.flSuppressionRec = 2
 ENT.flSuppressionHide = .1
 
-local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 function ENT:GAME_OnRangeAttacked( _, _, _, flDamage )
 	local MyTable = CEntity_GetTable( self )
 	MyTable.GAME_flSuppression = MyTable.GAME_flSuppression + flDamage
@@ -140,36 +156,59 @@ end
 
 local ProtectedCall = ProtectedCall
 local ai_disabled, developer = GetConVar "ai_disabled", GetConVar "developer"
+local coroutine_yield = coroutine.yield
+local math = math
+local math_Approach = math.Approach
+local math_Clamp = math.Clamp
+local math_abs = math.abs
+local math_AngleDifference = math.AngleDifference
+local FrameTime = FrameTime
+local CEntity_Health = CEntity.Health
+local CEntity_GetPoseParameter = CEntity.GetPoseParameter
+local CEntity_SetPoseParameter = CEntity.SetPoseParameter
+local CEntity_LookupPoseParameter = CEntity.LookupPoseParameter
+local Angle = Angle
 function ENT:RunBehaviour()
 	while true do
-		if ai_disabled:GetInt() == 1 then coroutine.yield() continue end
-		self.GAME_flSuppression = math.Approach( math.Clamp( self.GAME_flSuppression, 0, self:Health() * self.flSuppressionMax ), 0, self:Health() * self.flSuppressionRec * FrameTime() )
-		self.flCombatStateSuppressionShort = math.Approach( math.Clamp( self.flCombatStateSuppressionShort, 0, self:Health() * self.flCombatStateSuppressionShortMax ), 0, self:Health() * self.flCombatStateSuppressionShortRec * FrameTime() )
-		self.flCombatStateSuppressionLong = math.Approach( math.Clamp( self.flCombatStateSuppressionLong, 0, self:Health() * self.flCombatStateSuppressionLongMax ), 0, self:Health() * self.flCombatStateSuppressionLongRec * FrameTime() )
-		local vDesAim = self:GetDesiredAimVector()
+		if ai_disabled:GetInt() == 1 then coroutine_yield() continue end
+		local MyTable = CEntity_GetTable( self )
+		local f = CEntity_Health( self )
+		MyTable.GAME_flSuppression = math_Approach( math_Clamp( MyTable.GAME_flSuppression, 0, f * MyTable.flSuppressionMax ), 0, f * MyTable.flSuppressionRec * FrameTime() )
+		MyTable.flCombatStateSuppressionShort = math_Approach( math_Clamp( MyTable.flCombatStateSuppressionShort, 0, f * MyTable.flCombatStateSuppressionShortMax ), 0, f * MyTable.flCombatStateSuppressionShortRec * FrameTime() )
+		MyTable.flCombatStateSuppressionLong = math_Approach( math_Clamp( MyTable.flCombatStateSuppressionLong, 0, f * MyTable.flCombatStateSuppressionLongMax ), 0, f * MyTable.flCombatStateSuppressionLongRec * FrameTime() )
+		local vDesAim = MyTable.GetDesiredAimVector( self )
 		local aDesAim = vDesAim:Angle()
-		local ppAimPitch = self:LookupPoseParameter "aim_pitch"
-		local aAim = self:GetAngles()
+		local ppAimPitch = CEntity_LookupPoseParameter( self, "aim_pitch" )
+		local Angles = CEntity_GetAngles( self )
+		local aAim = Angle( Angles )
+		local flTurnRate = MyTable.flTurnRate
 		if ppAimPitch != -1 then
-			local des = math.AngleDifference( aDesAim.p, self:GetAngles().p + self:GetPoseParameter( "aim_pitch" ) )
-			local f = self.flTurnRate / self.flBodyTensity * FrameTime()
-			self:SetPoseParameter( "aim_pitch", self:GetPoseParameter( "aim_pitch" ) + math.Clamp( des * self.flBodyTensity, -f, f ) )
+			local p = CEntity_GetPoseParameter( self, "aim_pitch" )
+			local des = math_AngleDifference( aDesAim.p, Angles.p + p )
+			local t = MyTable.flBodyTensity
+			local f = flTurnRate / t * FrameTime()
+			CEntity_SetPoseParameter( self, "aim_pitch", p + math_Clamp( des * t, -f, f ) )
 			aAim.p = aAim.p + self:GetPoseParameter "aim_pitch"
 		end
-		local ppAimYaw = self:LookupPoseParameter "aim_yaw"
+		local ppAimYaw = CEntity_LookupPoseParameter( self, "aim_yaw" )
 		if ppAimYaw != -1 then
-			local des = math.AngleDifference( aDesAim.y, self:GetAngles().y + self:GetPoseParameter( "aim_yaw" ) )
-			local f = self.flTurnRate / self.flBodyTensity * FrameTime()
-			self:SetPoseParameter( "aim_yaw", self:GetPoseParameter( "aim_yaw" ) + math.Clamp( des * self.flBodyTensity, -f, f ) )
-			aAim.y = aAim.y + self:GetPoseParameter "aim_yaw"
+			local p = CEntity_GetPoseParameter( self, "aim_yaw" )
+			local des = math_AngleDifference( aDesAim.y, Angles.y + p )
+			local t = MyTable.flBodyTensity
+			local f = flTurnRate / t * FrameTime()
+			CEntity_SetPoseParameter( self, "aim_yaw", p + math_Clamp( des * t, -f, f ) )
+			aAim.y = aAim.y + CEntity_GetPoseParameter( self, "aim_yaw" )
 		end
-		self:CalcCombatState()
-		self.vAim = aAim:Forward()
-		self.loco:SetMaxYawRate( self.flTurnRate * math.Clamp( math.abs( math.AngleDifference( aDesAim.y, self:GetAngles().y ) ), 0, 90 ) * .01111111111 )
-		for _ = 1, 8 do self.loco:FaceTowards( self:GetPos() + vDesAim ) end
-		self:Look()
-		ProtectedCall( function() self:Behaviour() end )
-		coroutine.yield()
+		MyTable.CalcCombatState( self )
+		MyTable.aAim = aAim
+		MyTable.vAim = aAim:Forward()
+		local loco = MyTable.loco
+		loco:SetMaxYawRate( flTurnRate * math_Clamp( math_abs( math_AngleDifference( aDesAim.y, Angles.y ) ), 0, 90 ) * .01111111111 )
+		local v = CEntity_GetPos( self ) + vDesAim
+		for _ = 1, 8 do loco:FaceTowards( v ) end
+		MyTable.Look( self, MyTable )
+		ProtectedCall( function() MyTable.Behaviour( self, MyTable ) end )
+		coroutine_yield()
 	end
 end
 

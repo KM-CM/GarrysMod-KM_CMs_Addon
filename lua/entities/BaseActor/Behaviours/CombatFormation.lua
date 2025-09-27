@@ -53,7 +53,7 @@ Actor_RegisterBehaviour( "CombatFormation", {
 		if !IsValid( pCurrent ) then ErrorNoHaltWithStack "GatherParticipants Requires at Least One Participant" end
 		local tAllies = pCurrent:GetAlliesByClass()
 		if tAllies then
-			local vPos = pCurrent:GetPos()
+			local vPos = self.Vector
 			for ent in pairs( tAllies ) do
 				if !IsValid( ent ) || ent:GetPos():DistToSqr( vPos ) > 4194304/*2048*/ then continue end
 				self:AddParticipant( ent )

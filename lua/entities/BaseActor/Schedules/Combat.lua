@@ -475,7 +475,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	self.bSuppressing = true
 	local enemy, trueenemy = self:SetupEnemy( sched.Enemy )
 	if !IsValid( enemy ) || !sched.vFrom then return {} end
-	if !self:CanExpose() then self:SetSchedule "TakeCover" self:DLG_Suppressed() return end
+	if !self:CanExpose() then self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" ) self:DLG_Suppressed() return end
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
 	local c = self:GetWeaponClipPrimary()
@@ -498,7 +498,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 					if ent.GAME_tSuppressionAmount then
 						local flThreshold, flSoFar = ent:Health() * .1, 0
 						for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-							if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+							if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing || CurTime() <= ( other.flWeaponReloadTime || 0 ) then continue end
 							flSoFar = flSoFar + am
 							if flSoFar > flThreshold then continue end
 						end
@@ -507,7 +507,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 					if b then bNoEnemy = nil break end
 				end
 			end
-			if bNoEnemy then self:SetSchedule "TakeCover" return end
+			if bNoEnemy then self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" ) return end
 		end
 	end
 	self.bSuppressing = true
@@ -545,7 +545,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				filter = { self, enemy, trueenemy }
 			}
 		end
-		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule "TakeCover" return end
+		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" ) return end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
@@ -564,14 +564,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				local b = true
 				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end
 				if b then
-					self:SetSchedule "TakeCover"
+					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
 				end
 			elseif CurTime() > sched.Time then
 				local b = true
 				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end
 				if b then
-					self:SetSchedule "TakeCover"
+					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
 				end
 			end
@@ -603,7 +603,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 					if ent.GAME_tSuppressionAmount then
 						local flThreshold, flSoFar = ent:Health() * .1, 0
 						for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-							if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+							if other == self || self:Disposition( other ) != D_LI || CurTime() <= ( other.flWeaponReloadTime || 0 ) then continue end
 							flSoFar = flSoFar + am
 							if flSoFar > flThreshold then continue end
 						end
@@ -664,7 +664,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				filter = { self, enemy, trueenemy }
 			}
 		end
-		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule "TakeCover" return end
+		if trStand.Hit && ( !trDuck || trDuck.Hit ) then self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" ) return end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, sched.vFrom )
 		local flHealth = enemy:Health()
@@ -684,14 +684,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				local b = true
 				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end
 				if b then
-					self:SetSchedule "TakeCover"
+					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
 				end
 			elseif CurTime() > sched.Time then
 				local b = true
 				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end
 				if b then
-					self:SetSchedule "TakeCover"
+					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
 				end
 			end

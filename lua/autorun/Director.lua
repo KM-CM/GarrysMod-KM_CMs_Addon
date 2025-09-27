@@ -30,10 +30,10 @@ function Director_RegisterNonStandardMusicSound( Name, Path )
 end
 function Director_RegisterMusicSound( Name, Path ) return Director_RegisterNonStandardMusicSound( Name, "Music/" .. Path ) end
 
-DIRECTOR_THREAT_NULL = 0 //Nothing
-DIRECTOR_THREAT_HEAT = 1 //Hostiles Nearby
-DIRECTOR_THREAT_ALERT = 2 //Things are Alerted or Searching
-DIRECTOR_THREAT_COMBAT = 3 //Things are in Combat
+DIRECTOR_THREAT_NULL = 0 // Nothing
+DIRECTOR_THREAT_HEAT = 1 // Hostiles Nearby
+DIRECTOR_THREAT_ALERT = 2 // Things are Alerted or Searching
+DIRECTOR_THREAT_COMBAT = 3 // Things are in Combat
 
 if SERVER then
 
@@ -86,24 +86,24 @@ local DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE
 local _reg = debug.getregistry()
 local CDirectorMusicPlayer = _reg.CDirectorMusicPlayer || {}
 _reg.CDirectorMusicPlayer = CDirectorMusicPlayer
-//__index is NOT Used and I am Adding This Here Just in Case You have a Great But Schizophrenic Idea!
+// __index is NOT Used and I am Adding This Here Just in Case You have a Great But Schizophrenic Idea!
 CDirectorMusicPlayer.__index = CDirectorMusicPlayer
 
-//Override This!
+// Override This!
 function CDirectorMusicPlayer:Tick() ErrorNoHaltWithStack "CDirectorMusicPlayer::Tick Not Overriden!" end
 
 function CDirectorMusicPlayer:Length() return math.Rand( 0, 360 ) end
 
-//Sheesh, That's a Long Ass Name!
+// Sheesh, That's a Long Ass Name!
 function Director_CreateMusicPlayerFromTableInternal( ply, tbl )
 	local self = setmetatable( {
 		m_flVolume = 0,
 		m_pOwner = ply,
 		m_pSource = tbl,
-		//flVolume is Completely Up to The User,
-		//The Actual Volume is Chosen in CDirectorMusicPlayer::UpdateInternal
-		tHandles = {}, //This One is Used for Public Handles and Uses The User's Custom Time
-		m_tHandles = {} //This One is Used for Private Handles and Uses The Sound's True End Time
+		// flVolume is Completely Up to The User,
+		// The Actual Volume is Chosen in CDirectorMusicPlayer::UpdateInternal
+		tHandles = {}, // This One is Used for Public Handles and Uses The User's Custom Time
+		m_tHandles = {} // This One is Used for Private Handles and Uses The Sound's True End Time
 	}, { __index = function( self, Key )
 		v = rawget( tbl, Key )
 		if v == nil then return rawget( CDirectorMusicPlayer, Key )
@@ -139,7 +139,7 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength }
 	self.m_tHandles[ Index ] = { Sound, flVolume || 1, SysTime() + ( flActualLength || flHandleLength ) }
 	self:UpdateInternal()
-	return Sound //Just in Case
+	return Sound // Just in Case
 end
 
 function CDirectorMusicPlayer:ApproachVolume( Index, flVolume, flSpeed )
@@ -225,7 +225,7 @@ hook.Add( "Tick", "Director", function()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
 		if !ply.DR_ThreatAware then ply.DR_ThreatAware = DIRECTOR_THREAT_NULL end
 		if !ply.DR_Threat then ply.DR_Threat = DIRECTOR_THREAT_NULL end
-		//This is Used when a Theme Changes to CrossFade It
+		// This is Used when a Theme Changes to CrossFade It
 		if !ply.DR_tShutMeUp then ply.DR_tShutMeUp = {} end
 		if !ply.DR_tMusic then ply.DR_tMusic = {} end
 		if !ply.DR_tMusicNext then ply.DR_tMusicNext = {} end
@@ -234,8 +234,8 @@ hook.Add( "Tick", "Director", function()
 		Because Technically, We Dont See Him, But The Human Brain is on Average More Aware Than a Mote of Dust,
 		so It Approximates Where The Chaser is, Even While Moving Backwards and Not Seeing Him.*/
 		local tMusicEntities = {}
-		//Why Did I Put This Here? This Needs to be Lower
-		//ply.DR_tMusicEntities = tMusicEntities
+		// Why Did I Put This Here? This Needs to be Lower
+		// ply.DR_tMusicEntities = tMusicEntities
 		ply.GAME_flSuppression = math.Approach( ply.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( ply.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
 		if CurTime() > ( ply.DR_flNextUpdate || 0 ) then
 			local THREAT, flIntensity = DIRECTOR_THREAT_NULL, 0
@@ -293,7 +293,7 @@ hook.Add( "Tick", "Director", function()
 			end
 		end
 		ply:SetNW2Int( "DR_ThreatAware", ply.DR_ThreatAware )
-		//Lower Here, if You Even Read The Comment Above
+		// Lower Here, if You Even Read The Comment Above
 		ply.DR_tMusicEntities = tMusicEntities
 		local ThreatAware, bLayerFound, bNoLayer = ply.DR_ThreatAware
 		local tMusic = {}
@@ -322,7 +322,7 @@ hook.Add( "Tick", "Director", function()
 					continue
 				else
 					bNoLayer = true
-					//if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+					// if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
 					tMusic[ l ] = s
 					ply.DR_tMusicNext[ l ] = CurTime() + ply.DR_tMusic[ l ]:Length()
 				end
@@ -358,12 +358,12 @@ hook.Add( "Tick", "Director", function()
 		local tShutMeUp = {}
 		for mus in pairs( ply.DR_tShutMeUp ) do
 			mus:UpdateInternal( 0, DIRECTOR_CROSSFADE_SPEED * FrameTime() )
-			//If It is Already Quiet,
+			// If It is Already Quiet,
 			if mus.m_flVolume <= 0 then
 				if Director_Debug:GetBool() then print "Removing a DR_tShutMeUp Track ( m_flVolume <= 0 )" end
-				//M U R D E R   I T
+				// M U R D E R   I T
 				mus:StopAll()
-			else mus:Tick() tShutMeUp[ mus ] = true end //OtherWise, Play It so It Doesnt Get Cut Off
+			else mus:Tick() tShutMeUp[ mus ] = true end // OtherWise, Play It so It Doesnt Get Cut Off
 		end
 		ply.DR_tShutMeUp = tShutMeUp
 	end
@@ -377,9 +377,9 @@ hook.Add( "PostCleanupMap", "Director", function()
 	end
 end )
 
-end //SERVER
+end // SERVER
 
-//Do This Here so It'll be Shared
+// Do This Here so It'll be Shared
 local CEntity = FindMetaTable "Entity"
 local CEntity_LookupSequence = CEntity.LookupSequence
 local CEntity_GetTable = CEntity.GetTable

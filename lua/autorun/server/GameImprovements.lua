@@ -77,21 +77,21 @@ function HasMeleeAttack( ent )
 	end
 end
 
-//Intentionally Generates UUIDs Instead of Truly Unique Numbers for Extremely Rare Funni Bugs
+// Intentionally Generates UUIDs Instead of Truly Unique Numbers for Extremely Rare Funni Bugs
 function EntityUniqueIdentifier( ent )
 	if ent.__UNIQUE_IDENTIFIER__ then return ent.__UNIQUE_IDENTIFIER__ end
 	local t = {}
 	for _ = 1, 16 do
 		local i = math.random( 1, 3 )
-		if i == 1 then table.insert( t, string.char( math.random( 65, 90 ) ) ) //A-Z
-		elseif i == 2 then table.insert( t, string.char( math.random( 97, 122 ) ) ) //a-z
+		if i == 1 then table.insert( t, string.char( math.random( 65, 90 ) ) ) // A-Z
+		elseif i == 2 then table.insert( t, string.char( math.random( 97, 122 ) ) ) // a-z
 		else table.insert( t, math.random( 0, 9 ) ) end
 	end
 	ent.__UNIQUE_IDENTIFIER__ = table.concat( t )
 	return ent.__UNIQUE_IDENTIFIER__
 end
 
-//local tIgnoreRangeAttackDisp = { [ D_NU ] = true, [ D_LI ] = true }
+// local tIgnoreRangeAttackDisp = { [ D_NU ] = true, [ D_LI ] = true }
 local util_ScreenShake, util_DistanceToLine = util.ScreenShake, util.DistanceToLine
 RANGE_ATTACK_SUPPRESSION_BOUND_SIZE = 512
 function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
@@ -148,11 +148,17 @@ hook.Add( "PlayerHurt", "GameImprovements", function( ply, _, flHealth, flDamage
 	ply:ViewPunch( Angle( 0, 0, flDamage * math.Remap( flHealth, 0, ply:GetMaxHealth(), .05, .01 ) * ( b && 1 || -1 ) ) )
 end )
 
-__TRACER_COLOR__ = {
+TRACER_COLOR = {
 	Bullet = "255 48 0 1024",
 	AR2Tracer = "48 255 255 1024"
 }
-local __TRACER_COLOR__ = __TRACER_COLOR__
+local TRACER_COLOR = TRACER_COLOR
+
+TRACER_SIZE = {
+	Bullet = 2,
+	AR2Tracer = 2
+}
+local TRACER_SIZE = TRACER_SIZE
 
 local IsValid = IsValid
 
@@ -162,7 +168,8 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	if Data.AmmoType != "" then Data.Damage = game.GetAmmoPlayerDamage( game.GetAmmoID( Data.AmmoType ) ) end
 	local OldCallBack = Data.Callback || function() return { damage = true, effects = true } end
 	local flDamage = Data.Damage
-	local col = __TRACER_COLOR__[ Data.TracerName || "Bullet" ] || __TRACER_COLOR__[ "Bullet" ]
+	local col = TRACER_COLOR[ Data.TracerName || "Bullet" ] || TRACER_COLOR.Bullet
+	if Data.HullSize == 0 then Data.HullSize = TRACER_SIZE[ Data.TracerName || "Bullet" ] || TRACER_SIZE.Bullet end
 	local pOwner = GetOwner( ent )
 	Data.Callback = function( atk, tr, dmg )
 		DispatchRangeAttack( atk, tr.StartPos, tr.HitPos, flDamage )
@@ -172,8 +179,8 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 			vTargetVelocity = ent:GetVelocity()
 			dDamage = DamageInfo()
 			dDamage:SetAttacker( pOwner )
-			//Prevents WALK and STEP MoveType KnockBack
-			//dDamage:SetInflictor( ent )
+			// Prevents WALK and STEP MoveType KnockBack
+			// dDamage:SetInflictor( ent )
 			dDamage:SetDamage( dmg:GetDamage() )
 			dDamage:SetDamageType( DMG_BULLET )
 			dDamage:SetDamagePosition( tr.HitPos )
@@ -327,7 +334,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 
 	if ply:GetNW2Bool "CTRL_bSliding" then cmd:RemoveKey( IN_ATTACK ) cmd:RemoveKey( IN_ATTACK2 ) end
 
-	//if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
+	// if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
@@ -356,14 +363,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if !ply:IsOnGround() then
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if CEntity_WaterLevel( ply ) <= 0 && !Either( v == nil, ply.CTRL_bAllowMovingWhileInAir, v && v.bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
-			//cmd:SetForwardMove( 0 )
+			// cmd:SetForwardMove( 0 )
 			cmd:SetSideMove( 0 )
 		end
-		//ply:SetNW2Bool( "CTRL_bSprinting", false )
+		// ply:SetNW2Bool( "CTRL_bSprinting", false )
 	end
 
 	local bInCover
-	local bGunUsesCoverStance //Used in Very Special Circumstances
+	local bGunUsesCoverStance // Used in Very Special Circumstances
 	local PEEK = COVER_PEEK_NONE
 	local VARIANTS = COVER_VARIANTS_CENTER
 	local EyeAngles = ply:EyeAngles()
@@ -536,7 +543,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				elseif ply.CTRL_bMovingRight then
 					PEEK = bZoom && COVER_FIRE_RIGHT || COVER_BLINDFIRE_RIGHT
 				end
-				//Dont Use The Cover Gun Stance
+				// Dont Use The Cover Gun Stance
 				bGunUsesCoverStance = true
 			end
 		else ply.CTRL_bInCoverDuck = nil ply.CTRL_bPeekZoom = nil end
@@ -583,7 +590,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		ply:SetNW2Bool( "CTRL_bInCover", true )
 		ply:SetNW2Bool( "CTRL_bGunUsesCoverStance", true )
 	elseif bInCover then
-		//cmd:RemoveKey( IN_JUMP )
+		// cmd:RemoveKey( IN_JUMP )
 		ply:SetNW2Bool( "CTRL_bInCover", true ) 
 		ply.CTRL_bInCover = true
 		ply:SetNW2Bool( "CTRL_bGunUsesCoverStance", false )

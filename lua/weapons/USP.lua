@@ -94,7 +94,7 @@ function SWEP:PrimaryAttack()
 	}
 	owner:MuzzleFlash()
 	owner:SetAnimation( PLAYER_ATTACK1 )
-	//self:SendWeaponAnim( self.bSilenced && ACT_VM_PRIMARYATTACK_SILENCED || ACT_VM_PRIMARYATTACK )
+	// self:SendWeaponAnim( self.bSilenced && ACT_VM_PRIMARYATTACK_SILENCED || ACT_VM_PRIMARYATTACK )
 	if owner.GetViewModel then
 		local vm = owner:GetViewModel()
 		if IsValid( vm ) then vm:SendViewModelMatchingSequence( vm:LookupSequence( self.bSilenced && "shoot1" || "shoot1_unsil" ) ) end

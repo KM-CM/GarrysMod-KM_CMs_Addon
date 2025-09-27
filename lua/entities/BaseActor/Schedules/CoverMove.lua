@@ -44,7 +44,7 @@ function ENT:DoCoverMove( tEnemies )
 		end
 		local vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
 		if vec then
-			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
+			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then return end
 			local sched = self:SetSchedule "TakeCoverMove"
 			if a < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
 			self.vCover = vec
@@ -55,7 +55,7 @@ function ENT:DoCoverMove( tEnemies )
 	else
 		local vec, bDuck = self:FindRetreatCover( self.vCover, tEnemies )
 		if vec then
-			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() then return end
+			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then return end
 			local sched = self:SetSchedule "TakeCoverMove"
 			if a > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end
 			self.vCover = vec
@@ -103,6 +103,34 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				if self == ally then continue end
 				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
 			end
+			if !sched.bTriedRangeAttack then
+				local b
+				for ally in pairs( tAllies ) do
+					if self != ally && ally.bWantsCover then
+						b = true
+						break
+					end
+				end
+				if b then
+					local vec = self:GetPos()
+					local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
+					if IsValid( enemy ) then
+						local sched = self:SetSchedule "RangeAttack"
+						sched.vFrom = v
+						sched.Enemy = enemy
+					else
+						local vFrom, vTo, enemy = self:FindSuppressEnemy( vec, tEnemies, sched.bDuck )
+						if IsValid( enemy ) then
+							local sched = self:SetSchedule "RangeAttack"
+							sched.vFrom = vFrom
+							sched.vTo = vTo
+							sched.Enemy = enemy
+							sched.bSuppressing = true
+						end
+					end
+					sched.bTriedRangeAttack = true
+				end
+			end
 		end
 		local v = vec + self:GatherCoverBounds()
 		local dir = enemy:GetPos() - vec
@@ -143,7 +171,7 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				if ent.GAME_tSuppressionAmount then
 					local flThreshold, flSoFar = ent:Health() * .1, 0
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-						if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+						if other == self || self:Disposition( other ) != D_LI || CurTime() <= ( other.flWeaponReloadTime || 0 ) then continue end
 						flSoFar = flSoFar + am
 						if flSoFar > flThreshold then continue end
 					end

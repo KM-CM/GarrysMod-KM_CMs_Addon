@@ -36,9 +36,9 @@ __PLAYER_MODEL__[ "models/antlion.mdl" ] = {
 		if ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && CurTime() > ( ply.MDL_flDontMoveTime || 0 ) then
 			ply:GetActiveWeapon().Crosshair = nil
 			if ply:KeyDown( IN_ATTACK ) then
-				//We Allow Ourselves to Use Non-Shared Randoms Because
-				//We Dont Really Care What Animation is Going on
-				//Since They All Hit The Same
+				// We Allow Ourselves to Use Non-Shared Randoms Because
+				// We Dont Really Care What Animation is Going on
+				// Since They All Hit The Same
 				local s = ply:LookupSequence( table.Random { "attack1", "attack2", "attack3", "attack4", "attack5", "attack6", "pounce", "pounce2" } )
 				ply:EmitSound( math.random( 2 ) == 1 && "NPC_Antlion.MeleeAttackSingle" || "NPC_Antlion.MeleeAttackDouble" )
 				if SERVER then
@@ -157,9 +157,9 @@ __PLAYER_MODEL__[ "models/antlion_worker.mdl" ] = {
 		if ( IsValid( ply:GetActiveWeapon() ) && ply:GetActiveWeapon():GetClass() == "hands" ) && CurTime() > ( ply.MDL_flDontMoveTime || 0 ) then
 			ply:GetActiveWeapon().Crosshair = nil
 			if ply:KeyDown( IN_ATTACK ) then
-				//We Allow Ourselves to Use Non-Shared Randoms Because
-				//We Dont Really Care What Animation is Going on
-				//Since They All Hit The Same
+				// We Allow Ourselves to Use Non-Shared Randoms Because
+				// We Dont Really Care What Animation is Going on
+				// Since They All Hit The Same
 				local s = ply:LookupSequence( table.Random { "attack1", "attack2", "attack3", "attack4", "attack5", "attack6", "pounce", "pounce2" } )
 				ply:EmitSound( math.random( 2 ) == 1 && "NPC_Antlion.MeleeAttackSingle" || "NPC_Antlion.MeleeAttackDouble" )
 				if SERVER then

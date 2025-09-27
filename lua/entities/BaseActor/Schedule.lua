@@ -6,43 +6,52 @@ CActorSchedule.__index = CActorSchedule
 
 // ENT.Schedule = nil
 
-function ENT:SelectSchedule( Previous, PrevName, PrevReturn ) ErrorNoHaltWithStack "SelectSchedule Not Overriden" end
+local ErrorNoHaltWithStack = ErrorNoHaltWithStack
+function ENT:SelectSchedule( MyTable, Previous, PrevName, PrevReturn ) ErrorNoHaltWithStack "SelectSchedule Not Overriden" end
 
 local __SCHEDULE__ = __SCHEDULE__
 
 ENT.__SCHEDULE__ = __SCHEDULE__
 
-function ENT:SetSchedule( Name )
+local rawget = rawget
+
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+
+function ENT:SetSchedule( Name, MyTable )
 	local sched = setmetatable( { m_pOwner = self, m_sName = Name }, { __index = function( self, Key, Value )
 		local v = rawget( self, Key )
 		if v == nil then return rawget( CActorSchedule, Key )
 		else return v end
 	end } )
-	self.Schedule = sched
+	if MyTable then MyTable.Schedule = sched else CEntity_GetTable( self ).Schedule = sched end
 	return sched
 end
 
 ENT.tPreScheduleResetVariables = {}
 
-function ENT:SelectScheduleInternal( ... )
-	self.Schedule = nil
-	local p = self.GAME_pBehaviour
-	if p then if p:SelectSchedule( self, ... ) then return end end
+function ENT:SelectScheduleInternal( MyTable, ... )
+	MyTable.Schedule = nil
+	local p = MyTable.GAME_pBehaviour
+	if p then if p:SelectSchedule( self, MyTable, ... ) then return end end
 	local veh = self.GAME_pVehicle
-	if IsValid( veh ) then self:SetSchedule "Vehicle_Base"
-	else self:SelectSchedule( ... ) end
+	if IsValid( veh ) then MyTable.SetSchedule( self, "Vehicle_Base" )
+	else MyTable.SelectSchedule( self, MyTable, ... ) end
 end
 
+local pairs = pairs
+local Either = Either
+
 function ENT:RunMind()
-	for k, v in pairs( self.tPreScheduleResetVariables ) do self[ k ] = Either( v == false, nil, v ) end
-	local v = self.Schedule
-	if !v then self:SelectScheduleInternal() return end
+	local MyTable = CEntity_GetTable( self )
+	for k, v in pairs( MyTable.tPreScheduleResetVariables ) do MyTable[ k ] = Either( v == false, nil, v ) end
+	local v = MyTable.Schedule
+	if !v then MyTable.SelectScheduleInternal( self, MyTable ) return end
 	local s = v.m_sName || ''
-	local f = self.__SCHEDULE__[ s ]
-	local b = IsValid( self.GAME_pVehicle )
-	if !f || ( b && !s:match "^Vehicle_" || !b && s:match "^Vehicle_" ) then self.Schedule = nil self:SelectScheduleInternal( v, s ) return end
-	local r = f( self, v )
-	if r != nil then self:SelectScheduleInternal( v, s, r ) end
+	local f = MyTable.__SCHEDULE__[ s ]
+	local b = IsValid( MyTable.GAME_pVehicle )
+	if !f || ( b && !s:match "^Vehicle_" || !b && s:match "^Vehicle_" ) then MyTable.Schedule = nil MyTable.SelectScheduleInternal( self, MyTable, v, s ) return end
+	local r = f( self, v, MyTable )
+	if r != nil then MyTable.SelectScheduleInternal( self, MyTable, v, s, r ) end
 end
 
 ------ Include Default Schedules ------

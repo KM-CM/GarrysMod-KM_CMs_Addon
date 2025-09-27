@@ -7,6 +7,8 @@ end
 
 include "CoverMove.lua"
 
+local util_TraceLine = util.TraceLine
+
 Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
@@ -17,7 +19,6 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
-			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
 				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil return end
@@ -27,7 +28,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
-		if !util.TraceLine( {
+		if !util_TraceLine( {
 			start = v,
 			endpos = v + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
@@ -46,7 +47,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		for _, d in ipairs( tNearestEnemies ) do
 			local ent = d[ 1 ]
 			local v = ent:GetPos() + ent:OBBCenter()
-			local tr = util.TraceLine {
+			local tr = util_TraceLine {
 				start = self:GetShootPos(),
 				endpos = v,
 				mask = MASK_SHOT_HULL,
@@ -57,7 +58,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				if ent.GAME_tSuppressionAmount then
 					local flThreshold, flSoFar = ent:Health() * .1, 0
 					for other, am in pairs( ent.GAME_tSuppressionAmount ) do
-						if other == self || self:Disposition( other ) != D_LI || !other.bSuppressing then continue end
+						if other == self || self:Disposition( other ) != D_LI || CurTime() <= ( other.flWeaponReloadTime || 0 ) then continue end
 						flSoFar = flSoFar + am
 						if flSoFar > flThreshold then continue end
 					end
@@ -98,24 +99,26 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		local vEnemy = enemy:GetPos()
 		local v = self:GatherCoverBounds()
 		local tAllies = self:GetAlliesByClass()
-		local f = self:BoundingRadius()
+		local f = self:BoundingRadius() ^ 2
 		f = f * f
 		for vec in self:SearchNodes() do
 			local p = vec + v
 			local dir = vEnemy - vec
 			dir.z = 0
 			dir:Normalize()
-			if util.TraceLine( {
+			if util_TraceLine( {
 				start = p,
 				endpos = p + dir * self.vHullMaxs.x * 4, // Dont Check Often, so Give Them More Range to Consider "Cover"
 				mask = MASK_SHOT_HULL,
 				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 			} ).Hit then
 				if tAllies then
+					local b
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then continue end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then b = true break end
 					end
+					if b then continue end
 				end
 				self.vActualCover = vec
 				self.vCover = vec

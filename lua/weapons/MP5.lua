@@ -16,7 +16,7 @@ SWEP.Primary_flSpreadX = .02
 SWEP.Primary_flSpreadY = .02
 SWEP.Primary_flDelay = .075
 SWEP.Primary_flDamage = 60
-//SWEP.ViewModelFOV = 45
+// SWEP.ViewModelFOV = 45
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
@@ -35,7 +35,7 @@ sound.Add {
 	channel = CHAN_WEAPON,
 	level = 150,
 	pitch = { 90, 110 },
-	sound = "^MP7Shot.wav" //TODO: Sound
+	sound = "^MP7Shot.wav" // TODO: Sound
 }
 
 function SWEP:Initialize() self:SetHoldType "SMG" end

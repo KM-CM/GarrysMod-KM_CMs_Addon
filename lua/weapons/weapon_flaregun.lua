@@ -52,7 +52,7 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "FlareShot"
 	self:TakePrimaryAmmo( 1 )
-	//self:SetNextPrimaryFire( CurTime() + .5 )
+	// self:SetNextPrimaryFire( CurTime() + .5 )
 end
 
 function SWEP:SecondaryAttack() end

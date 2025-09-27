@@ -1,3 +1,11 @@
+local table = table
+local table_SortByMember = table.SortByMember
+local table_insert = table.insert
+local table_remove = table.remove
+local table_IsEmpty = table.IsEmpty
+
+local unpack = unpack
+
 function ENT:SearchAreas()
 	local vPos = self:GetPos()
 	local area = navmesh.GetNearestNavArea( vPos )
@@ -12,9 +20,9 @@ function ENT:SearchAreas()
 	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z ) end
 	local bDisAllowWater = !self.bCanSwim
 	return function()
-		if !table.IsEmpty( tQueue ) then
-			table.SortByMember( tQueue, 2 )
-			local area, dist = unpack( table.remove( tQueue ) )
+		if !table_IsEmpty( tQueue ) then
+			table_SortByMember( tQueue, 2 )
+			local area, dist = unpack( table_remove( tQueue ) )
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 				local new = t.area
 				local id = new:GetID()
@@ -23,18 +31,20 @@ function ENT:SearchAreas()
 				if bDisAllowWater && area:IsUnderwater() then continue end
 				local d = area:ComputeAdjacentConnectionHeightChange( new )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
-				table.insert( tQueue, { new, t.dist + dist } )
+				table_insert( tQueue, { new, t.dist + dist } )
 			end
 			return area, dist
 		end
 	end
 end
 
+local util_TraceLine = util.TraceLine
+
 function ENT:SearchNodes( vPos, flSpacing )
 	if !vPos then vPos = self:GetPos() end
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return {} end
-	if !flSpacing then flSpacing = self:BoundingRadius() * .5 end
+	if !flSpacing then flSpacing = self:BoundingRadius() end
 	local tQueue, tVisited = { { area, 0, self:GetPos() } }, {}
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
@@ -56,9 +66,9 @@ function ENT:SearchNodes( vPos, flSpacing )
 			local v = table.remove( t )
 			if v then return v[ 1 ] else t = nil end
 		end
-		if !table.IsEmpty( tQueue ) then
-			table.SortByMember( tQueue, 2 )
-			local area, dist, vPrev = unpack( table.remove( tQueue ) )
+		if !table_IsEmpty( tQueue ) then
+			table_SortByMember( tQueue, 2 )
+			local area, dist, vPrev = unpack( table_remove( tQueue ) )
 			local vCenter = area:GetCenter()
 			for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 				local new = t.area
@@ -68,7 +78,7 @@ function ENT:SearchNodes( vPos, flSpacing )
 				if bDisAllowWater && area:IsUnderwater() then continue end
 				local d = area:ComputeAdjacentConnectionHeightChange( new )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
-				table.insert( tQueue, { new, t.dist + dist, vCenter } )
+				table_insert( tQueue, { new, t.dist + dist, vCenter } )
 			end
 			local v = area:GetCorner( 0 ) // NORTH_WEST
 			local flCornerX, flCornerY = v.x, v.y
@@ -79,17 +89,17 @@ function ENT:SearchNodes( vPos, flSpacing )
 				for y = flCornerY, flCornerY + flSizeY, flSpacing do
 					local v = Vector( x, y )
 					v.z = area:GetZ( v )
-					if util.TraceLine( {
+					if util_TraceLine( {
 						start = v + s,
 						endpos = v + z,
 						mask = MASK_SOLID,
 						filter = tFilter
 					} ).Hit then continue end
-					table.insert( t, { v, v:DistToSqr( vPrev ) } )
+					table_insert( t, { v, v:DistToSqr( vPrev ) } )
 				end
 			end
-			table.SortByMember( t, 2 )
-			if t then return table.remove( t )[ 1 ] end
+			table_SortByMember( t, 2 )
+			if t then return table_remove( t )[ 1 ] end
 		end
 	end
 end

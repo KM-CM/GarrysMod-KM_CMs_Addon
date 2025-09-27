@@ -25,7 +25,7 @@ function CActorBehaviour:Initialize() end
 function CActorBehaviour:GatherParticipants() end
 
 // Dont Return Anything to Let The Entity's Default Behaviour Run
-function CActorBehaviour:SelectSchedule( self, ent, prev, ret ) return true end
+function CActorBehaviour:SelectSchedule( self, ent, EntTable, prev, ret ) return true end
 
 function CActorBehaviour:Remove()
 	for ent in pairs( self.m_tParticipants ) do

@@ -27,7 +27,7 @@ SWEP.DrawAmmo = true
 SWEP.vViewModelAim = Vector( -6.61, -12, 3.4 )
 SWEP.Crosshair = "Rifle"
 
-//Have to Do This for Technical Reasons
+// Have to Do This for Technical Reasons
 sound.Add {
 	name = "AK47_Shot",
 	channel = CHAN_WEAPON,
