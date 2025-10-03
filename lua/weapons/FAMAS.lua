@@ -1,20 +1,20 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-SWEP.Category = "Submachine Guns"
-SWEP.PrintName = "#UMP45"
-if CLIENT then language.Add( "UMP45", "H&K UMP45" ) end
+SWEP.Category = "Assault Rifles"
+SWEP.PrintName = "#FAMAS"
+if CLIENT then language.Add( "FAMAS", "FAMAS" ) end
 SWEP.Instructions = "Primary to shoot."
-SWEP.Purpose = "Heckler & Koch Universale Maschinenpistole 45."
-SWEP.ViewModel = Model "models/weapons/cstrike/c_smg_ump45.mdl"
+SWEP.Purpose = "Fusil d'Assaut de la Manufacture d'Armes de Saint-Étienne, Assault rifle from the Saint-Étienne Weapon Factory."
+SWEP.ViewModel = Model "models/weapons/cstrike/c_rif_famas.mdl"
 SWEP.UseHands = true
-SWEP.WorldModel = Model "models/weapons/w_smg_ump45.mdl"
-SWEP.Primary.ClipSize = 25
-SWEP.Primary.DefaultClip = 25
+SWEP.WorldModel = Model "models/weapons/w_rif_famas.mdl"
+SWEP.Primary.ClipSize = 30
+SWEP.Primary.DefaultClip = 30
 SWEP.Primary.Automatic = true
 SWEP.Primary.Ammo = "SMG1"
-SWEP.Primary_flSpreadX = .009
-SWEP.Primary_flSpreadY = .009
-SWEP.Primary_flDelay = .08
+SWEP.Primary_flDelay = .054
+SWEP.Primary_flSpreadX = .0058
+SWEP.Primary_flSpreadY = .0058
 SWEP.Primary_flDamage = 80
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
@@ -24,18 +24,25 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
-SWEP.vSprintArm = Vector( 1.358, -8.228, -0.94 )
-SWEP.Crosshair = "SubMachineGun"
+SWEP.vViewModelAim = Vector( -6.2, 0, 1 )
+SWEP.Crosshair = "Rifle"
 
 sound.Add {
-	name = "UMP45_Shot",
+	name = "FAMAS_Shot",
 	channel = CHAN_WEAPON,
 	level = 150,
 	pitch = { 90, 110 },
-	sound = "^UMP45Shot.wav"
+	sound = "^FAMASShot.wav"
+}
+sound.Add {
+	name = "FAMAS_Shot_Auto",
+	channel = CHAN_AUTO,
+	level = 150,
+	pitch = { 90, 110 },
+	sound = "^FAMASShot.wav"
 }
 
-function SWEP:Initialize() self:SetHoldType "SMG" end
+function SWEP:Initialize() self:SetHoldType "AR2" end
 
 function SWEP:PrimaryAttack()
 	if !self:CanPrimaryAttack() then return end
@@ -55,9 +62,10 @@ function SWEP:PrimaryAttack()
 	ed:SetAttachment( 1 )
 	ed:SetFlags( 1 )
 	util.Effect( "MuzzleFlash", ed )
-	self:EmitSound "UMP45_Shot"
+	self:EmitSound "FAMAS_Shot"
+	self:EmitSound "FAMAS_Shot_Auto"
 	self:TakePrimaryAmmo( 1 )
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
-list.Add( "NPCUsableWeapons", { class = "UMP45", title = "#UMP45", category = SWEP.Category } )
+list.Add( "NPCUsableWeapons", { class = "FAMAS", title = "#FAMAS", category = SWEP.Category } )

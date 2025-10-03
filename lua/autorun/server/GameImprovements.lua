@@ -107,7 +107,7 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 		if ent.__ACTOR__ then
 			if ent == Owner || Owner.Disposition && Owner:Disposition( ent ) == D_LI || ent.Disposition && ent:Disposition( Owner ) == D_LI then continue end
 			local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
-			if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
+			if ent:CanSee( v ) then ent.bHoldFire = nil ent:SetupBullseye( Owner, vStart, ang ) end
 		end
 	end
 	/*Too Cheaty - Makes Silencers Almost Completely UseLess
@@ -120,8 +120,27 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 	*/
 end
 
-hook.Add( "PlayerDeath", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
+hook.Add( "PlayerDeath", "GameImprovements", function( ply, _, at )
+	if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end
+	if IsValid( at ) && at:IsPlayer() then
+		local v = __PLAYER_MODEL__[ at:GetModel() ]
+		if v then
+			v = v.OnKilledSomething
+			if v then if v( at, ply ) then b = nil end end
+		end
+	end
+end )
 hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
+
+hook.Add( "OnNPCKilled", "GameImprovements", function( ent, at )
+	if IsValid( at ) && at:IsPlayer() then
+		local v = __PLAYER_MODEL__[ at:GetModel() ]
+		if v then
+			v = v.OnKilledSomething
+			if v then if v( at, ent ) then b = nil end end
+		end
+	end
+end )
 
 hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
 	if IsValid( ply.GAME_pFlashlight ) then ply:EmitSound "FlashlightOff" ply.GAME_pFlashlight:Remove() else
@@ -142,10 +161,59 @@ hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
 	return false
 end )
 
-hook.Add( "PlayerHurt", "GameImprovements", function( ply, _, flHealth, flDamage )
-	local b = !ply.GAME_bSecondHurtViewPunch
-	ply.GAME_bSecondHurtViewPunch = b
-	ply:ViewPunch( Angle( 0, 0, flDamage * math.Remap( flHealth, 0, ply:GetMaxHealth(), .05, .01 ) * ( b && 1 || -1 ) ) )
+local util_TraceLine = util.TraceLine
+
+hook.Add( "OnEntityCreated", "GameImprovements", function( ent )
+	if IsValid( ent ) && ent:IsWeapon() then
+		timer.Simple( .01, function() if IsValid( ent ) then ent.GAME_bWeaponPickedUpOnce = true end end )
+	end
+end )
+
+hook.Add( "PlayerCanPickupWeapon", "GameImprovements", function( ply, wep )
+	if !wep.GAME_bWeaponPickedUpOnce then
+		local w = ply:GetWeapon( wep:GetClass() )
+		if IsValid( w ) then ply:DropWeapon( w ) end
+		wep.GAME_bWeaponPickedUpOnce = true
+		return true
+	end
+	if !ply:KeyDown( IN_USE ) then return false end
+	local tr = util_TraceLine {
+		start = ply:EyePos(),
+		endpos = ply:EyePos() + ply:GetAimVector() * 999999,
+		filter = ply
+	}
+	if tr.Entity != wep then return false end
+	ply:DropObject()
+	wep:ForcePlayerDrop()
+	local c = wep:GetClass()
+	// Make them switch to the gun because they CONSCIOUSLY picked it up,
+	// not just randomly got it from the floor and accidentally self stunlocked in the deploy animation
+	ply.GAME_sRestoreGun = c
+	local w = ply:GetWeapon( c )
+	if IsValid( w ) then ply:DropWeapon( w ) end
+end )
+hook.Add( "PlayerCanPickupItem", "GameImprovements", function( ply, item )
+	if !ply:KeyDown( IN_USE ) then return false end
+	local tr = util_TraceLine {
+		start = ply:EyePos(),
+		endpos = ply:EyePos() + ply:GetAimVector() * 999999,
+		filter = ply
+	}
+	return tr.Entity == item
+end )
+
+hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, flDamage )
+	local b = true
+	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	if v then
+		v = v.Hurt
+		if v then if v( ply, pAttacker, flHealth, flDamage ) then b = nil end end
+	end
+	if b then
+		b = !ply.GAME_bSecondHurtViewPunch
+		ply.GAME_bSecondHurtViewPunch = b
+		ply:ViewPunch( Angle( 0, 0, flDamage * math.Remap( flHealth, 0, ply:GetMaxHealth(), .05, .01 ) * ( b && 1 || -1 ) ) )
+	end
 end )
 
 TRACER_COLOR = {
@@ -155,8 +223,8 @@ TRACER_COLOR = {
 local TRACER_COLOR = TRACER_COLOR
 
 TRACER_SIZE = {
-	Bullet = 2,
-	AR2Tracer = 2
+	Bullet = 4,
+	AR2Tracer = 4
 }
 local TRACER_SIZE = TRACER_SIZE
 
@@ -222,10 +290,19 @@ function PhysicsCollide( ent, Data )
 	end
 end
 
+hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
+	local at = dmg:GetAttacker()
+	if IsValid( at ) && at:IsPlayer() then
+		local v = __PLAYER_MODEL__[ at:GetModel() ]
+		if v then
+			v = v.OnHurtSomething
+			if v then if v( at, ent, dmg ) then b = nil end end
+		end
+	end
+end )
+
 local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_Extinguish = CEntity.Extinguish
-
-local util_TraceLine = util.TraceLine
 
 local ents = ents
 local ents_Iterator = ents.Iterator
@@ -337,7 +414,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	// if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
 
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
-	if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && !ply:Crouching() && cmd:KeyDown( IN_SPEED ) then
+	if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && ( ( !Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || !ply:Crouching() ) && cmd:KeyDown( IN_SPEED ) then
 		if cmd:GetForwardMove() <= 0 || b then
 			ply:SetNW2Bool( "CTRL_bSprinting", false )
 			cmd:RemoveKey( IN_SPEED )

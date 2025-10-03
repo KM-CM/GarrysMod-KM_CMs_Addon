@@ -77,6 +77,10 @@ local math = math
 local math_min = math.min
 
 if CLIENT then
+	function SWEP:Think()
+		local pViewModel = self:GetOwner():GetViewModel()
+		pViewModel:SetColor( self:GetColor() )
+	end
 	local Vector = Vector
 	local vFinal = Vector( 0, 0, 0 )
 	local vFinalAngle = Vector( 0, 0, 0 )
@@ -104,6 +108,8 @@ if CLIENT then
 	SWEP.flAimMultiplier = 1
 	SWEP.flFoV = 99
 	SWEP.flViewModelAimSwayMultiplier = 0
+	SWEP.flViewModelCoverDistanceLimit = 8
+	SWEP.flLastEyeYaw = 0
 	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
 	local math_sin = math.sin
@@ -127,7 +133,7 @@ if CLIENT then
 	function SWEP:CalcView( ply, pos, ang, fov )
 		local MyTable = CEntity_GetTable( self )
 		vViewTarget, vViewTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
-		if CEntity_IsOnGround( ply ) && ( bSprinting || CPlayer_IsSprinting( ply ) ) then
+		if CEntity_IsOnGround( ply ) && bSprinting then
 			local flVelocity = CEntity_GetVelocity( ply ):Length()
 			if flVelocity > 10 then
 				local flBreathe = RealTime() * 18
@@ -171,10 +177,13 @@ if CLIENT then
 		pos = pos + vViewFinal.x * ang:Right()
 		aViewAim = LerpAngle( 5 * FrameTime(), aViewAim, ply:EyeAngles() )
 		MyTable.aLastViewEyePosition = aViewAim - ply:EyeAngles()
-		MyTable.aLastViewEyePosition.y = math_AngleDifference( aViewAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
 		local flMultiplier = MyTable.flAimMultiplier || 0
 		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
 		local flSwayAngleNeg = -flSwayAngle
+		local eye = ply:EyeAngles()
+		MyTable.flLastEyeYaw = Lerp( 5 * FrameTime(), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
+		MyTable.flLastTrueEyeYaw = eye[ 2 ]
+		MyTable.aLastViewEyePosition[ 2 ] = -MyTable.flLastEyeYaw
 		ang:RotateAroundAxis( ang:Right(), -math_Clamp( flSwayAngle * MyTable.aLastViewEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
 		ang:RotateAroundAxis( ang:Up(), -math_Clamp( flSwayAngleNeg * MyTable.aLastViewEyePosition.y / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
 		local flSwayVector = MyTable.flSwayVector * flMultiplier
@@ -193,6 +202,7 @@ if CLIENT then
 		local t = LocalPlayer():GetEyeTrace().HitPos:ToScreen()
 		return t.x, t.y
 	end
+	local util_TraceLine = util.TraceLine
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
@@ -201,8 +211,8 @@ if CLIENT then
 		local bInCover = CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" )
 		local bZoom = !bSprinting && !bSliding && !bInCover && CPlayer_KeyDown( ply, IN_ZOOM )
 		local vAim
-		if bZoom then vAim = MyTable.vViewModelAim if !vAim then bZoom = nil end end
-		if bZoom then
+		if bZoom then vAim = MyTable.vViewModelAim end
+		if bZoom && vAim then
 			vTarget = Vector( vAim )
 			local vAimAngle = MyTable.vViewModelAimAngle
 			vTargetAngle = vAimAngle && Vector( vAimAngle ) || Vector( 0, 0, 0 )
@@ -216,19 +226,41 @@ if CLIENT then
 				if f == COVER_VARIANTS_RIGHT then
 					vTargetAngle.x = vTargetAngle.x + 22.5
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x + 4 + self.flViewModelX
+					vTarget.x = vTarget.x + 4 + MyTable.flViewModelX
 				elseif f == COVER_VARIANTS_LEFT then
 					vTargetAngle.x = vTargetAngle.x + 22.5
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x - 18 - self.flViewModelX
+					vTarget.x = vTarget.x - 18 - MyTable.flViewModelX
 				else
 					vTargetAngle.x = vTargetAngle.x + 22.5
-					vTarget.x = vTarget.x - 12 - self.flViewModelX
+					vTarget.x = vTarget.x - 12 - MyTable.flViewModelX
 					vTarget.z = vTarget.z - 10
 				end
 			else
 				vTargetAngle.x = vTargetAngle.x + 22.5
 				vTarget.z = vTarget.z - 10
+				local v = ang:Forward()
+				v.z = 0
+				v:Normalize()
+				local o, b, f = ply:GetPos(), ply:Crouching()
+				if b then
+					f = ply:GetViewOffsetDucked() * .5
+					o = o + f
+				else
+					o = o + ply:GetViewOffset()
+				end
+				local tr = util_TraceLine {
+					start = o,
+					endpos = o + v * 999999,
+					filter = ply,
+					mask = MASK_SOLID
+				}
+				local v = WorldToLocal( tr.HitPos, Angle(), b && ( pos - f ) || pos, v:Angle() + Angle( -22.5, 0, 0 ) )
+				local f = MyTable.flViewModelCoverDistanceLimit
+				v = v:GetNormalized() * math.Clamp( math.Remap( v:Length(), ply:OBBMaxs().x, ply:OBBMaxs().x * 2, 0, f ), 0, f )
+				vTarget[ 1 ] = vTarget[ 1 ] + v[ 2 ]
+				vTarget[ 2 ] = vTarget[ 2 ] + v[ 1 ]
+				vTarget[ 3 ] = vTarget[ 3 ] + v[ 3 ]
 			end
 		else
 			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
@@ -237,12 +269,12 @@ if CLIENT then
 				elseif p == COVER_FIRE_RIGHT then
 				elseif p == COVER_BLINDFIRE_UP then
 					vTargetAngle.z = vTargetAngle.z + 180
-					vTarget.z = vTarget.z + self.flViewModelZ
-					vTarget.x = vTarget.x - ( 18 + self.flViewModelY )
+					vTarget.z = vTarget.z + MyTable.flViewModelZ
+					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelY )
 				elseif p == COVER_BLINDFIRE_LEFT then
-					vTarget.x = vTarget.x - 18 - self.flViewModelX
+					vTarget.x = vTarget.x - 18 - MyTable.flViewModelX
 				elseif p == COVER_BLINDFIRE_RIGHT then
-					vTarget.x = vTarget.x + 4 + self.flViewModelX
+					vTarget.x = vTarget.x + 4 + MyTable.flViewModelX
 				end
 			end
 			local bOnGround = CEntity_IsOnGround( ply )
@@ -250,11 +282,11 @@ if CLIENT then
 				bOnGroundLast = true
 			elseif bOnGround then
 				bOnGroundLast = true
-				if !bSliding && bSprinting || CPlayer_IsSprinting( ply ) then
+				if !bSliding && bSprinting then
 					local f = CEntity_GetVelocity( ply ):Length() / CPlayer_GetRunSpeed( ply ) * .625
 					local flBreathe = RealTime() * 18
                     vTarget = vTarget + self.vSprintArm - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * f, 0, math_cos( flBreathe ) * f )
-                    vTargetAngle = vTargetAngle + self.vSprintArmAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
+                    vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
 				else
 					if bSliding || CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CurTime() > self:GetNextPrimaryFire() && CurTime() > self:GetNextSecondaryFire() && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
 						vTargetAngle.x = vTargetAngle.x - 11.25
@@ -337,18 +369,22 @@ if CLIENT then
 		pos = pos + vFinal.z * ang:Up()
 		pos = pos + vFinal.y * ang:Forward()
 		pos = pos + vFinal.x * ang:Right()
-		aAim = LerpAngle( 5 * FrameTime(), aAim, ply:EyeAngles() )
-		MyTable.aLastEyePosition = aAim - ply:EyeAngles()
-		MyTable.aLastEyePosition.y = math_AngleDifference( aAim.y, math_NormalizeAngle( ply:EyeAngles().y ) )
+		local eye = ply:EyeAngles()
+		MyTable.aLastEyePosition[ 1 ] = math_AngleDifference( aAim[ 1 ], eye[ 1 ] )
+		MyTable.aLastEyePosition[ 3 ] = math_AngleDifference( aAim[ 3 ], eye[ 3 ] )
+		aAim = LerpAngle( 5 * FrameTime(), aAim, eye )
 		local flMultiplier
 		if bZoom then
-			flMultiplier = vFinal:Distance( vTarget ) / vTarget:Length()
+			flMultiplier = vAim && vFinal:Distance( vTarget ) / vTarget:Length() || math_Clamp( MyTable.flAimMultiplier - FrameTime(), 0, 1 )
 		else
 			flMultiplier = math_Clamp( MyTable.flAimMultiplier + FrameTime(), 0, 1 )
 		end
 		MyTable.flAimMultiplier = math_Remap( flMultiplier, 1, 0, 1, MyTable.flViewModelAimSwayMultiplier )
 		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
 		local flSwayAngleNeg = -flSwayAngle
+		MyTable.flLastEyeYaw = Lerp( 5 * FrameTime(), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
+		MyTable.flLastTrueEyeYaw = eye[ 2 ]
+		MyTable.aLastEyePosition[ 2 ] = -MyTable.flLastEyeYaw
 		ang:RotateAroundAxis( ang:Right(), math_Clamp( flSwayAngle * MyTable.aLastEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
 		ang:RotateAroundAxis( ang:Up(), math_Clamp( flSwayAngleNeg * MyTable.aLastEyePosition.y / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
 		local flSwayVector = MyTable.flSwayVector * flMultiplier

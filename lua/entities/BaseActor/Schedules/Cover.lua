@@ -34,9 +34,19 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil return end
+		local v = self:GetPos() + self:GatherCoverBounds()
+		local dir = enemy:GetPos() - vec
+		dir.z = 0
+		dir:Normalize()
+		local f = self.flPathGoalTolerance
+		if util_TraceLine( {
+			start = v,
+			endpos = v + dir * self.vHullMaxs.x * 4,
+			mask = MASK_SHOT_HULL,
+			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		} ).Hit && self:GetPos():DistToSqr( vec ) <= ( f * f ) then return true end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then return { true } end
 		self.vActualCover = self.vCover
 		local tNearestEnemies = {}
 		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end

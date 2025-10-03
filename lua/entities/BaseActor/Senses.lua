@@ -35,6 +35,8 @@ local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_GetOwner = CEntity.GetOwner
 local CEntity_GetAngles = CEntity.GetAngles
 
+ENT.flLastEnemy = 0
+
 ENT.bCantSeeUnderWater = true
 ENT.bVisNot360 = true
 ENT.flVisionYaw = 99
@@ -93,6 +95,7 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	local beye = self.tBullseyes[ id ]
 	if beye then beye = beye[ 1 ] end
 	if !IsValid( beye ) then beye = ents.Create "BaseActorBullseye" beye:Spawn() end
+	beye.flTime = CurTime()
 	self.tBullseyes[ id ] = { beye, enemy, ent }
 	beye.Enemy = ent
 	beye.Owner = self
@@ -116,6 +119,7 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	end
 	beye:SetHealth( enemy:Health() )
 	beye:SetMaxHealth( enemy:GetMaxHealth() )
+	return beye
 end
 
 local pairs = pairs
@@ -239,22 +243,24 @@ function ENT:Look( MyTable )
 						if f && f >= 1 then
 							if ent:Classify() == self:Classify() then // Go Over to Ally Flares to Help
 								if ent:GetPos():DistToSqr( self:GetPos() ) > 9437184/*3072*/ then
-									self:SetupBullseye( ent, util_TraceLine( {
+									local p = self:SetupBullseye( ent, util_TraceLine( {
 										start = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ),
 										endpos = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) - HUGE_Z,
 										filter = ent,
 										mask = MASK_VISIBLE_AND_NPCS
 									} ).HitPos, CEntity_GetAngles( ent ) )
+									if IsValid( p ) then p.flTime = CurTime() end
 								end
 							else
 								local p = CEntity_GetOwner( ent )
 								if IsValid( p ) then
-									self:SetupBullseye( p, util_TraceLine( {
+									local p = self:SetupBullseye( p, util_TraceLine( {
 										start = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ),
 										endpos = CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) - HUGE_Z,
 										filter = ent,
 										mask = MASK_VISIBLE_AND_NPCS
 									} ).HitPos, CEntity_GetAngles( ent ) )
+									if IsValid( p ) then p.flTime = CurTime() end
 								end
 							end
 							if ent.FLARE_tFoundByClass then ent.FLARE_tFoundByClass[ self:Classify() ] = true
@@ -265,6 +271,8 @@ function ENT:Look( MyTable )
 			else
 				tVisionStrength[ ent ] = math_Clamp( tOldVisionStrength[ ent ] + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 )
 				if tVisionStrength[ ent ] >= 1 then
+					self.bHoldFire = nil
+					self.flLastEnemy = CurTime()
 					tEnemies[ ent ] = true
 					tVisibleEnemies[ EntityUniqueIdentifier( ent ) ] = true
 					self:SetupBullseye( ent )
@@ -305,12 +313,20 @@ function ENT:OnHeardSomething( Other, Data )
 	if d == D_LI then
 		local OtherTable = CEntity_GetTable( Other )
 		if !OtherTable.__ACTOR__ then return end
-		for _, d in pairs( OtherTable.tBullseyes ) do
+		for k, d in pairs( OtherTable.tBullseyes ) do
 			local beye = d[ 1 ]
 			if IsValid( beye ) then
 				local ent = d[ 2 ]
 				if IsValid( ent ) then
-					MyTable.SetupBullseye( self, ent, CEntity_GetPos( beye ), CEntity_GetAngles( beye ), MyTable )
+					local t = self.tBullseyes[ k ]
+					if t then
+						local meye = t[ 1 ]
+						if IsValid( meye ) && meye.flTime > beye.flTime then
+							OtherTable.SetupBullseye( Other, ent, CEntity_GetPos( meye ), CEntity_GetAngles( meye ), OtherTable )
+						else MyTable.SetupBullseye( self, ent, CEntity_GetPos( beye ), CEntity_GetAngles( beye ), MyTable ) end
+					else
+						MyTable.SetupBullseye( self, ent, CEntity_GetPos( beye ), CEntity_GetAngles( beye ), MyTable )
+					end
 				end
 			end
 		end

@@ -78,16 +78,18 @@ ENT.flCoverMoveStep = 1
 ENT.flCoverMoveShort = 4
 ENT.flCoverMoveNotShort = 8
 
+local util_TraceLine = util.TraceLine
+
 function ENT:CalcMyExposedShootPositions( enemy, vPos, bDuck, vStand, vDuck )
 	local enemy, trueenemy = self:SetupEnemy( enemy )
 	local t, bHasShort = {}
 	local vShoot = enemy:GetPos() + enemy:OBBCenter()
-	if vDuck && !util.TraceLine( {
+	if vDuck && !util_TraceLine( {
 		start = vPos + vDuck,
 		endpos = vShoot,
 		mask = MASK_SHOT_HULL,
 		filter = { self, enemy, trueenemy }
-	} ).Hit || !util.TraceLine( {
+	} ).Hit || !util_TraceLine( {
 		start = vPos + vStand,
 		endpos = vShoot,
 		mask = MASK_SHOT_HULL,
@@ -113,12 +115,12 @@ function ENT:CalcMyExposedShootPositions( enemy, vPos, bDuck, vStand, vDuck )
 			maxs = vMaxs,
 			filter = self
 		} ).Hit then break end
-		if vDuck && !util.TraceLine( {
+		if vDuck && !util_TraceLine( {
 			start = vec + vDuck,
 			endpos = vShoot,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
-		} ).Hit || !util.TraceLine( {
+		} ).Hit || !util_TraceLine( {
 			start = vec + vStand,
 			endpos = vShoot,
 			mask = MASK_SHOT_HULL,
@@ -134,12 +136,12 @@ function ENT:CalcMyExposedShootPositions( enemy, vPos, bDuck, vStand, vDuck )
 			maxs = vMaxs,
 			filter = self
 		} ).Hit then break end
-		if vDuck && !util.TraceLine( {
+		if vDuck && !util_TraceLine( {
 			start = vec + vDuck,
 			endpos = vShoot,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
-		} ).Hit || !util.TraceLine( {
+		} ).Hit || !util_TraceLine( {
 			start = vec + vStand,
 			endpos = vShoot,
 			mask = MASK_SHOT_HULL,
@@ -181,7 +183,7 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 	local enemy, trueenemy = self:SetupEnemy( enemy )
 	local t, bHasShort = {}
 	if bDuck then
-		local tr = util.TraceLine {
+		local tr = util_TraceLine {
 			start = vPos + vStand,
 			endpos = vShoot,
 			mask = MASK_SHOT_HULL,
@@ -214,13 +216,13 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 			filter = self
 		} ).Hit then break end
 		if vDuck then
-			local trStand = util.TraceLine {
+			local trStand = util_TraceLine {
 				start = vec + vStand,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
 				filter = { self, enemy, trueenemy }
 			}
-			local trDuck = util.TraceLine {
+			local trDuck = util_TraceLine {
 				start = vec + vDuck,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
@@ -245,7 +247,7 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 				break
 			end
 		else
-			local tr = util.TraceLine {
+			local tr = util_TraceLine {
 				start = vec + vStand,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
@@ -269,13 +271,13 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 			filter = self
 		} ).Hit then break end
 		if vDuck then
-			local trStand = util.TraceLine {
+			local trStand = util_TraceLine {
 				start = vec + vStand,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
 				filter = { self, enemy, trueenemy }
 			}
-			local trDuck = util.TraceLine {
+			local trDuck = util_TraceLine {
 				start = vec + vDuck,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
@@ -300,7 +302,7 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 				break
 			end
 		else
-			local tr = util.TraceLine {
+			local tr = util_TraceLine {
 				start = vec + vStand,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
@@ -346,18 +348,32 @@ function ENT:FindSuppressEnemy( vShoot, tEnemies, bDuck )
 	end
 end
 
+ENT.flHoldFireTime = 30
+
+function ENT:DLG_HoldFire()
+	local tAllies = self:GetAlliesByClass()
+	if tAllies then
+		local f = self.flLastEnemy
+		for _, ent in ipairs( tAllies ) do
+			if IsValid( ent ) && ( ent.flLastEnemy == 0 && ent.flLastEnemy > f ) then continue end
+			ent.bHoldFire = true
+		end
+	end
+	self.bHoldFire = true
+end
+
 Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
 	local enemy = sched.Enemy
 	if IsValid( enemy ) then enemy = self:SetupEnemy( enemy )
 	else enemy = self.Enemy if !IsValid( enemy ) then return {} end end
+	if CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) then self:DLG_HoldFire() end
 	if self.vCover then
 		local vec = self.vCover
 		self.vActualCover = vec
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) > self.flPathGoalTolerance then self.vCover = nil self:SetSchedule "TakeCover" return end
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
 			local pCover = self.pCover
@@ -372,13 +388,24 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
-		if !util.TraceLine( {
+		if !util_TraceLine( {
 			start = v,
 			endpos = v + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil return end
-		if !util.TraceLine( {
+		local v = self:GetPos() + self:GatherCoverBounds()
+		local dir = enemy:GetPos() - vec
+		dir.z = 0
+		dir:Normalize()
+		local f = self.flPathGoalTolerance
+		if !util_TraceLine( {
+			start = v,
+			endpos = v + dir * self.vHullMaxs.x * 4,
+			mask = MASK_SHOT_HULL,
+			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		} ).Hit || self:GetPos():DistToSqr( vec ) > ( f * f ) then self.vCover = nil return end
+		if !util_TraceLine( {
 			start = o,
 			endpos = o + dir * self.vHullMaxs.x * 4,
 			mask = MASK_SHOT_HULL,
@@ -481,13 +508,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
+	sched.bWantsCover = sched.bMove
 	local tAllies = self:GetAlliesByClass()
 	if !self.vCover then
 		if table.Count( tAllies ) > 1 then
 			local bNoEnemy = true
 			for ent in pairs( self.tEnemies ) do
 				local v = ent:GetPos() + ent:OBBCenter()
-				local tr = util.TraceLine {
+				local tr = util_TraceLine {
 					start = self:GetShootPos(),
 					endpos = v,
 					mask = MASK_SHOT_HULL,
@@ -515,14 +543,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
 		local v = enemy:GetPos() + enemy:OBBCenter()
-		local trStand, trDuck = util.TraceLine {
+		local trStand, trDuck = util_TraceLine {
 			start = sched.vFrom + vStand,
 			endpos = v,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
 		}
 		if vDuck then
-			trDuck = util.TraceLine {
+			trDuck = util_TraceLine {
 				start = sched.vFrom + vDuck,
 				endpos = v,
 				mask = MASK_SHOT_HULL,
@@ -531,14 +559,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		end
 		if !trStand.Hit || trDuck && !trDuck.Hit then sched.bSuppressing = nil return end
 		v = sched.vTo
-		local trStand, trDuck = util.TraceLine {
+		local trStand, trDuck = util_TraceLine {
 			start = sched.vFrom + vStand,
 			endpos = v,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
 		}
 		if vDuck then
-			trDuck = util.TraceLine {
+			trDuck = util_TraceLine {
 				start = sched.vFrom + vDuck,
 				endpos = v,
 				mask = MASK_SHOT_HULL,
@@ -558,7 +586,22 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			local nws = math.abs( flHealth - 1 / ( wep.Primary.Automatic && t || t + self.tWeaponPrimaryVolleyNonAutomaticDelay[ 2 ] ) * d * ( wep.Primary_flNum || 1 ) )
 			if nws < ws then w, ws = wep, nws end
 		end
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
+		local trCurStand, trCurDuck = util_TraceLine {
+			start = self:GetPos() + vStand,
+			endpos = v,
+			mask = MASK_SHOT_HULL,
+			filter = { self, enemy, trueenemy }
+		}
+		if vDuck then
+			trCurDuck = util_TraceLine {
+				start = self:GetPos() + vDuck,
+				endpos = v,
+				mask = MASK_SHOT_HULL,
+				filter = { self, enemy, trueenemy }
+			}
+		end
+		local f = self.flPathGoalTolerance
+		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && ( !trStand.Hit || ( trDuck && !trDuck.Hit ) ) then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
 			elseif sched.Time == -1 then
 				local b = true
@@ -592,7 +635,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			for _, d in ipairs( tNearestEnemies ) do
 				local ent = d[ 1 ]
 				local v = ent:GetPos() + ent:OBBCenter()
-				local tr = util.TraceLine {
+				local tr = util_TraceLine {
 					start = self:GetShootPos(),
 					endpos = v,
 					mask = MASK_SHOT_HULL,
@@ -650,14 +693,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 		local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
 		local v = enemy:GetPos() + enemy:OBBCenter()
-		local trStand, trDuck = util.TraceLine {
+		local trStand, trDuck = util_TraceLine {
 			start = sched.vFrom + vStand,
 			endpos = v,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
 		}
 		if vDuck then
-			trDuck = util.TraceLine {
+			trDuck = util_TraceLine {
 				start = sched.vFrom + vDuck,
 				endpos = v,
 				mask = MASK_SHOT_HULL,
@@ -712,7 +755,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			for _, d in ipairs( tNearestEnemies ) do
 				local ent = d[ 1 ]
 				local v = ent:GetPos() + ent:OBBCenter()
-				local tr = util.TraceLine {
+				local tr = util_TraceLine {
 					start = self:GetShootPos(),
 					endpos = v,
 					mask = MASK_SHOT_HULL,

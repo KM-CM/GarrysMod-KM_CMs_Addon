@@ -35,7 +35,7 @@ function ENT:DoCoverMove( tEnemies )
 			if g then
 				local b = self:CreateBehaviour "CombatFormation"
 				b.Vector = p:GetPositionOnPath( i )
-				b.Direction = g.forward
+				b.Direction = -g.forward
 				b:AddParticipant( self )
 				b:GatherParticipants()
 				b:Initialize()
@@ -77,6 +77,8 @@ function ENT:DLG_TakeCoverGeneral() end
 local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 function ENT:DLG_TakeCoverAdvance() CEntity_GetTable( self ).DLG_TakeCoverGeneral( self ) end
 function ENT:DLG_TakeCoverRetreat() CEntity_GetTable( self ).DLG_TakeCoverGeneral( self ) end
+
+local util_TraceLine = util.TraceLine
 
 Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
@@ -149,6 +151,18 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			elseif sched.bRetreating then self:DLG_Retreating() end
 			sched.bActed = true
 		end
+		local v = self:GetPos() + self:GatherCoverBounds()
+		local dir = enemy:GetPos() - vec
+		dir.z = 0
+		dir:Normalize()
+		local f = self.flPathGoalTolerance
+		if util_TraceLine( {
+			start = v,
+			endpos = v + dir * self.vHullMaxs.x * 4,
+			mask = MASK_SHOT_HULL,
+			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		} ).Hit && self:GetPos():DistToSqr( vec ) <= ( f * f ) then return true end
+		self.bWantsCover = true
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
 		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then return { true } end

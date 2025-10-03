@@ -186,6 +186,11 @@ DIRECTOR_MELEE_DANGER = 2
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function()
 	for _, ply in player_Iterator() do
+		local v = __PLAYER_MODEL__[ ply:GetModel() ]
+		if v then
+			v = v.Think
+			if v then v( ply ) end
+		end
 		if Player_Debug_EyeOffset:GetBool() then
 			if ply:GetViewOffsetDucked() == VectorZ28 then
 				ply:SetViewOffsetDucked( Vector( 0, 0, 42 ) )
