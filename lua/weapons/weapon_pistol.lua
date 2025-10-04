@@ -40,7 +40,7 @@ function SWEP:PrimaryAttack()
 	self:FireBullets {
 		Attacker = owner,
 		Src = owner:GetShootPos(),
-		Dir = owner:GetAimVector(),
+		Dir = self:GetAimVector(),
 		Tracer = 1,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
 		Damage = self.Primary_flDamage

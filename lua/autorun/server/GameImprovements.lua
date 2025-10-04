@@ -253,7 +253,7 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 			dDamage:SetDamageType( DMG_BULLET )
 			dDamage:SetDamagePosition( tr.HitPos )
 		end
-		local t = OldCallBack( atk, tr, dDamage )
+		local t = OldCallBack( atk, tr, dDamage ) || { damage = true, effects = true }
 		if t.damage && bTarget then pTarget:TakeDamageInfo( dDamage ) end
 		local b = t.effects
 		if b then

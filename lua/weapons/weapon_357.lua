@@ -14,7 +14,7 @@ SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Pistol"
 SWEP.Primary_flSpreadX = .0084
 SWEP.Primary_flSpreadY = .0084
-SWEP.Primary_flDamage = 120
+SWEP.Primary_flDamage = 240
 SWEP.Primary_flDelay = .25
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
@@ -24,6 +24,9 @@ SWEP.Slot = 1
 SWEP.vViewModelAim = Vector( -4.62, 0, .67 )
 SWEP.ViewModelFOV = 54
 SWEP.Crosshair = "Revolver"
+SWEP.flSideWaysRecoilMin = -.33
+SWEP.flSideWaysRecoilMax = .33
+SWEP.flRecoil = 5
 
 sound.Add {
 	name = "ColyPython_Shot",
@@ -41,7 +44,7 @@ function SWEP:PrimaryAttack()
 	self:FireBullets {
 		Attacker = owner,
 		Src = owner:GetShootPos(),
-		Dir = owner:GetAimVector(),
+		Dir = self:GetAimVector(),
 		Tracer = 1,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
 		Damage = self.Primary_flDamage

@@ -30,6 +30,9 @@ SWEP.DrawAmmo = true
 SWEP.Crosshair = "Shotgun"
 SWEP.vSprintArm = Vector( 1.358, -6.228, -.94 )
 SWEP.vViewModelAim = Vector( -2.955, -4, 2.2 )
+SWEP.flSideWaysRecoilMin = -.33
+SWEP.flSideWaysRecoilMax = .33
+SWEP.flRecoil = 5
 
 SWEP.bSemi = true
 SWEP.bPumped = true
@@ -180,7 +183,7 @@ function SWEP:PrimaryAttack()
 	self:FireBullets {
 		Attacker = owner,
 		Src = owner:GetShootPos(),
-		Dir = owner:GetAimVector(),
+		Dir = self:GetAimVector(),
 		Tracer = 1,
 		Num = self.Primary_flNum,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),

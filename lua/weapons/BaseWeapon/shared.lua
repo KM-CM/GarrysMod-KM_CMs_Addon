@@ -73,6 +73,34 @@ local CEntity_IsOnGround = CEntity.IsOnGround
 local CEntity_GetNW2Bool = CEntity.GetNW2Bool
 local CEntity_GetTable = CEntity.GetTable
 
+function SWEP:GetAimVector()
+	local owner = self:GetOwner()
+	local v = owner:GetAimVector()
+	local f = owner.GetViewPunchAngles
+	if f then
+		v = v:Angle()
+		v = v + f( owner )
+		v = v:Forward()
+	end
+	return v
+end
+
+SWEP.flRecoil = 2 // With the data below, this is degrees
+SWEP.flSideWaysRecoilMin = -.5
+SWEP.flSideWaysRecoilMax = .5
+SWEP.flRecoilGrowMin = -.5
+SWEP.flRecoilGrowMax = -1
+DEFINE_BASECLASS "weapon_base"
+local util_SharedRandom = util.SharedRandom
+function SWEP:ShootEffects()
+	local pOwner = self:GetOwner()
+	if IsValid( pOwner ) && pOwner:IsPlayer() then
+		local flRecoil = self.flRecoil
+		pOwner:ViewPunch( Angle( util_SharedRandom("BaseWeapon_ViewPunch", self.flRecoilGrowMin, self.flRecoilGrowMax ) * flRecoil, util_SharedRandom( "BaseWeapon_ViewPunch", self.flSideWaysRecoilMin, self.flSideWaysRecoilMax ) * flRecoil, 0 ) )
+	end
+	BaseClass.ShootEffects( self )
+end
+
 local math = math
 local math_min = math.min
 
@@ -198,11 +226,18 @@ if CLIENT then
 		else MyTable.flFoV = fov end
 		return pos, ang, fov
 	end
+	local util_TraceLine = util.TraceLine
 	function SWEP:GatherCrosshairPosition( MyTable )
-		local t = LocalPlayer():GetEyeTrace().HitPos:ToScreen()
+		local v = LocalPlayer():GetNW2Entity "GAME_pVehicle"
+		local tr = util_TraceLine {
+			start = LocalPlayer():GetShootPos(),
+			endpos = LocalPlayer():GetShootPos() + self:GetAimVector() * 999999,
+			mask = MASK_SOLID,
+			filter = IsValid( v ) && { LocalPlayer(), v } || LocalPlayer()
+		}
+		local t = tr.HitPos:ToScreen()
 		return t.x, t.y
 	end
-	local util_TraceLine = util.TraceLine
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
