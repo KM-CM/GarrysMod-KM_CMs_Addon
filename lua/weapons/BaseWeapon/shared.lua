@@ -104,6 +104,8 @@ end
 local math = math
 local math_min = math.min
 
+AddCSLuaFile "Crosshair.lua"
+
 if CLIENT then
 	function SWEP:Think()
 		local pViewModel = self:GetOwner():GetViewModel()
@@ -440,3 +442,4 @@ sound.Add {
 }
 
 weapons.Register( SWEP, "BaseWeapon" )
+
