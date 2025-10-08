@@ -16,7 +16,7 @@ function ENT:GetSlowWalkSpeed() return CEntity_GetTable( self ).flWalkSpeed end
 
 local FL = FL_DUCKING + FL_ANIMDUCKING
 function ENT:Crouching() return self:IsFlagSet( FL ) end
-function ENT:GetCrouchTarget() return self:IsCrouching() && 0 || 1 end
+function ENT:GetCrouchTarget() return self:Crouching() && 0 || 1 end
 function ENT:SetCrouchTarget( flHeight ) if flHeight < .5 then self:AddFlags( FL ) else self:RemoveFlags( FL ) end end
 
 ENT.flDefaultJumpHeight = HUMAN_JUMP_HEIGHT

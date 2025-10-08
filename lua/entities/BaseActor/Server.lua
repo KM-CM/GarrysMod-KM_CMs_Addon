@@ -226,8 +226,6 @@ ENT.bCanDuckMove = false
 ENT.bCanDuckMoveShoot = false
 */
 
-function ENT:Crouching() return false end
-// Dont Worry, if bSimpleDuck is true, This will Only be Supplied with
-// Either a 0 or a 1, as Opposed to Any Value in The [ 0, 1 ] Range
+function ENT:Crouching() return self:GetCrouchTarget() < .5 end
 function ENT:SetCrouchTarget( flTarget ) end
 function ENT:GetCrouchTarget() return 1 end

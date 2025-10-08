@@ -313,6 +313,7 @@ function ENT:OnHeardSomething( Other, Data )
 	if d == D_LI then
 		local OtherTable = CEntity_GetTable( Other )
 		if !OtherTable.__ACTOR__ then return end
+		if !OtherTable.bHoldFire then MyTable.bHoldFire = nil end
 		for k, d in pairs( OtherTable.tBullseyes ) do
 			local beye = d[ 1 ]
 			if IsValid( beye ) then

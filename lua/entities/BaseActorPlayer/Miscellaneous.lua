@@ -12,7 +12,7 @@ function ENT:MoveAlongPath( Path, flSpeed, flHeight, tFilter )
 	if goal && CurTime() > self.flNextJumpInternal then
 		local vel = GetVelocity( self )
 		local vlen = vel:Length()
-		local len = math.max( self:OBBMaxs().z * 2, vlen )
+		local len = math.min( math.max( self:OBBMaxs().z * 2, vlen ), Path:GetLength() )
 		local dir
 		if Path:GetClosestPosition( self:GetPos() ):DistToSqr( self:GetPos() ) <= ( self.flPathTolerance * self.flPathTolerance ) then
 			dir = goal.forward
@@ -30,6 +30,7 @@ function ENT:MoveAlongPath( Path, flSpeed, flHeight, tFilter )
 			mask = MASK_SOLID
 		}
 		local ent = tr.Entity
+		// FROM KM_CM's RANDOM THINGS:
 		/*At First I Thought It was a Good Idea to Jump Above Allies, But in Practice,
 		That Just Made Hordes of Antlion Chaotic. Because They werent Jumping to Intercept,
 		Which was a Mechanic I was Creating, But Instead Jumping Above EachOther*/

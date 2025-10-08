@@ -4,7 +4,7 @@ ENT.tPreScheduleResetVariables.bSuppressing = false
 ENT.tPreScheduleResetVariables.bWantsCover = false
 
 function ENT:RangeAttack()
-	if self.bHoldFire then return end // No, This is Not Included by Default...
+	if self.bHoldFire then return end
 	self:WeaponPrimaryVolley()
 	return true
 end
@@ -329,7 +329,38 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 			table.insert( t, { vRight, vRightTarget } )
 		end
 	end
-	return t
+	if table.IsEmpty( t ) then
+		local Path = Path "Follow"
+		self:ComputeFlankPath( Path, enemy:GetPos() )
+		for I = 32, 768 do
+			local vec = Path:GetPositionOnPath( I )
+			local v, b = vec + vDuck
+			local tr = util_TraceLine {
+				start = v,
+				endpos = vShoot,
+				mask = MASK_SHOT_HULL,
+				filter = { self, enemy, trueenemy }
+			}
+			if tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
+				bHasShort = true
+				table.insert( t, { vec, tr.HitPos } )
+				b = true
+			end
+			local v = vec + vStand
+			local tr = util_TraceLine {
+				start = v,
+				endpos = vShoot,
+				mask = MASK_SHOT_HULL,
+				filter = { self, enemy, trueenemy }
+			}
+			if tr.Fraction > self.flSuppressionTraceFraction && tr.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then
+				bHasShort = true
+				table.insert( t, { vec, tr.HitPos } )
+				b = true
+			end
+			if b then return t end
+		end
+	else return t end
 end
 
 function ENT:FindSuppressEnemy( vShoot, tEnemies, bDuck )
@@ -348,7 +379,7 @@ function ENT:FindSuppressEnemy( vShoot, tEnemies, bDuck )
 	end
 end
 
-ENT.flHoldFireTime = 30
+ENT.flHoldFireTime = 16
 
 function ENT:DLG_HoldFire()
 	local tAllies = self:GetAlliesByClass()
@@ -368,7 +399,7 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 	local enemy = sched.Enemy
 	if IsValid( enemy ) then enemy = self:SetupEnemy( enemy )
 	else enemy = self.Enemy if !IsValid( enemy ) then return {} end end
-	if CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) then self:DLG_HoldFire() end
+	if CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) && !self.bHoldFire then self:DLG_HoldFire() end
 	if self.vCover then
 		local vec = self.vCover
 		self.vActualCover = vec
@@ -601,7 +632,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			}
 		end
 		local f = self.flPathGoalTolerance
-		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && ( !trStand.Hit || ( trDuck && !trDuck.Hit ) ) then
+		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && ( !trCurStand.Hit && trCurStand.Fraction > self.flSuppressionTraceFraction && trCurStand.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE && ( !trCurDuck || trCurDuck && trCurDuck.Hit && trCurDuck.Fraction > self.flSuppressionTraceFraction && trCurDuck.HitPos:Distance( v ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE ) ) then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
 			elseif sched.Time == -1 then
 				local b = true
@@ -721,7 +752,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			if nws < ws then w, ws = wep, nws end
 		end
 		if IsValid( w ) then self:SetActiveWeapon( w ) end
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
+		local f = self.flPathGoalTolerance
+		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && ( !trStand.Hit || ( trDuck && !trDuck.Hit ) ) then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
 			elseif sched.Time == -1 then
 				local b = true

@@ -1,6 +1,6 @@
 local _reg = debug.getregistry()
-local CActorSchedule = _reg.CActorSchedule || {}
-_reg.CActorSchedule = CActorSchedule
+local CActorSchedule = _reg.ActorSchedule || {}
+_reg.ActorSchedule = CActorSchedule
 
 CActorSchedule.__index = CActorSchedule
 

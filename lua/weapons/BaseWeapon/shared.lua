@@ -92,12 +92,15 @@ SWEP.flRecoilGrowMin = -.5
 SWEP.flRecoilGrowMax = -1
 DEFINE_BASECLASS "weapon_base"
 local util_SharedRandom = util.SharedRandom
-function SWEP:ShootEffects()
+function SWEP:DoRecoil()
 	local pOwner = self:GetOwner()
 	if IsValid( pOwner ) && pOwner:IsPlayer() then
 		local flRecoil = self.flRecoil
 		pOwner:ViewPunch( Angle( util_SharedRandom("BaseWeapon_ViewPunch", self.flRecoilGrowMin, self.flRecoilGrowMax ) * flRecoil, util_SharedRandom( "BaseWeapon_ViewPunch", self.flSideWaysRecoilMin, self.flSideWaysRecoilMax ) * flRecoil, 0 ) )
 	end
+end
+function SWEP:ShootEffects()
+	self:DoRecoil()
 	BaseClass.ShootEffects( self )
 end
 
@@ -138,7 +141,6 @@ if CLIENT then
 	SWEP.flAimMultiplier = 1
 	SWEP.flFoV = 99
 	SWEP.flViewModelAimSwayMultiplier = 0
-	SWEP.flViewModelCoverDistanceLimit = 8
 	SWEP.flLastEyeYaw = 0
 	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
@@ -261,43 +263,26 @@ if CLIENT then
 			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
 				local f = CEntity_GetNW2Int( ply, "CTRL_Variants" )
 				if f == COVER_VARIANTS_RIGHT then
-					vTargetAngle.x = vTargetAngle.x + 22.5
+					vTargetAngle.x = vTargetAngle.x + 45
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x + 4 + MyTable.flViewModelX
+					vTarget.y = vTarget.y - 10
+					vTarget.x = vTarget.x - .5 + MyTable.flViewModelX
 				elseif f == COVER_VARIANTS_LEFT then
-					vTargetAngle.x = vTargetAngle.x + 22.5
+					vTargetAngle.x = vTargetAngle.x + 45
 					vTarget.z = vTarget.z - 10
-					vTarget.x = vTarget.x - 18 - MyTable.flViewModelX
+					vTarget.y = vTarget.y - 10
+					vTarget.x = vTarget.x + 6 + MyTable.flViewModelX
 				else
-					vTargetAngle.x = vTargetAngle.x + 22.5
-					vTarget.x = vTarget.x - 12 - MyTable.flViewModelX
+					vTargetAngle.x = vTargetAngle.x + 45
+					vTarget.x = vTarget.x + ( MyTable.vViewModelAim && MyTable.vViewModelAim[ 1 ] || 2 )
+					vTarget.y = vTarget.y - 10
 					vTarget.z = vTarget.z - 10
 				end
 			else
-				vTargetAngle.x = vTargetAngle.x + 22.5
-				vTarget.z = vTarget.z - 10
-				local v = ang:Forward()
-				v.z = 0
-				v:Normalize()
-				local o, b, f = ply:GetPos(), ply:Crouching()
-				if b then
-					f = ply:GetViewOffsetDucked() * .5
-					o = o + f
-				else
-					o = o + ply:GetViewOffset()
-				end
-				local tr = util_TraceLine {
-					start = o,
-					endpos = o + v * 999999,
-					filter = ply,
-					mask = MASK_SOLID
-				}
-				local v = WorldToLocal( tr.HitPos, Angle(), b && ( pos - f ) || pos, v:Angle() + Angle( -22.5, 0, 0 ) )
-				local f = MyTable.flViewModelCoverDistanceLimit
-				v = v:GetNormalized() * math.Clamp( math.Remap( v:Length(), ply:OBBMaxs().x, ply:OBBMaxs().x * 2, 0, f ), 0, f )
-				vTarget[ 1 ] = vTarget[ 1 ] + v[ 2 ]
-				vTarget[ 2 ] = vTarget[ 2 ] + v[ 1 ]
-				vTarget[ 3 ] = vTarget[ 3 ] + v[ 3 ]
+				vTargetAngle.x = vTargetAngle.x + 45
+				vTarget.x = vTarget.x + ( MyTable.vViewModelAim && ( MyTable.vViewModelAim[ 1 ] * .5 ) || 2 )
+				vTarget.y = vTarget.y - 8
+				vTarget.z = vTarget.z - 8
 			end
 		else
 			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
@@ -309,9 +294,8 @@ if CLIENT then
 					vTarget.z = vTarget.z + MyTable.flViewModelZ
 					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelY )
 				elseif p == COVER_BLINDFIRE_LEFT then
-					vTarget.x = vTarget.x - 18 - MyTable.flViewModelX
+					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelX )
 				elseif p == COVER_BLINDFIRE_RIGHT then
-					vTarget.x = vTarget.x + 4 + MyTable.flViewModelX
 				end
 			end
 			local bOnGround = CEntity_IsOnGround( ply )
@@ -442,4 +426,3 @@ sound.Add {
 }
 
 weapons.Register( SWEP, "BaseWeapon" )
-

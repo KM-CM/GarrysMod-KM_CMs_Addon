@@ -84,8 +84,8 @@ DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE || {
 local DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE
 
 local _reg = debug.getregistry()
-local CDirectorMusicPlayer = _reg.CDirectorMusicPlayer || {}
-_reg.CDirectorMusicPlayer = CDirectorMusicPlayer
+local CDirectorMusicPlayer = _reg.DirectorMusicPlayer || {}
+_reg.DirectorMusicPlayer = CDirectorMusicPlayer
 // __index is NOT Used and I am Adding This Here Just in Case You have a Great But Schizophrenic Idea!
 CDirectorMusicPlayer.__index = CDirectorMusicPlayer
 
@@ -313,16 +313,18 @@ hook.Add( "Tick", "Director", function()
 				if t then
 					local b = true
 					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_pSource == t then b = nil break end end
-					if b then for _, mus in pairs( ply.DR_tMusic ) do if mus.m_pSource == t then b = nil break end end end
 					if b then
-						if Director_Debug:GetBool() then print( "Next Track of Type " .. Director_ThreatValueToName( l ) ) end
-						ply.DR_tShutMeUp[ s ] = true
-						tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t )
-						ply.DR_tMusicNext[ l ] = CurTime() + tMusic[ l ]:Length()
-					else
-						bNoLayer = true
-						if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
-						ply.DR_tMusicNext[ l ] = CurTime() + s:Length()
+						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_pSource == t then b = nil break end end
+						if b then
+							if Director_Debug:GetBool() then print( "Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+							ply.DR_tShutMeUp[ s ] = true
+							tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t )
+							ply.DR_tMusicNext[ l ] = CurTime() + tMusic[ l ]:Length()
+						else
+							bNoLayer = true
+							if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+							ply.DR_tMusicNext[ l ] = CurTime() + s:Length()
+						end
 					end
 					continue
 				else

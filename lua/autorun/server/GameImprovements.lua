@@ -212,7 +212,8 @@ hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, 
 	if b then
 		b = !ply.GAME_bSecondHurtViewPunch
 		ply.GAME_bSecondHurtViewPunch = b
-		ply:ViewPunch( Angle( 0, 0, flDamage * math.Remap( flHealth, 0, ply:GetMaxHealth(), .05, .01 ) * ( b && 1 || -1 ) ) )
+		local f = ply:GetMaxHealth()
+		ply:ViewPunch( Angle( 0, 0, flDamage * ( flHealth > f && .01 || math.Remap( flHealth, 0, f, .05, .01 ) ) * ( b && 1 || -1 ) ) )
 	end
 end )
 
@@ -233,7 +234,7 @@ local IsValid = IsValid
 hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	if _Comp then return end
 	hook.Run( "EntityFireBullets", ent, Data, true )
-	if Data.AmmoType != "" then Data.Damage = game.GetAmmoPlayerDamage( game.GetAmmoID( Data.AmmoType ) ) end
+	if Data.AmmoType != "" then Data.Damage = game.GetAmmoPlayerDamage( game.GetAmmoID( Data.AmmoType ) ) Data.AmmoType = "" end
 	local OldCallBack = Data.Callback || function() return { damage = true, effects = true } end
 	local flDamage = Data.Damage
 	local col = TRACER_COLOR[ Data.TracerName || "Bullet" ] || TRACER_COLOR.Bullet
