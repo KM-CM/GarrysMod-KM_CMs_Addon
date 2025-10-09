@@ -332,7 +332,7 @@ function ENT:CalcMySuppressionShootPositions( enemy, vPos, bDuck, vStand, vDuck 
 	if table.IsEmpty( t ) then
 		local Path = Path "Follow"
 		self:ComputeFlankPath( Path, enemy:GetPos() )
-		for I = 32, 768 do
+		for I = 32, 768, 32 do
 			local vec = Path:GetPositionOnPath( I )
 			local v, b = vec + vDuck
 			local tr = util_TraceLine {
@@ -503,7 +503,7 @@ Actor_RegisterSchedule( "CombatSoldier", function( self, sched )
 					else sched.flSuppressed = CurTime() + math.Rand( 0, 4 ) end
 				end
 			end
-		else sched.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .5 ), 0, 4 ) end
+		else sched.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .2 ), 0, 2 ) end
 	else
 		local vec = self:GetPos()
 		local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
