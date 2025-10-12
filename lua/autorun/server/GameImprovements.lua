@@ -110,14 +110,13 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 			if ent:CanSee( v ) then ent.bHoldFire = nil ent:SetupBullseye( Owner, vStart, ang ) end
 		end
 	end
-	/*Too Cheaty - Makes Silencers Almost Completely UseLess
+	/*Too cheaty - makes silencers almost completely useless
 	local ang = ( vEnd - vStart ):Angle()
 	for ent in pairs( __ACTOR_LIST__ ) do
 		if ent == Owner || Owner.Disposition && tIgnoreRangeAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRangeAttackDisp[ ent:Disposition( Owner ) ] then continue end
 		local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
 		if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
-	end
-	*/
+	end*/
 end
 
 hook.Add( "PlayerDeath", "GameImprovements", function( ply, _, at )
@@ -248,7 +247,7 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 			vTargetVelocity = ent:GetVelocity()
 			dDamage = DamageInfo()
 			dDamage:SetAttacker( pOwner )
-			// Prevents WALK and STEP MoveType KnockBack
+			// Not setting the inflictor prevents WALK and STEP movetype knockback
 			// dDamage:SetInflictor( ent )
 			dDamage:SetDamage( dmg:GetDamage() )
 			dDamage:SetDamageType( DMG_BULLET )
@@ -490,25 +489,6 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		local bLeft, bRight
 		if cmd:KeyDown( IN_DUCK ) && trDuck.Hit then
 			local vStart = vViewDucked
-			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
-			if util_TraceLine( {
-				start = vStart,
-				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
-				mask = MASK_SOLID,
-				filter = ply
-			} ).Hit && !util_TraceLine( {
-				start = vStart,
-				endpos = vec,
-				mask = MASK_SOLID,
-				filter = ply
-			} ).Hit then
-				bLeft = util_TraceLine( {
-					start = vec,
-					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
-					mask = MASK_SOLID,
-					filter = ply
-				} ).Hit
-			end
 			local vec = vStart + trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
@@ -521,7 +501,26 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				mask = MASK_SOLID,
 				filter = ply
 			} ).Hit then
-				bRight = util_TraceLine( {
+				bLeft = !util_TraceLine( {
+					start = vec,
+					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
+					mask = MASK_SOLID,
+					filter = ply
+				} ).Hit
+			end
+			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			if util_TraceLine( {
+				start = vStart,
+				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit && !util_TraceLine( {
+				start = vStart,
+				endpos = vec,
+				mask = MASK_SOLID,
+				filter = ply
+			} ).Hit then
+				bRight = !util_TraceLine( {
 					start = vec,
 					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
 					mask = MASK_SOLID,
@@ -530,7 +529,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		else
 			local vStart = vView
-			local vec = vStart - trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			local vec = vStart - trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
 				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
@@ -542,14 +541,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				mask = MASK_SOLID,
 				filter = ply
 			} ).Hit then
-				bLeft = util_TraceLine( {
+				bLeft = !util_TraceLine( {
 					start = vec,
 					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
 					mask = MASK_SOLID,
 					filter = ply
 				} ).Hit
 			end
-			local vec = vStart + trDuck.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			local vec = vStart + trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
 				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
@@ -561,7 +560,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				mask = MASK_SOLID,
 				filter = ply
 			} ).Hit then
-				bRight = util_TraceLine( {
+				bRight = !util_TraceLine( {
 					start = vec,
 					endpos = vec + EyeVectorFlat * ply:OBBMaxs().x * 2,
 					mask = MASK_SOLID,
@@ -687,20 +686,20 @@ local CEntity_GetTable = CEntity.GetTable
 
 local CPlayer_KeyDown = CPlayer.KeyDown
 
-function QuickSlide_Can( ply, t ) if t == nil then t = CEntity_GetTable( ply ) end return !Either( t.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, t.CTRL_bCantSlide ) && CEntity_IsOnGround( ply ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() end
+function QuickSlide_Can( ply, t ) if t == nil then t = CEntity_GetTable( ply ) end return !CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) && !Either( t.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, t.CTRL_bCantSlide ) && CEntity_IsOnGround( ply ) && GetVelocity( ply ):Length() >= ( ply:GetRunSpeed() * .9 ) end
 local CEntity_SetNW2Bool = CEntity.SetNW2Bool
 local CEntity_SetNW2Float = CEntity.SetNW2Float
 local CEntity_GetNW2Float = CEntity.GetNW2Float
 function QuickSlide_Handle( ply )
-	local vel = CEntity_GetVelocity( ply )
+	local vel = GetVelocity( ply )
 	local f = CEntity_GetNW2Float( ply, "CTRL_flSlideSpeed", 0 )
-	if ( !ply.Alive || ply.Alive && ply:Alive() ) && CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) && vel:Length() > 10 && CEntity_IsOnGround( ply ) && ( ply:IsPlayer() && CPlayer_KeyDown( ply, IN_DUCK ) && CPlayer_KeyDown( ply, IN_SPEED ) ) && f > 10 then
+	if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) && ( !ply.Alive || ply.Alive && ply:Alive() ) && vel:Length() > 8 && CEntity_IsOnGround( ply ) && f > 8 && ( !ply:IsPlayer() || ply:IsPlayer() && CPlayer_KeyDown( ply, IN_DUCK ) && CPlayer_KeyDown( ply, IN_SPEED ) ) then
 		local v = ply:GetAimVector()
 		v.z = 0
 		v:Normalize()
 		local flRunSpeed = ply:GetRunSpeed()
 		local t = CEntity_GetTable( ply )
-		f = f - ( ply.GAME_flSlideSpeed || CPlayer_GetRunSpeed( ply ) * 1.5 ) * ( t.CTRL_flSlideSpeedDecay || .8 ) * FrameTime()
+		f = f - ( ply.GAME_flSlideSpeed || flRunSpeed * 1.5 ) * ( t.CTRL_flSlideSpeedDecay || .4 ) * FrameTime()
 		CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
 		local s = t.CTRL_pSlideLoop
 		if s then
@@ -722,17 +721,16 @@ function QuickSlide_Handle( ply )
 end
 function QuickSlide_Start( ply, t )
 	CEntity_SetNW2Bool( ply, "CTRL_bSliding", true )
-	local f = ply.GAME_flSlideSpeed || ply:GetRunSpeed() * 1.5
+	local t = t || CEntity_GetTable( ply )
+	local f = t.GAME_flSlideSpeed || ply:GetRunSpeed() * 1.5
 	CEntity_SetNW2Float( ply, "CTRL_flSlideSpeed", f )
-	CEntity_SetNW2Float( ply, "CTRL_flSlide", CurTime() )
-	local t = CEntity_GetTable( ply )
 	local s = CreateSound( ply, t.CTRL_sSlideLoop || "HumanSlideLoop" )
 	t.CTRL_pSlideLoop = s
 	s:Play()
 end
 function QuickSlide_CalcLength( ply )
 	local v = ply.GAME_flSlideSpeed || ply:GetRunSpeed() * 1.5
-	local d = v * ( CEntity_GetTable( ply ).CTRL_flSlideSpeedDecay || .8 )
+	local d = v * ( CEntity_GetTable( ply ).CTRL_flSlideSpeedDecay || .4 )
 	return ( v * v ) / ( 2 * d )
 end
 hook.Add( "Move", "GameImprovements", function( ply, mv )
