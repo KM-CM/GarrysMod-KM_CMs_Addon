@@ -529,7 +529,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		else
 			local vStart = vView
-			local vec = vStart - trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			local vec = vStart + trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
 				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
@@ -548,7 +548,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 					filter = ply
 				} ).Hit
 			end
-			local vec = vStart + trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
+			local vec = vStart - trStand.HitNormal:Angle():Right() * ply:OBBMaxs().x * 2
 			if util_TraceLine( {
 				start = vStart,
 				endpos = ply:GetPos() - Vector( 0, 0, 12 ),
