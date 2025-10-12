@@ -22,6 +22,9 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
+SWEP.flSideWaysRecoilMin = -.33
+SWEP.flSideWaysRecoilMax = .33
+SWEP.flRecoil = 5
 
 SWEP.flViewModelX = -8
 SWEP.flViewModelY = -2
