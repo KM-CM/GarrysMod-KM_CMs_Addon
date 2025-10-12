@@ -126,7 +126,31 @@ function ENT:FindPathStackUpLine( Path, tEnemies, flTolerance )
 	local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
 	if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
 	local flStackUpTraceFraction = self.flStackUpTraceFraction
+	local flSuppressionTraceFraction = self.flSuppressionTraceFraction
+	local N
 	for I = 0, Path:GetLength(), flTolerance do
+		if N then
+			local vec = Path:GetPositionOnPath( I )
+			for enemy in pairs( tEnemies ) do
+				if !IsValid( enemy ) then continue end
+				local vShoot = enemy:GetPos() + enemy:OBBCenter()
+				local b
+				local tr = util.TraceLine {
+					start = vec + vStand,
+					endpos = vShoot,
+					mask = MASK_SHOT_HULL,
+					filter = { self, enemy, trueenemy }
+				}
+				if tr.Fraction > flSuppressionTraceFraction && tr.HitPos:Distance( vShoot ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then return N end
+				local tr = util.TraceLine {
+					start = vec + vDuck,
+					endpos = vShoot,
+					mask = MASK_SHOT_HULL,
+					filter = { self, enemy, trueenemy }
+				}
+				if tr.Fraction > flSuppressionTraceFraction && tr.HitPos:Distance( vShoot ) <= RANGE_ATTACK_SUPPRESSION_BOUND_SIZE then return N end
+			end
+		end
 		local vec = Path:GetPositionOnPath( I )
 		for enemy in pairs( tEnemies ) do
 			if !IsValid( enemy ) then continue end
@@ -137,14 +161,16 @@ function ENT:FindPathStackUpLine( Path, tEnemies, flTolerance )
 				mask = MASK_SHOT_HULL,
 				filter = { self, enemy, trueenemy }
 			}
-			if tr.Fraction > flStackUpTraceFraction then return I end
+			if tr.Fraction > flSuppressionTraceFraction then return end
+			if tr.Fraction > flStackUpTraceFraction then N = I continue end
 			local tr = util.TraceLine {
 				start = vec + vDuck,
 				endpos = vShoot,
 				mask = MASK_SHOT_HULL,
 				filter = { self, enemy, trueenemy }
 			}
-			if tr.Fraction > flStackUpTraceFraction then return I end
+			if tr.Fraction > flSuppressionTraceFraction then return end
+			if tr.Fraction > flStackUpTraceFraction then N = I continue end
 		end
 	end
 end

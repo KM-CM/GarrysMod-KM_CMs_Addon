@@ -24,7 +24,9 @@ Actor_RegisterSchedule( "CombatFormationMove", function( self, sched )
 		self[ "DLG_CombatFormation" .. sched.sType ]( self )
 		sched.bDialogue = true
 	end
-	if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then
+	local f = self.flPathGoalTolerance
+	f = f * f
+	if self:GetPos():DistToSqr( vec ) <= f then
 		self:Stand( 1 )
 		self.vDesAim = dir
 		if !sched.bDialogue then

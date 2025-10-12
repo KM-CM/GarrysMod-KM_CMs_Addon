@@ -163,7 +163,8 @@ function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	local ply = LocalPlayer()
-	if self:GetMaxClip1() > 60 then
+	// TODO: Machine gun ammo cubes
+	if false then//self:GetMaxClip1() > 60 then
 		
 	else
 		local flW, flH = ScrW() * .9, ScrH() * .9

@@ -4,10 +4,12 @@ COVER_BLINDFIRE_LEFT = 2
 COVER_BLINDFIRE_RIGHT = 3
 COVER_FIRE_LEFT = 4
 COVER_FIRE_RIGHT = 5
+COVER_FIRE_UP = 6
 
-COVER_VARIANTS_CENTER = 0
-COVER_VARIANTS_LEFT = 1
-COVER_VARIANTS_RIGHT = 2
+COVER_VARIANTS_NONE = 0
+COVER_VARIANTS_BOTH = 1
+COVER_VARIANTS_LEFT = 2
+COVER_VARIANTS_RIGHT = 3
 
 TRAVERSES_NONE = 0
 TRAVERSES_WATER = 1
@@ -199,13 +201,23 @@ local CEntity_GetTable = CEntity.GetTable
 local CEntity_GetVelocity = CEntity.GetVelocity
 local CEntity_GetPhysicsObject = CEntity.GetPhysicsObject
 local Vector = Vector
+local CurTime = CurTime
 function GetVelocity( ent )
 	local EntTable = CEntity_GetTable( ent )
 	local v = EntTable.GAME_pVehicle
 	if IsValid( v ) then return GetVelocity( v ) end
 	if EntTable.__GetVelocity__ then return EntTable:__GetVelocity__() end
 	if ent:IsPlayer() || ent:IsNPC() then return CEntity_GetVelocity( ent ) else
-		if ent:IsNextBot() then return EntTable.loco:GetVelocity() end
+		if ent:IsNextBot() then
+			local v = EntTable.loco:GetVelocity()
+			if v == vector_origin && EntTable.GAME_vVelocity then
+				return Vector( EntTable.GAME_vVelocity )
+			else
+				EntTable.GAME_vVelocity = v
+				EntTable.GAME_flVelocityFixUpTime = CurTime() + .1
+				return v
+			end
+		end
 		local phys = CEntity_GetPhysicsObject( ent )
 		if IsValid( phys ) then return phys:GetVelocity() end
 	end

@@ -449,7 +449,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	local bInCover
 	local bGunUsesCoverStance // Used in Very Special Circumstances
 	local PEEK = COVER_PEEK_NONE
-	local VARIANTS = COVER_VARIANTS_CENTER
+	local VARIANTS = COVER_VARIANTS_NONE
 	local EyeAngles = ply:EyeAngles()
 	local EyeVector = EyeAngles:Forward()
 	local EyeVectorFlat = EyeAngles:Forward()
@@ -568,7 +568,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				} ).Hit
 			end
 		end
-		if bLeft && bRight then
+		if bLeft && bRight then VARIANTS = COVER_VARIANTS_BOTH
 		elseif bLeft then VARIANTS = COVER_VARIANTS_LEFT
 		elseif bRight then VARIANTS = COVER_VARIANTS_RIGHT end
 		if cmd:KeyDown( IN_ATTACK ) then b = true ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed() end
@@ -578,6 +578,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			cmd:RemoveKey( IN_SPEED )
 			cmd:AddKey( IN_WALK )
 			if trDuck.Hit && !trStand.Hit then
+				PEEK = COVER_FIRE_UP
 				local bDo = bLeft && bRight || !( bLeft || bRight )
 				if !bDo then
 					if ply.CTRL_bInCoverDuck then

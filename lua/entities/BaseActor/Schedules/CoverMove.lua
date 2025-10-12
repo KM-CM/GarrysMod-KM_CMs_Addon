@@ -165,7 +165,6 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		self.bWantsCover = true
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
-		if math.abs( sched.Path:GetLength() - sched.Path:GetCursorPosition() ) <= self.flPathGoalTolerance then return { true } end
 		self.vActualCover = self.vCover
 		local tNearestEnemies = {}
 		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end

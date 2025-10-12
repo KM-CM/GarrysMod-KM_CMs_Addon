@@ -16,6 +16,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	self.bWantsCover = true
 	if self.vCover then
+		sched.pIterator = nil
 		local vec = self.vCover
 		self.vActualCover = self.vCover
 		local v = vec + self:GatherCoverBounds()
@@ -76,26 +77,14 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 			end
 		end
 		if IsValid( pEnemy ) then
-			if self:CanExpose() then
-				if self.bCoverDuck == true then sched.bCoverStand = nil
-				elseif sched.bCoverStand == nil then sched.bCoverStand = math.random( 2 ) == 1 end
-				local flDist = self.flWalkSpeed * 4
-				flDist = flDist * flDist
-				if self:GetPos():DistToSqr( self.vCover ) > flDist || sched.bCoverStand then
-					local flDist = self.flProwlSpeed * 4
-					flDist = flDist * flDist
-					if self:GetPos():DistToSqr( self.vCover ) > flDist then
-						self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
-					else self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 ) end
-				else self:MoveAlongPath( sched.Path, self.flWalkSpeed, 0 ) end
-			else self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 ) end
+			self:MoveAlongPath( sched.Path, self.flProwlSpeed, 1 )
 		else
 			local goal = sched.Path:GetCurrentGoal()
 			if goal then
 				self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
 				self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
 			end
-			self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
+			self:MoveAlongPathToCover( sched.Path )
 		end
 	else
 		self.vCover = nil

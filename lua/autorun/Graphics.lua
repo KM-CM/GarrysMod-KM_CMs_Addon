@@ -9,6 +9,10 @@ function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 
 
 if !CLIENT_DLL then return end
 
+concommand.Remove "thirdperson"
+local cThirdPerson = CreateClientConVar( "bThirdPerson", "0", true, nil, "Enable thirdperson?", 0, 1 )
+local cThirdPersonShoulder = CreateClientConVar( "bThirdPersonShoulder", "0", true, nil, "Should thirdperson use the left shoulder?", 0, 1 )
+
 local util_TraceLine = util.TraceLine
 local MASK_VISIBLE_AND_NPCS = MASK_VISIBLE_AND_NPCS
 local LocalPlayer = LocalPlayer
@@ -129,6 +133,60 @@ hook.Add( "SetupWorldFog", "Graphics", function()
 	local flBrightness = GetBrightnessRGB( self.GP_FogR || 255, self.GP_FogG || 255, self.GP_FogB || 255 )
 	render.FogMaxDensity( ( flBrightness < .5 && math.Remap( flBrightness, 0, .5, 0, 1 ) || math.Remap( flBrightness, .5, 1, 1, 0 ) ) * ( self.GP_FogDensityMul || 0 ) )
 	return true
+end )
+
+local Vector, Angle = Vector, Angle
+
+local vThirdPersonCameraOffset = Vector()
+
+hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfar )
+	local view = {
+		origin = origin,
+		angles = angles,
+		fov = fov,
+		znear = znear,
+		zfar = zfar,
+		drawviewer = false,
+	}
+	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then return view end
+	if cThirdPerson:GetBool() then
+		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
+		if VARIANTS != COVER_VARIANTS_NONE || PEEK != COVER_PEEK_NONE || !ply:KeyDown( IN_ZOOM ) then
+			view.drawviewer = true
+			local vTarget = Vector( -64, cThirdPersonShoulder:GetBool() && 24 || -24, ply:Crouching() && 24 || 8 )
+			local bInCover = ply:GetNW2Bool "CTRL_bInCover"
+			if bInCover || PEEK != COVER_PEEK_NONE then
+				if VARIANTS == COVER_VARIANTS_LEFT || PEEK == COVER_FIRE_LEFT || PEEK == COVER_BLINDFIRE_LEFT then
+					vTarget = Vector( -64, 32, ply:Crouching() && 24 || 8 )
+				elseif bInCover && VARIANTS == COVER_VARIANTS_RIGHT || PEEK == COVER_FIRE_RIGHT || PEEK == COVER_BLINDFIRE_RIGHT then
+					vTarget = Vector( -64, -32, ply:Crouching() && 24 || 8 )
+				elseif bInCover && VARIANTS == COVER_VARIANTS_BOTH || PEEK == COVER_BLINDFIRE_UP || PEEK == COVER_FIRE_UP then
+					vTarget = Vector( -64, 0, 32 )
+				end
+			end
+			vThirdPersonCameraOffset = LerpVector( 3 * FrameTime(), vThirdPersonCameraOffset, vTarget )
+			local v = Vector( vThirdPersonCameraOffset )
+			v:Rotate( angles )
+			local f = ply:GetFOV() * .33
+			local tr = util_TraceLine( {
+				start = view.origin,
+				endpos = view.origin + v:GetNormalized() * ( v:Length() + f ),
+				mask = MASK_VISIBLE_AND_NPCS,
+			} )
+			view.origin = tr.HitPos - tr.Normal * f
+			return view
+		end
+	end
+	player_manager.RunClass( ply, "CalcView", view )
+	local pWeapon = ply:GetActiveWeapon()
+	if IsValid( pWeapon ) then
+		local f = pWeapon.CalcView
+		if f then
+			local origin, angles, fov = f( pWeapon, ply, Vector( view.origin ), Angle( view.angles ), view.fov )
+			view.origin, view.angles, view.fov = origin or view.origin, angles or view.angles, fov or view.fov
+		end
+	end
+	return view
 end )
 
 __HUD_SHOULD_NOT_DRAW__ = { CHudHistoryResource = true, CHudGeiger = true, CHudDamageIndicator = true }

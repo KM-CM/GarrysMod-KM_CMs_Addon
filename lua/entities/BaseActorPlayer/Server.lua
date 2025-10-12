@@ -16,6 +16,13 @@ function ENT:GetSlideLength() return QuickSlide_CalcLength( self ) end
 
 function ENT:MoveAlongPathToCover( Path, tFilter )
 	if self:GetNW2Bool "CTRL_bSliding" then
+		// HACK: Rapidly decelerate
+		local f = self.flPathTolerance
+		f = f * f
+		if self:GetPos():DistToSqr( Path:GetEnd() ) <= ( self:GetSlideLength() * .2 ) then
+			f = self:GetNW2Float( "CTRL_flSlideSpeed", 0 )
+			self:SetNW2Float( "CTRL_flSlideSpeed", f - ( self.GAME_flSlideSpeed || self:GetRunSpeed() * 1.5 ) * ( self.CTRL_flSlideSpeedDecay || .8 ) * FrameTime() )
+		end
 		self.loco:SetDesiredSpeed( 0 )
 		self.loco:SetAcceleration( 0 )
 		self.loco:SetDeceleration( 0 )
@@ -24,7 +31,8 @@ function ENT:MoveAlongPathToCover( Path, tFilter )
 	end
 	if self.bCanSlide && QuickSlide_Can( self ) then
 		Path:MoveCursorToClosestPosition( self:GetPos() )
-		if math.abs( Path:GetLength() - Path:GetCursorPosition() ) <= self:GetSlideLength() then
+		local f, n = math.abs( Path:GetLength() - Path:GetCursorPosition() ), self:GetSlideLength()
+		if f > n * .2 && f <= n then
 			QuickSlide_Start( self )
 			self.loco:SetDesiredSpeed( 0 )
 			self.loco:SetAcceleration( 0 )
@@ -82,7 +90,15 @@ function ENT:Behaviour()
 	end
 	self:RunMind()
 	local v = QuickSlide_Handle( self )
-	if v then self.loco:SetVelocity( v ) end
+	if v then
+		self.loco:Approach( Vector( 0, 0, 0 ), 1 )
+		self.loco:SetVelocity( v )
+		self.loco:Approach( Vector( 0, 0, 0 ), 1 )
+		self.loco:SetDesiredSpeed( 0 )
+		self.loco:SetAcceleration( 0 )
+		self.loco:SetDeceleration( 0 )
+		self.loco:Approach( Vector( 0, 0, 0 ), 1 )
+	end
 end
 
 function ENT:OnDeath( dmg ) end
