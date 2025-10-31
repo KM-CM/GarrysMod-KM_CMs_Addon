@@ -320,9 +320,9 @@ hook.Add( "Tick", "Director", function()
 				local t, n = table.Random( DIRECTOR_MUSIC_TABLE[ l ] )
 				if t then
 					local b = true
-					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == t then b = nil break end end
+					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
 					if b then
-						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == t then b = nil break end end
+						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end
 						if b then
 							if Director_Debug:GetBool() then print( "Next Track of Type " .. Director_ThreatValueToName( l ) ) end
 							ply.DR_tShutMeUp[ s ] = true
