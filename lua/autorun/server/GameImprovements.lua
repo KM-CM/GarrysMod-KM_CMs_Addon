@@ -171,7 +171,7 @@ end )
 hook.Add( "PlayerCanPickupWeapon", "GameImprovements", function( ply, wep )
 	if !wep.GAME_bWeaponPickedUpOnce then
 		local w = ply:GetWeapon( wep:GetClass() )
-		if IsValid( w ) then ply:DropWeapon( w ) end
+		if IsValid( w ) && !w.__GRENADE__ then ply:DropWeapon( w ) end
 		wep.GAME_bWeaponPickedUpOnce = true
 		return true
 	end
@@ -182,13 +182,14 @@ hook.Add( "PlayerCanPickupWeapon", "GameImprovements", function( ply, wep )
 		filter = ply
 	}
 	if tr.Entity != wep then return false end
+	local c = wep:GetClass()
+	local w = ply:GetWeapon( c )
+	if w.__GRENADE__ then return true end
 	ply:DropObject()
 	wep:ForcePlayerDrop()
-	local c = wep:GetClass()
 	// Make them switch to the gun because they CONSCIOUSLY picked it up,
 	// not just randomly got it from the floor and accidentally self stunlocked in the deploy animation
 	ply.GAME_sRestoreGun = c
-	local w = ply:GetWeapon( c )
 	if IsValid( w ) then ply:DropWeapon( w ) end
 end )
 hook.Add( "PlayerCanPickupItem", "GameImprovements", function( ply, item )
@@ -292,12 +293,16 @@ end
 
 hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
 	local at = dmg:GetAttacker()
-	if IsValid( at ) && at:IsPlayer() then
-		local v = __PLAYER_MODEL__[ at:GetModel() ]
-		if v then
-			v = v.OnHurtSomething
-			if v then if v( at, ent, dmg ) then b = nil end end
+	if IsValid( at ) then
+		if at:IsPlayer() then
+			local v = __PLAYER_MODEL__[ at:GetModel() ]
+			if v then
+				v = v.OnHurtSomething
+				if v then if v( at, ent, dmg ) then b = nil end end
+			end
 		end
+		local f = at.GAME_OnHurtSomething
+		if f then f( at, ent, dmg ) end
 	end
 end )
 
@@ -308,6 +313,7 @@ local ents = ents
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
 	for _, ent in ents_Iterator() do
+		if ent.GAME_Think then ent:GAME_Think() end
 		if !ent.GAME_bPhysCollideHook then ent:AddCallback( "PhysicsCollide", function( ... ) PhysicsCollide( ... ) end ) ent.GAME_bPhysCollideHook = true end
 		if CEntity_WaterLevel( ent ) > 0 then CEntity_Extinguish( ent ) elseif CEntity_IsOnFire( ent ) then CEntity_Ignite( ent, 999999 ) end
 		if CEntity_IsOnFire( ent ) && math.random( ( ent.GAME_bFireBall && 200000 || ( 400000 / ent:BoundingRadius() ) ) * FrameTime() ) == 1 then
@@ -361,10 +367,13 @@ local ents_Create = ents.Create
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if !ply:Alive() then return end
 
+	ply:ConCommand( "fov_desired " .. tostring( UNIVERSAL_FOV ) )
+
 	ply:SetLadderClimbSpeed( ply:IsSprinting() && ply:GetRunSpeed() || ply:IsWalking() && ply:GetSlowWalkSpeed() || ply:GetWalkSpeed() )
 
 	local p = ply:GetWeapon "Hands"
 	if !IsValid( p ) then p = CPlayer_Give( ply, "Hands" ) end
+	if !IsValid( ply:GetActiveWeapon() ) then ply:SetActiveWeapon( p ) end
 	local veh = ply.GAME_pVehicle
 	if IsValid( veh ) then
 		if !ply.GAME_sRestoreGun then
@@ -568,16 +577,18 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				} ).Hit
 			end
 		end
+		local bStand = trDuck.Hit && !trStand.Hit
 		if bLeft && bRight then VARIANTS = COVER_VARIANTS_BOTH
 		elseif bLeft then VARIANTS = COVER_VARIANTS_LEFT
-		elseif bRight then VARIANTS = COVER_VARIANTS_RIGHT end
+		elseif bRight then VARIANTS = COVER_VARIANTS_RIGHT
+		elseif bStand then VARIANTS = COVER_VARIANTS_CENTER end
 		if cmd:KeyDown( IN_ATTACK ) then b = true ply.CTRL_flCoverPeekTime = CurTime() + ply:GetUnDuckSpeed() end
 		local bZoom = cmd:KeyDown( IN_ZOOM )
 		if bZoom then ply.CTRL_bPeekZoom = true else ply.CTRL_bPeekZoom = nil end
 		if bZoom || CurTime() <= ( ply.CTRL_flCoverPeekTime || 0 ) then
 			cmd:RemoveKey( IN_SPEED )
 			cmd:AddKey( IN_WALK )
-			if trDuck.Hit && !trStand.Hit then
+			if bStand then
 				PEEK = COVER_FIRE_UP
 				local bDo = bLeft && bRight || !( bLeft || bRight )
 				if !bDo then
@@ -751,7 +762,7 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	local ent = Data.Entity
 	local dent = GetOwner( ent )
 	if ent.GAME_bNextSoundMute then ent.GAME_bNextSoundMute = nil return true end
-	local dt = math.Clamp( Data.SoundLevel ^ ( Data.SoundLevel >= 80 && 1.65 || 1.5 ), 5, 18000 )
+	local dt = math.Clamp( Data.SoundLevel ^ ( Data.SoundLevel >= 100 && 2 || 1.5 ), 5, 18000 )
 	local vPos = Data.Pos || ent:GetPos()
 	for act in pairs( __ACTOR_LIST__ ) do
 		if act == ent || act == dent then continue end

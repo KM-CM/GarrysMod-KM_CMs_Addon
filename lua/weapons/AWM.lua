@@ -28,8 +28,9 @@ SWEP.bDontDrawCrosshairDuringZoom = false
 SWEP.flZoomFoVMin = 8.25
 SWEP.flZoomFoVMax = 1.98
 SWEP.flCustomZoomFoV = SWEP.flZoomFoVMax
-SWEP.vSprintArm = Vector( 1.358, -3.228, -0.94 )
 SWEP.vViewModelAim = Vector( 0, 0, -18 )
+SWEP.vSprintArm = Vector( 1.358, -3.228, -0.94 )
+SWEP.flViewModelY = -2
 
 function SWEP:FreezeMovement()
 	local owner = self:GetOwner()

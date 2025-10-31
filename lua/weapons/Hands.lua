@@ -15,8 +15,9 @@ SWEP.Slot = 0
 SWEP.DrawAmmo = false
 SWEP.Crosshair = ""
 
-local CWeapon_SetHoldType = FindMetaTable( "Weapon" ).SetHoldType
-function SWEP:Initialize() CWeapon_SetHoldType( self, "Normal" ) end
+function SWEP:Initialize() self:SetHoldType "Normal" end
 
 local CEntity_Remove = FindMetaTable( "Entity" ).Remove
 function SWEP:OnDrop() CEntity_Remove( self ) end
+
+function SWEP:GetCapabilities() return 0 end

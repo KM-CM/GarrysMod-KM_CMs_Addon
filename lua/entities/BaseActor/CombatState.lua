@@ -30,8 +30,8 @@ local CEntity_GetPos = CEntity.GetPos
 local CVector_DistToSqr = FindMetaTable( "Vector" ).DistToSqr
 
 local IsValid = IsValid
-function ENT:CalcCombatState()
-	local MyTable = CEntity_GetTable( self )
+function ENT:CalcCombatState( MyTable )
+	MyTable = MyTable || CEntity_GetTable( self )
 	local h = CEntity_Health( self )
 	local flDistSqr = MyTable.flAllyRetreatShareDistance
 	flDistSqr = flDistSqr * flDistSqr

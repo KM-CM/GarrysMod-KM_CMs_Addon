@@ -7,6 +7,9 @@ COVER_FIRE_RIGHT = 5
 COVER_FIRE_UP = 6
 
 COVER_VARIANTS_NONE = 0
+// Should be COVER_VARIANTS_UP, but this name just stuck with me from previous versions,
+// and I like it too much to just abandon it in the older versions
+COVER_VARIANTS_CENTER = 1
 COVER_VARIANTS_BOTH = 1
 COVER_VARIANTS_LEFT = 2
 COVER_VARIANTS_RIGHT = 3
@@ -15,6 +18,8 @@ TRAVERSES_NONE = 0
 TRAVERSES_WATER = 1
 TRAVERSES_GROUND = 2
 TRAVERSES_AIR = 4
+
+UNIVERSAL_FOV = 80
 
 if SERVER then
 	__VEHICLE_TABLE__ = __VEHICLE_TABLE__ || {

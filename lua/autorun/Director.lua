@@ -31,9 +31,10 @@ end
 function Director_RegisterMusicSound( Name, Path ) return Director_RegisterNonStandardMusicSound( Name, "Music/" .. Path ) end
 
 DIRECTOR_THREAT_NULL = 0 // Nothing
-DIRECTOR_THREAT_HEAT = 1 // Hostiles Nearby
-DIRECTOR_THREAT_ALERT = 2 // Things are Alerted or Searching
-DIRECTOR_THREAT_COMBAT = 3 // Things are in Combat
+DIRECTOR_THREAT_HEAT = 1 // Hostiles nearby
+DIRECTOR_THREAT_ALERT = 2 // Things are alerted or searching
+DIRECTOR_THREAT_COMBAT = 3 // Things are in combat
+DIRECTOR_THREAT_TERROR = 4 // Things are in combat AND we're scared of them
 
 if SERVER then
 
@@ -41,7 +42,8 @@ local _ThreatValueToName = {
 	[ DIRECTOR_THREAT_NULL ] = "DIRECTOR_THREAT_NULL",
 	[ DIRECTOR_THREAT_HEAT ] = "DIRECTOR_THREAT_HEAT",
 	[ DIRECTOR_THREAT_ALERT ] = "DIRECTOR_THREAT_ALERT",
-	[ DIRECTOR_THREAT_COMBAT ] = "DIRECTOR_THREAT_COMBAT"
+	[ DIRECTOR_THREAT_COMBAT ] = "DIRECTOR_THREAT_COMBAT",
+	[ DIRECTOR_THREAT_TERROR ] = "DIRECTOR_THREAT_TERROR"
 }
 function Director_ThreatValueToName( n ) return _ThreatValueToName[ n ] || "DIRECTOR_THREAT_NULL" end
 
@@ -79,7 +81,8 @@ DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE || {
 	[ DIRECTOR_THREAT_NULL ] = {},
 	[ DIRECTOR_THREAT_HEAT ] = {},
 	[ DIRECTOR_THREAT_ALERT ] = {},
-	[ DIRECTOR_THREAT_COMBAT ] = {}
+	[ DIRECTOR_THREAT_COMBAT ] = {},
+	[ DIRECTOR_THREAT_TERROR ] = {}
 }
 local DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE
 
@@ -95,11 +98,11 @@ function CDirectorMusicPlayer:Tick() ErrorNoHaltWithStack "CDirectorMusicPlayer:
 function CDirectorMusicPlayer:Length() return math.Rand( 0, 360 ) end
 
 // Sheesh, That's a Long Ass Name!
-function Director_CreateMusicPlayerFromTableInternal( ply, tbl )
+function Director_CreateMusicPlayerFromTableInternal( ply, tbl, sSource )
 	local self = setmetatable( {
 		m_flVolume = 0,
 		m_pOwner = ply,
-		m_pSource = tbl,
+		m_sSource = sSource,
 		// flVolume is Completely Up to The User,
 		// The Actual Volume is Chosen in CDirectorMusicPlayer::UpdateInternal
 		tHandles = {}, // This One is Used for Public Handles and Uses The User's Custom Time
@@ -120,7 +123,20 @@ function CDirectorMusicPlayer:StopAll()
 end
 
 local SysTime = SysTime
+local engine_TickInterval = engine.TickInterval
 function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flActualLength )
+	if !flActualLength then flActualLength = SoundDuration( sound.GetProperties( Sound ).sound ) end
+	if !flHandleLength then flHandleLength = SoundDuration( sound.GetProperties( Sound ).sound ) end
+	flVolume = flVolume || 1
+	local ply = self.m_pOwner
+	local f = RecipientFilter()
+	f:AddPlayer( ply )
+	Sound = CreateSound( ply, Sound, f )
+	ply.GAME_bNextSoundMute = true
+	Sound:Play()
+	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength - engine_TickInterval() * 2 }
+	self.m_tHandles[ Index ] = { Sound, flVolume, SysTime() + ( flActualLength || flHandleLength ) }
+	self:UpdateInternal()
 	if Director_Debug:GetBool() then
 		print "<CDirectorMusicPlayer::Play>"
 		print( "\tIndex: " .. tostring( Index ) )
@@ -130,15 +146,6 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 		print( "\tflActualLength: " .. tostring( flActualLength ) )
 		print "</CDirectorMusicPlayer::Play>"
 	end
-	local ply = self.m_pOwner
-	local f = RecipientFilter()
-	f:AddPlayer( ply )
-	Sound = CreateSound( ply, Sound, f )
-	ply.GAME_bNextSoundMute = true
-	Sound:Play()
-	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength }
-	self.m_tHandles[ Index ] = { Sound, flVolume || 1, SysTime() + ( flActualLength || flHandleLength ) }
-	self:UpdateInternal()
 	return Sound // Just in Case
 end
 
@@ -284,6 +291,7 @@ hook.Add( "Tick", "Director", function()
 			ply.DR_flIntensity = math.Clamp( ( flIntensity + ply.GAME_flSuppression ) / ( ply:Health() * ( ply.GAME_flMaxIntensityHealthMultiplier || 4 ) ), 0, 1 )
 			ply.DR_Threat = THREAT
 			if ply.DR_ThreatAware > ply.DR_Threat then ply.DR_ThreatAware = ply.DR_Threat end
+			if !table.IsEmpty( DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_TERROR ] ) && ply.DR_ThreatAware == DIRECTOR_THREAT_COMBAT && ( ply:Health() <= ply:GetMaxHealth() * .33 || !HasMeleeAttack( ply ) && !HasRangeAttack( ply ) ) then ply.DR_ThreatAware = DIRECTOR_THREAT_TERROR end
 			ply.DR_flNextUpdate = CurTime() + math.Rand( .1, .2 )
 			for ent in pairs( ply.DR_tMusicEntities || {} ) do
 				if IsValid( ent ) && util_TraceLine( {
@@ -309,16 +317,16 @@ hook.Add( "Tick", "Director", function()
 				s:UpdateInternal( 1, DIRECTOR_CROSSFADE_SPEED * FrameTime() )
 			else s:UpdateInternal( 0, DIRECTOR_CROSSFADE_SPEED * FrameTime() ) end
 			if CurTime() > ( ply.DR_tMusicNext[ l ] || 0 ) then
-				local t = table.Random( DIRECTOR_MUSIC_TABLE[ l ] )
+				local t, n = table.Random( DIRECTOR_MUSIC_TABLE[ l ] )
 				if t then
 					local b = true
-					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_pSource == t then b = nil break end end
+					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == t then b = nil break end end
 					if b then
-						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_pSource == t then b = nil break end end
+						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == t then b = nil break end end
 						if b then
 							if Director_Debug:GetBool() then print( "Next Track of Type " .. Director_ThreatValueToName( l ) ) end
 							ply.DR_tShutMeUp[ s ] = true
-							tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t )
+							tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
 							ply.DR_tMusicNext[ l ] = CurTime() + tMusic[ l ]:Length()
 						else
 							bNoLayer = true
@@ -338,14 +346,14 @@ hook.Add( "Tick", "Director", function()
 		end
 		ply.DR_tMusic = tMusic
 		if !bLayerFound && !bNoLayer && ThreatAware > DIRECTOR_THREAT_NULL then
-			local t = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
+			local t, n = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
 			if t then
 				local b = true
-				for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_pSource == t then b = nil break end end
-				if b then for _, mus in pairs( ply.DR_tMusic ) do if mus.m_pSource == t then b = nil break end end end
+				for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
+				if b then for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end end
 				if b then
 					if Director_Debug:GetBool() then print( "Creating New Track for Layer " .. Director_ThreatValueToName( ThreatAware ) ) end
-					tMusic[ ThreatAware ] = Director_CreateMusicPlayerFromTableInternal( ply, t )
+					tMusic[ ThreatAware ] = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
 					ply.DR_tMusicNext[ ThreatAware ] = CurTime() + tMusic[ ThreatAware ]:Length()
 				end
 			elseif Director_Debug:GetBool() then print( "No Next Track for Layer " .. Director_ThreatValueToName( l ) ) end
@@ -401,17 +409,19 @@ hook.Add( "CalcMainActivity", "GameImprovements", function( ply, vel )
 	end
 end )
 
-function Director_CreateSimpleMusicPlayer( iCat, sName, sPath, flLength )
-	local sActualName = Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" )
-	local t = {
-		Tick = function( self )
-			if !self.tHandles.Main then
-				self:Play( "Main", sActualName, 1, flLength )
+if SERVER then
+	function Director_CreateSimpleMusicPlayer( iCat, sName, sPath, flLength )
+		local sActualName = Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" )
+		local t = {
+			Tick = function( self )
+				if !self.tHandles.Main then
+					self:Play( "Main", sActualName, 1, flLength )
+				end
 			end
-		end
-	}
-	DIRECTOR_MUSIC_TABLE[ iCat ][ sName ] = t
-	return t
-end
+		}
+		DIRECTOR_MUSIC_TABLE[ iCat ][ sName ] = t
+		return t
+	end
+else function Director_CreateSimpleMusicPlayer( _, sName, sPath, _ ) Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" ) end end
 
 for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end

@@ -6,12 +6,9 @@ CActorSchedule.__index = CActorSchedule
 
 // ENT.Schedule = nil
 
-local ErrorNoHaltWithStack = ErrorNoHaltWithStack
-function ENT:SelectSchedule( MyTable, Previous, PrevName, PrevReturn ) ErrorNoHaltWithStack "SelectSchedule Not Overriden" end
-
-local __SCHEDULE__ = __SCHEDULE__
-
-ENT.__SCHEDULE__ = __SCHEDULE__
+// See Mind.lua for the new default implementation as of version 0.20.0
+// local ErrorNoHaltWithStack = ErrorNoHaltWithStack
+// function ENT:SelectSchedule( MyTable, Previous, PrevName, PrevReturn ) ErrorNoHaltWithStack "SelectSchedule Not Overriden" end
 
 local rawget = rawget
 
@@ -27,14 +24,17 @@ function ENT:SetSchedule( Name, MyTable )
 	return sched
 end
 
+local __SCHEDULE__ = __SCHEDULE__
+ENT.__SCHEDULE__ = {}
+
 ENT.tPreScheduleResetVariables = {}
 
 function ENT:SelectScheduleInternal( MyTable, ... )
 	MyTable.Schedule = nil
 	local p = MyTable.GAME_pBehaviour
 	if p then if p:SelectSchedule( self, MyTable, ... ) then return end end
-	local veh = self.GAME_pVehicle
-	if IsValid( veh ) then MyTable.SetSchedule( self, "Vehicle_Base" )
+	local veh = MyTable.GAME_pVehicle
+	if IsValid( veh ) then MyTable.SetSchedule( self, "Vehicle_Base", MyTable )
 	else MyTable.SelectSchedule( self, MyTable, ... ) end
 end
 
@@ -47,7 +47,7 @@ function ENT:RunMind()
 	local v = MyTable.Schedule
 	if !v then MyTable.SelectScheduleInternal( self, MyTable ) return end
 	local s = v.m_sName || ''
-	local f = MyTable.__SCHEDULE__[ s ]
+	local f = MyTable.__SCHEDULE__[ s ] || __SCHEDULE__[ s ]
 	local b = IsValid( MyTable.GAME_pVehicle )
 	if !f || ( b && !s:match "^Vehicle_" || !b && s:match "^Vehicle_" ) then MyTable.Schedule = nil MyTable.SelectScheduleInternal( self, MyTable, v, s ) return end
 	local r = f( self, v, MyTable )
@@ -62,3 +62,4 @@ include "Schedules/Idle.lua"
 include "Schedules/Combat.lua"
 include "Schedules/Cover.lua"
 include "Schedules/PullAlarm.lua"
+include "Schedules/Mind.lua"

@@ -16,7 +16,29 @@ function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
 	MyTable.vDesAim = v:Forward()
 end
 
-function ENT:MoveAlongPathToCover( ... ) return self:MoveAlongPath( ... ) end
+function ENT:OnAcquireEnemy() end
+
+local select = select
+function ENT:ClearThreatToClass( MyTable )
+	MyTable = MyTable || CEntity_GetTable( self )
+	local t = MyTable.tThreatToClass
+	if !t then return end
+	local n = {}
+	for ent in pairs( MyTable.tEnemies ) do
+		if ent.__ACTOR_BULLSEYE__ then
+			local _, p = self:SetupEnemy( ent )
+			ent = p
+		end
+		local f = ent.Classify
+		if !f then continue end
+		n[ f( ent ) ] = true
+	end
+	MyTable.tThreatToClass = n
+end
+
+function ENT:MoveAlongPathToCover( pPath, tFilter )
+	self:MoveAlongPath( pPath, math.abs( pPath:GetLength() - pPath:GetCursorPosition() ) <= self.flWalkSpeed && self.flWalkSpeed || self.flTopSpeed, 1, tFilter )
+end
 
 ENT.bHoldFire = false
 
@@ -61,12 +83,17 @@ local CEntity_GetAngles = CEntity.GetAngles
 
 local IsValid = IsValid
 
+function ENT:DoPhysicsStuff( phys, MyTable ) end
+
 ENT.bPhysics = false
 function ENT:Think()
 	local MyTable = CEntity_GetTable( self )
-	if !MyTable.bPhysics then
-		local phys = CEntity_GetPhysicsObject( self )
-		if IsValid( phys ) then
+	local phys = CEntity_GetPhysicsObject( self )
+	if IsValid( phys ) then
+		MyTable.DoPhysicsStuff( self, phys, MyTable )
+		if MyTable.bPhysics then
+			phys:Wake()
+		else
 			if IsValid( CEntity_GetParent( self ) ) then CEntity_PhysicsDestroy( self ) else
 				if CEntity_WaterLevel( self ) == 0 then
 					phys:SetPos( CEntity_GetPos( self ) )
@@ -88,7 +115,7 @@ local FL = FL_OBJECT + FL_NPC + FL_CLIENT + FL_FAKECLIENT
 function ENT:Initialize()
 	self:AddFlags( FL )
 	__ACTOR_LIST__[ self ] = true
-	self:SetNPCClass( self:GetNPCClass() ) // Required for Ally Searches to Work
+	self:SetNPCClass( self:GetNPCClass() ) // Required for ally searches to work
 	self:AddCallback( "PhysicsCollide", function( self, Data )
 		local ent = Data.HitEntity
 		if !IsValid( ent ) then return end
@@ -138,8 +165,6 @@ function ENT:KeyValue( k, v )
 	self:HandleKeyValue( k, v )
 end
 
-function ENT:Behaviour() end
-
 function ENT:ActorOnDeath() for wep in pairs( self.tWeapons ) do self:DropWeapon( wep ) end end
 
 ENT.GAME_flSuppression = 0
@@ -153,6 +178,8 @@ function ENT:GAME_OnRangeAttacked( _, _, _, flDamage )
 	MyTable.flCombatStateSuppressionShort = MyTable.flCombatStateSuppressionShort + flDamage
 	MyTable.flCombatStateSuppressionLong = MyTable.flCombatStateSuppressionLong + flDamage
 end
+
+function ENT:Behaviour() end
 
 local ProtectedCall = ProtectedCall
 local ai_disabled, developer = GetConVar "ai_disabled", GetConVar "developer"
@@ -168,6 +195,37 @@ local CEntity_GetPoseParameter = CEntity.GetPoseParameter
 local CEntity_SetPoseParameter = CEntity.SetPoseParameter
 local CEntity_LookupPoseParameter = CEntity.LookupPoseParameter
 local Angle = Angle
+function ENT:HandleTurning( MyTable )
+	local vDesAim = MyTable.GetDesiredAimVector( self )
+	local aDesAim = vDesAim:Angle()
+	local ppAimPitch = CEntity_LookupPoseParameter( self, "aim_pitch" )
+	local Angles = CEntity_GetAngles( self )
+	local aAim = Angle( Angles )
+	local flTurnRate = MyTable.flTurnRate
+	if ppAimPitch != -1 then
+		local p = CEntity_GetPoseParameter( self, "aim_pitch" )
+		local des = math_AngleDifference( aDesAim.p, Angles.p + p )
+		local t = MyTable.flBodyTensity
+		local f = flTurnRate / t * FrameTime()
+		CEntity_SetPoseParameter( self, "aim_pitch", p + math_Clamp( des * t, -f, f ) )
+		aAim.p = aAim.p + self:GetPoseParameter "aim_pitch"
+	end
+	local ppAimYaw = CEntity_LookupPoseParameter( self, "aim_yaw" )
+	if ppAimYaw != -1 then
+		local p = CEntity_GetPoseParameter( self, "aim_yaw" )
+		local des = math_AngleDifference( aDesAim.y, Angles.y + p )
+		local t = MyTable.flBodyTensity
+		local f = flTurnRate / t * FrameTime()
+		CEntity_SetPoseParameter( self, "aim_yaw", p + math_Clamp( des * t, -f, f ) )
+		aAim.y = aAim.y + CEntity_GetPoseParameter( self, "aim_yaw" )
+	end
+	MyTable.aAim = aAim
+	MyTable.vAim = aAim:Forward()
+	local loco = MyTable.loco
+	loco:SetMaxYawRate( flTurnRate * math_Clamp( math_abs( math_AngleDifference( aDesAim.y, Angles.y ) ), 0, 90 ) * .01111111111 )
+	local v = CEntity_GetPos( self ) + vDesAim
+	for _ = 1, 8 do loco:FaceTowards( v ) end
+end
 function ENT:RunBehaviour()
 	while true do
 		if ai_disabled:GetInt() == 1 then coroutine_yield() continue end
@@ -176,38 +234,10 @@ function ENT:RunBehaviour()
 		MyTable.GAME_flSuppression = math_Approach( math_Clamp( MyTable.GAME_flSuppression, 0, f * MyTable.flSuppressionMax ), 0, f * MyTable.flSuppressionRec * FrameTime() )
 		MyTable.flCombatStateSuppressionShort = math_Approach( math_Clamp( MyTable.flCombatStateSuppressionShort, 0, f * MyTable.flCombatStateSuppressionShortMax ), 0, f * MyTable.flCombatStateSuppressionShortRec * FrameTime() )
 		MyTable.flCombatStateSuppressionLong = math_Approach( math_Clamp( MyTable.flCombatStateSuppressionLong, 0, f * MyTable.flCombatStateSuppressionLongMax ), 0, f * MyTable.flCombatStateSuppressionLongRec * FrameTime() )
-		local vDesAim = MyTable.GetDesiredAimVector( self )
-		local aDesAim = vDesAim:Angle()
-		local ppAimPitch = CEntity_LookupPoseParameter( self, "aim_pitch" )
-		local Angles = CEntity_GetAngles( self )
-		local aAim = Angle( Angles )
-		local flTurnRate = MyTable.flTurnRate
-		if ppAimPitch != -1 then
-			local p = CEntity_GetPoseParameter( self, "aim_pitch" )
-			local des = math_AngleDifference( aDesAim.p, Angles.p + p )
-			local t = MyTable.flBodyTensity
-			local f = flTurnRate / t * FrameTime()
-			CEntity_SetPoseParameter( self, "aim_pitch", p + math_Clamp( des * t, -f, f ) )
-			aAim.p = aAim.p + self:GetPoseParameter "aim_pitch"
-		end
-		local ppAimYaw = CEntity_LookupPoseParameter( self, "aim_yaw" )
-		if ppAimYaw != -1 then
-			local p = CEntity_GetPoseParameter( self, "aim_yaw" )
-			local des = math_AngleDifference( aDesAim.y, Angles.y + p )
-			local t = MyTable.flBodyTensity
-			local f = flTurnRate / t * FrameTime()
-			CEntity_SetPoseParameter( self, "aim_yaw", p + math_Clamp( des * t, -f, f ) )
-			aAim.y = aAim.y + CEntity_GetPoseParameter( self, "aim_yaw" )
-		end
-		MyTable.CalcCombatState( self )
-		MyTable.aAim = aAim
-		MyTable.vAim = aAim:Forward()
-		local loco = MyTable.loco
-		loco:SetMaxYawRate( flTurnRate * math_Clamp( math_abs( math_AngleDifference( aDesAim.y, Angles.y ) ), 0, 90 ) * .01111111111 )
-		local v = CEntity_GetPos( self ) + vDesAim
-		for _ = 1, 8 do loco:FaceTowards( v ) end
+		MyTable.HandleTurning( self, MyTable )
 		MyTable.Look( self, MyTable )
-		ProtectedCall( function() MyTable.Behaviour( self, MyTable ) end )
+		MyTable.CalcCombatState( self, MyTable )
+		MyTable.Behaviour( self, MyTable )
 		coroutine_yield()
 	end
 end

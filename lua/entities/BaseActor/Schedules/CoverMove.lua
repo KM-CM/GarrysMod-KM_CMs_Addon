@@ -1,76 +1,4 @@
-local COVERED_MOVE_CHANCE, COVERED_NOT_MOVE_CHANCE = 3, 6
-
-function ENT:MaybeCoverMove( ... )
-	local tAllies = self:GetAlliesByClass()
-	if tAllies then
-		local b, i
-		for ent in pairs( tAllies ) do
-			if ent != self then
-				i = true
-				if ent.bSuppressing then b = true break end
-			end
-		end
-		if math.random( i && ( b && COVERED_MOVE_CHANCE || COVERED_NOT_MOVE_CHANCE ) || COVERED_NOT_MOVE_CHANCE ) == 1 then return self:DoCoverMove( ... ) end
-	else
-		if math.random( COVERED_NOT_MOVE_CHANCE ) == 1 then return self:DoCoverMove( ... ) end
-	end
-end
-
-local math = math
-local math_min = math.min
-local math_abs = math.abs
-function ENT:DoCoverMove( tEnemies )
-	local enemy = self.Enemy
-	if !IsValid( enemy ) then return end
-	local a = self.flCombatState
-	local n = math_min( a, self.flCombatStateSmall )
-	if n > 0 then
-		local p = Path "Follow"
-		// self:ComputeFlankPath( p, enemy )
-		self:ComputePath( p, enemy:GetPos() )
-		local i = self:FindPathStackUpLine( p, tEnemies )
-		if i && i > 512 then
-			p:MoveCursorTo( i )
-			local g = p:GetCurrentGoal()
-			if g then
-				local b = self:CreateBehaviour "CombatFormation"
-				b.Vector = p:GetPositionOnPath( i )
-				b.Direction = -g.forward
-				b:AddParticipant( self )
-				b:GatherParticipants()
-				b:Initialize()
-				return
-			end
-		end
-		local vec, bDuck = self:FindAdvanceCover( self.vCover, tEnemies )
-		if vec then
-			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then return end
-			local sched = self:SetSchedule "TakeCoverMove"
-			if a < .33 then sched.bTakeCoverAdvance = true else sched.bAdvancing = true end
-			self.vCover = vec
-			self.pCover = pCover
-			self.bCoverDuck = bDuck
-			return true
-		end
-	else
-		local vec, bDuck = self:FindRetreatCover( self.vCover, tEnemies )
-		if vec then
-			if self.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then return end
-			local sched = self:SetSchedule "TakeCoverMove"
-			if a > -.33 then sched.bTakeCoverRetreat = true else sched.bRetreating = true end
-			self.vCover = vec
-			self.pCover = pCover
-			self.bCoverDuck = bDuck
-			return true
-		end
-	end
-end
-
-ENT.flCoverMoveDistance = 800
-
-include "CoverAdvance.lua"
-include "CoverRetreat.lua"
-
+// NOTE: You should probably use DLG_State_TakeCover() and DLG_State_Retreat() if you want them to shout it once
 function ENT:DLG_Advancing() end
 function ENT:DLG_Retreating() end
 function ENT:DLG_TakeCoverGeneral() end
@@ -83,7 +11,7 @@ local util_TraceLine = util.TraceLine
 Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
-	if !self:CanExpose() then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
+	if !self:CanExpose() then self.vCover = nil self:SetSchedule "TakeCover" return end
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	local enemy, trueenemy = self:SetupEnemy( enemy )
@@ -97,10 +25,16 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if self.vCover then
+		if sched.bActed == nil then
+			if sched.bTakeCoverAdvance then self:DLG_TakeCoverAdvance()
+			elseif sched.bTakeCoverRetreat then self:DLG_TakeCoverRetreat()
+			elseif sched.bAdvancing then self:DLG_Advancing()
+			elseif sched.bRetreating then self:DLG_Retreating() end
+			sched.bActed = true
+		end
 		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
-			local pCover = self.pCover
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
 				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
@@ -115,18 +49,20 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 				end
 				if b then
 					local vec = self:GetPos()
-					local v, enemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
-					if IsValid( enemy ) then
+					local v, pEnemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )
+					if IsValid( pEnemy ) then
 						local sched = self:SetSchedule "RangeAttack"
 						sched.vFrom = v
-						sched.Enemy = enemy
+						sched.Enemy = pEnemy
 					else
-						local vFrom, vTo, enemy = self:FindSuppressEnemy( vec, tEnemies, sched.bDuck )
-						if IsValid( enemy ) then
+						if !sched.pEnemyPath then sched.pEnemyPath = Path "Follow" end
+						self:ComputeFlankPath( sched.pEnemyPath, enemy )
+						local vFrom, vTo, pEnemy = self:FindSuppressEnemy( vec, tEnemies, sched.bDuck )
+						if IsValid( pEnemy ) then
 							local sched = self:SetSchedule "RangeAttack"
 							sched.vFrom = vFrom
 							sched.vTo = vTo
-							sched.Enemy = enemy
+							sched.Enemy = pEnemy
 							sched.bSuppressing = true
 						end
 					end
@@ -144,13 +80,6 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 			mask = MASK_SHOT_HULL,
 			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
 		} ).Hit then self.vCover = nil self:SetSchedule "TakeCover" return end
-		if sched.bActed == nil then
-			if sched.bTakeCoverAdvance then self:DLG_TakeCoverAdvance()
-			elseif sched.bTakeCoverRetreat then self:DLG_TakeCoverRetreat()
-			elseif sched.bAdvancing then self:DLG_Advancing()
-			elseif sched.bRetreating then self:DLG_Retreating() end
-			sched.bActed = true
-		end
 		local v = self:GetPos() + self:GatherCoverBounds()
 		local dir = enemy:GetPos() - vec
 		dir.z = 0

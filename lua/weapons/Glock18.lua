@@ -23,6 +23,7 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
+SWEP.bPistolSprint = true
 
 sound.Add {
 	name = "Glock18_Shot",

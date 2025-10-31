@@ -43,12 +43,12 @@ local util_TraceLine = util.TraceLine
 // WRONG: BUG: Returns navmesh areas sometimes when called as self:SearchAreas()().
 // WRONG: Why? Unknown. Probably something to do with the recursive F() call
 // Nevermind I am so freakin' stupid I called self:SearchAreas() instead of this function
-function ENT:SearchNodes( vPos, flSpacing )
+function ENT:SearchNodes( vPos, flSpacing, fWeighter )
 	if !vPos then vPos = self:GetPos() end
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return function() return nil end end
 	if !flSpacing then flSpacing = self:BoundingRadius() end
-	local tQueue, tVisited = { { true, area, 0, self:GetPos() } }, { [ area:GetID() ] = true }
+	local tQueue, tVisited = { { true, area, 0, 0, self:GetPos() } }, { [ area:GetID() ] = true }
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
 	local flOff = math.max( math.abs( self:OBBMaxs().x ), math.abs( self:OBBMins().x ) ) * 1.5
@@ -63,11 +63,13 @@ function ENT:SearchNodes( vPos, flSpacing )
 	s = Vector( 0, 0, s )
 	local veh = self.GAME_pVehicle
 	local tFilter = IsValid( veh ) && { self, veh } || self
+	fWeighter = fWeighter || function() return 0 end
 	local function F()
 		if !table_IsEmpty( tQueue ) then
-			local bIsArea, area, dist, vPrev = unpack( table_remove( tQueue ) )
+			local bIsArea, area, dist, weight, vPrev = unpack( table_remove( tQueue ) )
 			if bIsArea then
 				local vCenter = area:GetCenter()
+				local f
 				for _, t in ipairs( area:GetAdjacentAreaDistances() ) do
 					local new = t.area
 					local id = new:GetID()
@@ -76,12 +78,15 @@ function ENT:SearchNodes( vPos, flSpacing )
 					if bDisAllowWater && area:IsUnderwater() then continue end
 					local d = area:ComputeAdjacentConnectionHeightChange( new )
 					if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
-					table_insert( tQueue, { true, new, t.dist + dist, vCenter } )
+					f = dist + t.dist
+					table_insert( tQueue, { true, new, f, f * 65536 + fWeighter( true, new, dist, t.dist, f, weight, vPrev, vCenter ), vCenter } )
 				end
 				local v = area:GetCorner( 0 ) // NORTH_WEST
 				local flCornerX, flCornerY = v.x, v.y
 				local flSizeX, flSizeY = area:GetSizeX(), area:GetSizeY()
-				table_insert( tQueue, { false, vCenter, dist + vCenter:Distance( vPrev ) } )
+				f = vCenter:Distance( vPrev )
+				local n = dist + f
+				table_insert( tQueue, { false, vCenter, n, n * 65536 + fWeighter( false, v, dist, f, n, weight, vPrev, vCenter ), vCenter } )
 				for x = flCornerX, flCornerX + flSizeX, flSpacing do
 					for y = flCornerY, flCornerY + flSizeY, flSpacing do
 						local v = Vector( x, y )
@@ -92,11 +97,13 @@ function ENT:SearchNodes( vPos, flSpacing )
 							mask = MASK_SOLID,
 							filter = tFilter
 						} ).Hit then continue end
-						table_insert( tQueue, { false, v, dist + v:Distance( vPrev ) } )
+						f = vPrev:Distance( v )
+						n = dist + f
+						table_insert( tQueue, { false, v, n, n * 65536 + fWeighter( false, v, dist, f, n, weight, vPrev, vCenter ), vCenter } )
 					end
 				end
-				// Sorting is very expensive!!! We need to only sort this if we actually did something!!!
-				table_SortByMember( tQueue, 3 )
+				// Sorting is expensive!!! We need to only sort this if we actually did something!!!
+				table_SortByMember( tQueue, 4 )
 				return F()
 			end
 			return area

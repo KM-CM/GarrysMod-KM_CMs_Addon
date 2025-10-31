@@ -12,7 +12,7 @@ SWEP.Primary.ClipSize = 8
 SWEP.Primary.DefaultClip = 8
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Buckshot"
-SWEP.Primary_flNum = 8
+SWEP.Primary_iNum = 8
 SWEP.Primary_flSpreadX = .036
 SWEP.Primary_flSpreadY = .036
 SWEP.Primary_flDelay = .16
@@ -121,7 +121,7 @@ function SWEP:PrimaryAttack()
 		Src = owner:GetShootPos(),
 		Dir = self:GetAimVector(),
 		Tracer = 1,
-		Num = self.Primary_flNum,
+		Num = self.Primary_iNum,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
 		Damage = self.Primary_flDamage,
 		Force = 2

@@ -41,7 +41,7 @@ function ENT:MoveAlongPathToCover( Path, tFilter )
 			return
 		end
 	end
-	self:MoveAlongPath( Path, self.flTopSpeed, 1, tFilter )
+	self:MoveAlongPath( Path, self.flTopSpeed, 1, tFilter, true )
 end
 
 ENT.flTopSpeed = HUMAN_RUN_SPEED

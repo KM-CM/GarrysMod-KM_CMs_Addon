@@ -1,5 +1,17 @@
+ENT.flAnimalTooCloseRange = 1536
+
 Actor_RegisterSchedule( "Idle", function( self, sched )
 	if !table.IsEmpty( self.tEnemies ) then return {} end
+	local b
+	local f = self.flAnimalTooCloseRange
+	f = f * f
+	for ent in pairs( self.tAlertEntities ) do
+		if ent:GetPos():DistToSqr( self:GetPos() ) <= f then
+			self:SetupBullseye( ent )
+			b = true
+		end
+	end
+	if b then return {} end
 	if CurTime() > self.flWeaponReloadTime then
 		local t = {}
 		for wep in pairs( self.tWeapons ) do if wep:Clip1() < wep:GetMaxClip1() then table.insert( t, wep ) end end

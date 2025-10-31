@@ -27,6 +27,7 @@ SWEP.Slot = 1
 SWEP.CSMuzzleFlashes = true
 SWEP.vViewModelAim = Vector( -5.905, -12, 2.6 )
 SWEP.Crosshair = "Pistol"
+SWEP.bPistolSprint = true
 
 sound.Add {
 	name = "USP_Shot",

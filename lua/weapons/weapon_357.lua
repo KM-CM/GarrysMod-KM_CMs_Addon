@@ -27,6 +27,7 @@ SWEP.Crosshair = "Revolver"
 SWEP.flSideWaysRecoilMin = -.33
 SWEP.flSideWaysRecoilMax = .33
 SWEP.flRecoil = 5
+SWEP.bPistolSprint = true
 
 sound.Add {
 	name = "ColyPython_Shot",

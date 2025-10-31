@@ -1,6 +1,16 @@
 function SWEP:PrimaryAttack() end
 function SWEP:SecondaryAttack() end
 
+SWEP.Primary.ClipSize = -1
+SWEP.Primary.DefaultClip = -1
+SWEP.Primary.Ammo = ""
+
+SWEP.Secondary.ClipSize = -1
+SWEP.Secondary.DefaultClip = -1
+SWEP.Secondary.Ammo = ""
+
+SWEP.UseHands = true
+
 SWEP.__WEAPON__ = true
 
 function SWEP:Reload()
@@ -138,10 +148,13 @@ if CLIENT then
 	SWEP.BobScale = 0
 	SWEP.vSprintArm = Vector( 1.358, 1.228, -.94 )
 	SWEP.vSprintArmAngle = Vector( -10.554, 34.167, -20 )
+	SWEP.vPistolSprint = Vector( 0, -8, -12 )
+	SWEP.vPistolSprintAngle = Vector( 45, 0, 0 )
 	SWEP.flAimMultiplier = 1
-	SWEP.flFoV = 99
+	SWEP.flFoV = UNIVERSAL_FOV
 	SWEP.flViewModelAimSwayMultiplier = 0
 	SWEP.flLastEyeYaw = 0
+	SWEP.flBobScale = 1
 	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
 	local math_sin = math.sin
@@ -158,24 +171,31 @@ if CLIENT then
 	end
 	local BEZIER_MIMICRY_RATIO = .5
 	local math_Remap = math.Remap
-	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", 99 ) end end
+	function SWEP:AdjustMouseSensitivity() local v = CEntity_GetTable( self ).flFoV if v then return v / LocalPlayer():GetInfoNum( "fov_desired", UNIVERSAL_FOV ) end end
 	local CPlayer_IsSprinting = CPlayer.IsSprinting
 	local CPlayer_Crouching = CPlayer.Crouching
 	local CEntity_GetNW2Int = CEntity.GetNW2Int
-	function SWEP:CalcView( ply, pos, ang, fov )
+	function SWEP:CalcView( ply, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		vViewTarget, vViewTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
-		if CEntity_IsOnGround( ply ) && bSprinting then
-			local flVelocity = CEntity_GetVelocity( ply ):Length()
-			if flVelocity > 10 then
-				local flBreathe = RealTime() * 18
-				local f = flVelocity / CPlayer_GetRunSpeed( ply ) * 4
-				local v = Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
-				vTarget = vTarget - v
-				vViewTarget = vViewTarget - v
-				local v = Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
-				vTargetAngle = vTargetAngle - v
-				vViewTargetAngle = vViewTargetAngle - v
+		if !CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) && CEntity_IsOnGround( ply ) then
+			if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" ) then
+				local flVelocity = CEntity_GetVelocity( ply ):Length()
+				if flVelocity > 10 then
+					local f = flVelocity / CPlayer_GetRunSpeed( ply ) * ( MyTable.flBobScale * 4 )
+					local flBreathe = RealTime() * 18
+					local v = Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
+					vViewTarget = vViewTarget - v
+					local v = Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
+					vViewTargetAngle = vViewTargetAngle - v
+				end
+			else
+				local flVelocity = CEntity_GetVelocity( ply ):Length()
+				if flVelocity > 10 then
+					local flBreathe = RealTime() * 16
+					local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * MyTable.flAimMultiplier * ( MyTable.flBobScale * 4 )
+					vViewTargetAngle = vViewTargetAngle + Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, 0 )
+				end
 			end
 		end
 		local p = CEntity_GetNW2Int( ply, "CTRL_Peek" )
@@ -224,11 +244,11 @@ if CLIENT then
 		pos = pos - math_Clamp( ( flSwayVectorNeg * MyTable.aLastViewEyePosition.y / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Right()
 		local v = MyTable.flCustomZoomFoV
 		if v then
-			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, fov, v )
+			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, UNIVERSAL_FOV, v )
 			MyTable.flFoV = f
 			return pos, ang, f
-		else MyTable.flFoV = fov end
-		return pos, ang, fov
+		else MyTable.flFoV = UNIVERSAL_FOV end
+		return pos, ang, UNIVERSAL_FOV
 	end
 	local util_TraceLine = util.TraceLine
 	function SWEP:GatherCrosshairPosition( MyTable )
@@ -245,6 +265,8 @@ if CLIENT then
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
+		local f = math_Clamp( ply:Health() / ply:GetMaxHealth(), 0, 1 )
+		MyTable.flBobScale = math.Remap( f, 0, 1, 2, 1 )
 		local bSprinting = CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )
 		local bSliding = CEntity_GetNW2Bool( ply, "CTRL_bSliding" )
 		local bInCover = CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" )
@@ -256,8 +278,7 @@ if CLIENT then
 			local vAimAngle = MyTable.vViewModelAimAngle
 			vTargetAngle = vAimAngle && Vector( vAimAngle ) || Vector( 0, 0, 0 )
 		else
-			vTarget = Vector( 0, 0, 0 )
-			vTargetAngle = Vector( 0, 0, 0 )
+			vTarget, vTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
 		end
 		if bInCover then
 			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
@@ -304,19 +325,25 @@ if CLIENT then
 			elseif bOnGround then
 				bOnGroundLast = true
 				if !bSliding && bSprinting then
-					local f = CEntity_GetVelocity( ply ):Length() / CPlayer_GetRunSpeed( ply ) * .625
+					local f = CEntity_GetVelocity( ply ):Length() / CPlayer_GetRunSpeed( ply ) * ( MyTable.bPistolSprint && 1.25 || .625 ) * MyTable.flBobScale
 					local flBreathe = RealTime() * 18
-					vTarget = vTarget + self.vSprintArm - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * f, 0, math_cos( flBreathe ) * f )
-					vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
+					if MyTable.bPistolSprint then
+						vTarget = vTarget + MyTable.vPistolSprint - Vector( math_cos( flBreathe * .5 ) * f, -math_cos( flBreathe ) * f, 0 )
+						vTargetAngle = vTargetAngle + MyTable.vPistolSprintAngle - Vector( math_cos( flBreathe * .5 ) * f, 0, 0 )
+					else
+						vTarget = vTarget + MyTable.vSprintArm - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * 1.25 ) * f, 0, math_cos( flBreathe ) * f )
+						vTargetAngle = vTargetAngle + MyTable.vSprintArmAngle - Vector( ( ( math_cos( flBreathe * .5 ) + 1 ) * -2.5 ) * f, ( ( math_cos( flBreathe * .5 ) + 1 ) * 7.5 ) * f, 0 )
+					end
 				else
-					if bSliding || CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CurTime() > self:GetNextPrimaryFire() && CurTime() > self:GetNextSecondaryFire() && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
+					if bSliding || CEntity_GetNW2Int( ply, "CTRL_Peek" ) == COVER_PEEK_NONE && CurTime() > ( self:GetNextPrimaryFire() + .2 ) && CPlayer_KeyDown( ply, IN_DUCK ) && !bZoom then
 						vTargetAngle.x = vTargetAngle.x - 11.25
-						vTarget.z = vTarget.z + 2.25
+						vTarget.z = vTarget.z + 3
+						vTarget.z = vTarget.x + 3
 						if !bSliding then
 							local flVelocity = CEntity_GetVelocity( ply ):Length()
 							if flVelocity > 10 then
 								local flBreathe = RealTime() * 18
-								local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * 4
+								local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * 4 * MyTable.flAimMultiplier * MyTable.flBobScale
 								vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
 								vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
 							end
@@ -325,7 +352,7 @@ if CLIENT then
 						local flVelocity = CEntity_GetVelocity( ply ):Length()
 						if flVelocity > 10 then
 							local flBreathe = RealTime() * 16
-							local f = flVelocity / CPlayer_GetWalkSpeed( ply )
+							local f = flVelocity / CPlayer_GetWalkSpeed( ply ) * MyTable.flAimMultiplier * MyTable.flBobScale
 							vTarget = vTarget - Vector( ( -math_cos( flBreathe * .5 ) / 5 ) * f, 0, 0 )
 							vTargetAngle = vTargetAngle - Vector( ( math_Clamp( math_cos( flBreathe ), -.3, .3 ) * 1.2 ) * f, ( -math_cos( flBreathe * .5 ) * 1.2 ) * f, 0 )
 						end

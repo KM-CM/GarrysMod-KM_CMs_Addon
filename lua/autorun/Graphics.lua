@@ -9,7 +9,6 @@ function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 
 
 if !CLIENT_DLL then return end
 
-concommand.Remove "thirdperson"
 local cThirdPerson = CreateClientConVar( "bThirdPerson", "0", true, nil, "Enable thirdperson?", 0, 1 )
 local cThirdPersonShoulder = CreateClientConVar( "bThirdPersonShoulder", "0", true, nil, "Should thirdperson use the left shoulder?", 0, 1 )
 
@@ -29,12 +28,7 @@ function UTIL_IsUnderSkybox()
 	} ).HitSky
 end
 
-// These Shall NOT be Overriden by ANYTHING!
-local BLEED_MAX_COLOR_MULTIPLY = 1
-local BLEED_MAX_COLOR_ADD = .5
-
-local BLEED_COLORLESS_LOWER_THRESHOLD = .2
-local BLEED_COLORLESS_UPPER_THRESHOLD = .6
+local BLEED_LOWER_THRESHOLD = .25
 
 local util_TraceLine = util.TraceLine
 
@@ -65,17 +59,10 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 		[ "$pp_colour_mulb" ] = 0
 	}
 	local flDeath = math.Clamp( self:Health() / self:GetMaxHealth(), 0, 1 )
-	if flDeath > BLEED_COLORLESS_UPPER_THRESHOLD then
-		local flBleed = math.Remap( flDeath, BLEED_COLORLESS_UPPER_THRESHOLD, 1, 1, 0 )
-		tDrawColorModify[ "$pp_colour_mulr" ] = flBleed * BLEED_MAX_COLOR_MULTIPLY
-		tDrawColorModify[ "$pp_colour_addr" ] = flBleed * BLEED_MAX_COLOR_ADD
-	elseif flDeath > BLEED_COLORLESS_LOWER_THRESHOLD then
-		local flBleed = math.Remap( flDeath, BLEED_COLORLESS_LOWER_THRESHOLD, BLEED_COLORLESS_UPPER_THRESHOLD, 0, 1 )
-		tDrawColorModify[ "$pp_colour_mulr" ] = flBleed * BLEED_MAX_COLOR_MULTIPLY
-		tDrawColorModify[ "$pp_colour_addr" ] = flBleed * BLEED_MAX_COLOR_ADD
-		tDrawColorModify[ "$pp_colour_colour" ] = math.Remap( flDeath, BLEED_COLORLESS_UPPER_THRESHOLD, BLEED_COLORLESS_LOWER_THRESHOLD, 1, 0 )
-	else
-		tDrawColorModify[ "$pp_colour_colour" ] = 0
+	tDrawColorModify[ "$pp_colour_colour" ] = math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 1, 0 )
+	if flDeath != 0 then
+		DrawBlur( math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 8 ), 0, 8 ) )
+		DrawMotionBlur( math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, .1, .02 ), .1, .02 ), math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 1 ), 0, 1 ), 0 )
 	end
 	local flOxygen, flOxygenLimit = self:GetNW2Float( "GAME_flOxygen", -1 ), self:GetNW2Float( "GAME_flOxygenLimit", -1 )
 	if flOxygen != -1 && flOxygenLimit != -1 then
@@ -151,31 +138,29 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then return view end
 	if cThirdPerson:GetBool() then
 		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
-		if VARIANTS != COVER_VARIANTS_NONE || PEEK != COVER_PEEK_NONE || !ply:KeyDown( IN_ZOOM ) then
-			view.drawviewer = true
-			local vTarget = Vector( -64, cThirdPersonShoulder:GetBool() && 24 || -24, ply:Crouching() && 24 || 8 )
-			local bInCover = ply:GetNW2Bool "CTRL_bInCover"
-			if bInCover || PEEK != COVER_PEEK_NONE then
-				if VARIANTS == COVER_VARIANTS_LEFT || PEEK == COVER_FIRE_LEFT || PEEK == COVER_BLINDFIRE_LEFT then
-					vTarget = Vector( -64, 32, ply:Crouching() && 24 || 8 )
-				elseif bInCover && VARIANTS == COVER_VARIANTS_RIGHT || PEEK == COVER_FIRE_RIGHT || PEEK == COVER_BLINDFIRE_RIGHT then
-					vTarget = Vector( -64, -32, ply:Crouching() && 24 || 8 )
-				elseif bInCover && VARIANTS == COVER_VARIANTS_BOTH || PEEK == COVER_BLINDFIRE_UP || PEEK == COVER_FIRE_UP then
-					vTarget = Vector( -64, 0, 32 )
-				end
+		view.drawviewer = true
+		local vTarget = Vector( -64, cThirdPersonShoulder:GetBool() && 24 || -24, ply:Crouching() && 24 || 8 )
+		local bInCover = ply:GetNW2Bool "CTRL_bInCover" || ply:GetNW2Bool "CTRL_bGunUsesCoverStance"
+		if bInCover || PEEK != COVER_PEEK_NONE then
+			if VARIANTS == COVER_VARIANTS_LEFT || PEEK == COVER_FIRE_LEFT || PEEK == COVER_BLINDFIRE_LEFT then
+				vTarget = Vector( -64, 32, ply:Crouching() && 24 || 8 )
+			elseif bInCover && VARIANTS == COVER_VARIANTS_RIGHT || PEEK == COVER_FIRE_RIGHT || PEEK == COVER_BLINDFIRE_RIGHT then
+				vTarget = Vector( -64, -32, ply:Crouching() && 24 || 8 )
+			elseif bInCover && VARIANTS == COVER_VARIANTS_BOTH || PEEK == COVER_BLINDFIRE_UP || PEEK == COVER_FIRE_UP then
+				vTarget = Vector( -64, 0, 32 )
 			end
-			vThirdPersonCameraOffset = LerpVector( 3 * FrameTime(), vThirdPersonCameraOffset, vTarget )
-			local v = Vector( vThirdPersonCameraOffset )
-			v:Rotate( angles )
-			local f = ply:GetFOV() * .33
-			local tr = util_TraceLine( {
-				start = view.origin,
-				endpos = view.origin + v:GetNormalized() * ( v:Length() + f ),
-				mask = MASK_VISIBLE_AND_NPCS,
-			} )
-			view.origin = tr.HitPos - tr.Normal * f
-			return view
 		end
+		vThirdPersonCameraOffset = LerpVector( 3 * FrameTime(), vThirdPersonCameraOffset, vTarget )
+		local v = Vector( vThirdPersonCameraOffset )
+		v:Rotate( angles )
+		local f = ply:GetFOV() * .33
+		local tr = util_TraceLine( {
+			start = view.origin,
+			endpos = view.origin + v:GetNormalized() * ( v:Length() + f ),
+			mask = MASK_VISIBLE_AND_NPCS,
+		} )
+		view.origin = tr.HitPos - tr.Normal * f
+		return view
 	end
 	player_manager.RunClass( ply, "CalcView", view )
 	local pWeapon = ply:GetActiveWeapon()

@@ -67,7 +67,7 @@ function ENT:AddRelationship( sRelationship )
 end
 
 local ai_ignoreplayers = GetConVar "ai_ignoreplayers"
-function ENT:Disposition( ent ) // Public
+function ENT:Disposition( ent )
 	if !IsValid( ent ) || ent.__ALARM__ then return D_NU end
 	if ent.__ACTOR_BULLSEYE__ then return ent.Owner == self && D_HT || D_NU end
 	if !ent.Classify || ent:IsPlayer() && ai_ignoreplayers:GetInt() == 1 then return D_NU end
@@ -81,5 +81,20 @@ function ENT:Disposition( ent ) // Public
 end
 
 function ENT:GetRelationship( ent ) return self:Disposition( ent ) end
+
+function ENT:WillAttackFirst( ent )
+	// Only attack first if both of us are consciously hostile beings or we are a threat to eachother
+	local t = ent.tThreatToClass
+	if t then return t[ self:Classify() ] end
+	local t = self.tThreatToClass
+	if t then
+		local f = ent.Classify
+		if f then
+			f = f( ent )
+			return t[ f ]
+		end
+	end
+	return true
+end
 
 function ENT:IsHateDisposition( ent ) local d = self:Disposition( ent ) return d == D_HT || d == D_FR end

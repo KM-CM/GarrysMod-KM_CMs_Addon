@@ -3,8 +3,6 @@ DEFINE_BASECLASS "BaseActorPlayerHuman"
 
 scripted_ents.Register( ENT, "HumanSWAT" )
 
-local VOICE_PITCH_MIN, VOICE_PITCH_MAX = 90, 110
-
 ENT.CATEGORIZE = {
 	LawEnforcement = true,
 	SWAT = true

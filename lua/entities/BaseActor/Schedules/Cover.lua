@@ -6,6 +6,7 @@ function ENT:GatherCoverBounds()
 end
 
 include "CoverMove.lua"
+include "CoverUnReachable.lua"
 
 local util_TraceLine = util.TraceLine
 

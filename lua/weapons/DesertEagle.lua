@@ -6,7 +6,6 @@ if CLIENT then language.Add( "DesertEagle", "Desert Eagle" ) end
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Desert Eagle, .50 Action Express."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_pist_deagle.mdl"
-SWEP.UseHands = true
 SWEP.WorldModel = Model "models/weapons/w_pist_deagle.mdl"
 SWEP.Primary.ClipSize = 7
 SWEP.Primary.DefaultClip = 7
@@ -22,6 +21,7 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
+SWEP.bPistolSprint = true
 SWEP.flSideWaysRecoilMin = -.33
 SWEP.flSideWaysRecoilMax = .33
 SWEP.flRecoil = 5

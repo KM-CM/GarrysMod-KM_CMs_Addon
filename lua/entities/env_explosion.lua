@@ -1,14 +1,3 @@
-/*////////////////////////////////////////////////////////
-
-A Traditional Explosion.
-
-If You"re Looking to Create a Special Explosion - for Example,
-Napalm, Name The Entity in Format `env_explosion_*`.
-
-Internally Made as a Replacement for `env_explosion`.
-
-////////////////////////////////////////////////////////*/
-
 AddCSLuaFile()
 DEFINE_BASECLASS "base_point"
 
@@ -56,9 +45,9 @@ function ENT:AcceptInput( Key, _, _, Value )
 	end
 end
 
-ENT.SMOKE_TRANSPARENCY = 200
-ENT.SMOKE_SPEED = .1
-ENT.SMOKE_TURN = 45
+// ENT.SMOKE_TRANSPARENCY = 200
+// ENT.SMOKE_SPEED = .1
+// ENT.SMOKE_TURN = 45
 
 ENT.FIRE_SPEED = 100
 

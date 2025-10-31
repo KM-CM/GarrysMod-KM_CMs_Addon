@@ -31,3 +31,13 @@ function ENT:AnimationSystemTick()
 	end
 	table.Empty( tPromote )
 end
+
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+
+function ENT:AnimationSystemHalt( MyTable )
+	for seq, lay in pairs( ( MyTable || CEntity_GetTable( self ) ).tSequences ) do
+		local s = self:LookupSequence( seq )
+		if self:GetLayerSequence( lay ) != s then self:SetLayerSequence( lay, s ) end
+		self:SetLayerWeight( lay, 0 )
+	end
+end

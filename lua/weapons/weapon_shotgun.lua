@@ -12,7 +12,7 @@ SWEP.Primary.ClipSize = 9
 SWEP.Primary.DefaultClip = 9
 SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Buckshot"
-SWEP.Primary_flNum = 11
+SWEP.Primary_iNum = 11
 SWEP.Primary_flSpreadX = .042
 SWEP.Primary_flSpreadY = .042
 SWEP.Primary_flDelay = .2
@@ -28,8 +28,6 @@ SWEP.Weight = 1
 SWEP.Slot = 3
 SWEP.DrawAmmo = true
 SWEP.Crosshair = "Shotgun"
-SWEP.vSprintArm = Vector( 1.358, -6.228, -.94 )
-SWEP.vViewModelAim = Vector( -2.955, -4, 2.2 )
 SWEP.flSideWaysRecoilMin = -.33
 SWEP.flSideWaysRecoilMax = .33
 SWEP.flRecoil = 5
@@ -39,9 +37,12 @@ SWEP.bPumped = true
 SWEP.bWantsToPump = false
 SWEP.flPumpTime = 0
 
-SWEP.flViewModelX = -6
-SWEP.flViewModelY = -6
-SWEP.flViewModelZ = 2
+SWEP.flViewModelX = -6.5
+SWEP.flViewModelY = -6.5
+SWEP.flViewModelZ = 2.5
+
+SWEP.vSprintArm = Vector( 1.358, -6.228, -.94 )
+SWEP.vViewModelAim = Vector( -8.955 - SWEP.flViewModelY, -10 - SWEP.flViewModelX, 4.2 - SWEP.flViewModelZ )
 
 function SWEP:SetupDataTables()
 	self:NetworkVar( "Bool", 0, "Reloading" )
@@ -185,7 +186,7 @@ function SWEP:PrimaryAttack()
 		Src = owner:GetShootPos(),
 		Dir = self:GetAimVector(),
 		Tracer = 1,
-		Num = self.Primary_flNum,
+		Num = self.Primary_iNum,
 		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
 		Damage = self.Primary_flDamage,
 		Force = 2

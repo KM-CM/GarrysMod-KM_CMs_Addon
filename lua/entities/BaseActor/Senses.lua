@@ -39,8 +39,10 @@ ENT.flLastEnemy = 0
 
 ENT.bCantSeeUnderWater = true
 ENT.bVisNot360 = true
-ENT.flVisionYaw = 99
-ENT.flVisionPitch = 33 // Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
+// ENT.flVisionYaw = 99
+// ENT.flVisionPitch = 33 // Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
+ENT.flVisionYaw = UNIVERSAL_FOV
+ENT.flVisionPitch = UNIVERSAL_FOV * ( 9 / 16 )
 function ENT:CanSee( vec, MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	local veh, ent
@@ -179,6 +181,7 @@ ENT.flNextLookTime = 0
 // 1 / Seconds to lose completely
 ENT.flLoseSpeed = .2 // 5
 ENT.tVisionStrength = {} // Entity ( Even invalid, will be filtered ) -> Float [ 0, 1 ]
+ENT.tAlertEntities = {} // Entities that we might wanna be concerned about, such as enemies who won't attack first
 local ipairs = ipairs
 function ENT:Look( MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
@@ -186,6 +189,7 @@ function ENT:Look( MyTable )
 	MyTable.flNextLookTime = CurTime() + math_Rand( .08, .12 )
 	local tVisionStrength = {}
 	local tVisibleEnemies = {}
+	local tAlertEntities = {}
 	local iNumEnemies = table_Count( MyTable.tEnemies )
 	local tEnemies = {}
 	local tOldVisionStrength = MyTable.tVisionStrength
@@ -193,6 +197,7 @@ function ENT:Look( MyTable )
 	local flVisionDistSqr = MyTable.flMaxVisionRange * MyTable.flMaxVisionRange
 	local vEyePos = MyTable.GetShootPos( self )
 	local tAllies = MyTable.GetAlliesByClass( self )
+	local bClear = !IsValid( MyTable.Enemy )
 	for _, ent in ipairs(
 		// This is the piece of shit that is necessary but absolutely CONSUMES the CPU!
 		// I am 100% sure, and I have tested it.
@@ -273,26 +278,34 @@ function ENT:Look( MyTable )
 				if tVisionStrength[ ent ] >= 1 then
 					self.bHoldFire = nil
 					self.flLastEnemy = CurTime()
-					tEnemies[ ent ] = true
-					tVisibleEnemies[ EntityUniqueIdentifier( ent ) ] = true
-					self:SetupBullseye( ent )
+					if MyTable.WillAttackFirst( self, ent ) then
+						tEnemies[ ent ] = true
+						tVisibleEnemies[ EntityUniqueIdentifier( ent ) ] = true
+						self:SetupBullseye( ent )
+					else tAlertEntities[ ent ] = true end
 				end
 			end
 		else tVisionStrength[ ent ] = 0 end
 	end
+	MyTable.tAlertEntities = tAlertEntities
 	local f = MyTable.flLoseSpeed
 	for ent, flt in pairs( tOldVisionStrength ) do
 		if !IsValid( ent ) || flt <= 0 || tVisionStrength[ ent ] then continue end
 		tVisionStrength[ ent ] = flt - f * FrameTime()
 	end
 	local tBullseyes = {}
+	local bMelee, bRange
 	for id, data in pairs( MyTable.tBullseyes ) do
 		local ent = data[ 1 ]
 		if !IsValid( ent ) then continue end
 		tBullseyes[ id ] = data
 		if tVisibleEnemies[ id ] then continue end
+		if !bMelee && HasMeleeAttack( ent ) then bMelee = true end
+		if !bRange && HasRangeAttack( ent ) then bRange = true end
 		tEnemies[ ent ] = true
 	end
+	MyTable.bEnemiesHaveMeleeAttack = bMelee
+	MyTable.bEnemiesHaveRangeAttack = bRange
 	MyTable.tBullseyes = tBullseyes
 	local ned, ne = math.huge
 	for ent in pairs( MyTable.tEnemies ) do
@@ -305,6 +318,7 @@ function ENT:Look( MyTable )
 	MyTable.tEnemies = tEnemies
 	MyTable.flLastLookTime = CurTime()
 	MyTable.tVisionStrength = tVisionStrength
+	if bClear && IsValid( ne ) then MyTable.OnAcquireEnemy( self, MyTable ) end
 end
 
 function ENT:OnHeardSomething( Other, Data )
@@ -332,6 +346,7 @@ function ENT:OnHeardSomething( Other, Data )
 			end
 		end
 	elseif d == D_HT || d == D_FR then
+		if !MyTable.WillAttackFirst( self, Other ) then return end
 		MyTable.SetupBullseye( self, Other, nil, nil, MyTable )
 	end
 end

@@ -48,16 +48,16 @@ end )
 
 Actor_RegisterBehaviour( "CombatFormation", {
 	Initialize = function( self )
-		self.sType = "Stack" // Only This for Now
+		self.sType = "Stack" // Only this for now
 	end,
 	GatherParticipants = function( self )
 		local pCurrent = next( self.m_tParticipants )
-		if !IsValid( pCurrent ) then ErrorNoHaltWithStack "GatherParticipants Requires at Least One Participant" end
+		if !IsValid( pCurrent ) then ErrorNoHaltWithStack "GatherParticipants Requires at least one participant" end
 		local tAllies = pCurrent:GetAlliesByClass()
 		if tAllies then
 			local vPos = self.Vector
 			for ent in pairs( tAllies ) do
-				if !IsValid( ent ) || ent:GetPos():DistToSqr( vPos ) > 4194304/*2048*/ then continue end
+				if !IsValid( ent ) || ent:GetPos():DistToSqr( vPos ) > 9437184/*3072*/ || ent.Schedule && ent.Schedule.bFromCombatFormation then continue end
 				self:AddParticipant( ent )
 			end
 		end
@@ -100,19 +100,13 @@ Actor_RegisterBehaviour( "CombatFormation", {
 					s.Vector = v - d * dist
 					s.Direction = d
 					s.sType = self.sType
+					s.bLead = nil
 					if s.bReached then iNum = iNum + 1 end
 				end
-				if iCount == iNum then
+				if iCount >= iNum then
 					lead:DLG_CombatFormationMove()
 					for ent in pairs( self.tPositions ) do
-						local vec, bDuck = ent:FindAdvanceCover( ent:GetPos(), ent.tEnemies, ent.flCombatState )
-						if vec then
-							ent.Schedule = nil
-							local sched = ent:SetSchedule "TakeCoverMove"
-							sched.bActed = true
-							ent.vCover = vec
-							ent.bCoverDuck = bDuck
-						end
+						ent:SetSchedule( "Combat" ).bAdvance = true
 					end
 					self:Finish()
 					return
