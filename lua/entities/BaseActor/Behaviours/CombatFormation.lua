@@ -24,7 +24,7 @@ Actor_RegisterSchedule( "CombatFormationMove", function( self, sched )
 		self[ "DLG_CombatFormation" .. sched.sType ]( self )
 		sched.bDialogue = true
 	end
-	local f = self.flPathGoalTolerance
+	local f = self.flPathTolerance
 	f = f * f
 	if self:GetPos():DistToSqr( vec ) <= f then
 		self:Stand( 1 )

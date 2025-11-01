@@ -1,5 +1,4 @@
-ENT.flPathTolerance = 64
-ENT.flPathGoalTolerance = 8
+ENT.flPathTolerance = 32
 
 local CEntity = FindMetaTable( "Entity" )
 local CEntity_GetTable = CEntity.GetTable
@@ -7,6 +6,7 @@ local CEntity_GetTable = CEntity.GetTable
 function ENT:ComputePath( Path, vGoal, Weighter )
 	local MyTable = CEntity_GetTable( self )
 	local f = MyTable.flPathTolerance
+	Path:SetGoalTolerance( f )
 	f = f * f
 	Path:MoveCursorToClosestPosition( self:GetPos() )
 	if Path:GetPositionOnPath( Path:GetCursorPosition() ):DistToSqr( self:GetPos() ) <= f && Path:GetEnd():DistToSqr( vGoal ) <= f then return true end

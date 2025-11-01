@@ -120,7 +120,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
-		local f = self.flPathGoalTolerance
+		local f = self.flPathTolerance
 		if !util_TraceLine( {
 			start = v,
 			endpos = v + dir * self.vHullMaxs.x * 4,
@@ -192,8 +192,8 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 						table.insert( tPitchAngles, a )
 					end
 				end
-				local bCheckDistance, flDistSqr = self.flCombatState > 0
-				if bCheckDistance then
+				local bDontCheckDistance, flDistSqr = self.flCombatState > 0
+				if !bDontCheckDistance then
 					flDistSqr = RANGE_ATTACK_SUPPRESSION_BOUND_SIZE
 					flDistSqr = flDistSqr * flDistSqr
 				end
@@ -218,7 +218,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 									endpos = vTarget,
 									mask = MASK_SHOT_HULL,
 									filter = tWholeFilter
-								} ).Hit && ( bCheckDistance && vPoint:DistToSqr( vTarget ) <= flDistSqr || !bCheckDistance ) then
+								} ).Hit && ( bDontCheckDistance || vPoint:DistToSqr( vTarget ) > flDistSqr ) then
 									if developer:GetInt() > 0 then debugoverlay.Line( tr.StartPos, tr.HitPos, 5, Color( 255, 0, 0, 85 ), true ) end
 									continue
 								end

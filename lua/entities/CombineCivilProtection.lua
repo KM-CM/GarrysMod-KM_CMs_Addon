@@ -99,6 +99,7 @@ function ENT:Initialize()
 	self:SetModel( math.random( 3 ) == 1 && "models/player/police_fem.mdl" || "models/player/police.mdl" )
 	self:SetHealth( 150 )
 	self:SetMaxHealth( 150 )
+	self:SetPlayerColor( Vector( 0, 0, 0 ) )
 	BaseClass.Initialize( self )
 end
 

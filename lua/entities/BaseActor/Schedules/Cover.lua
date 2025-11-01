@@ -34,7 +34,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		local dir = enemy:GetPos() - vec
 		dir.z = 0
 		dir:Normalize()
-		local f = self.flPathGoalTolerance
+		local f = self.flPathTolerance // self.flPathTolerance
 		if util_TraceLine( {
 			start = v,
 			endpos = v + dir * self.vHullMaxs.x * 4,
