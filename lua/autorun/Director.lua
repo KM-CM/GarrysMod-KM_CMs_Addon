@@ -47,7 +47,6 @@ local _ThreatValueToName = {
 }
 function Director_ThreatValueToName( n ) return _ThreatValueToName[ n ] || "DIRECTOR_THREAT_NULL" end
 
-local Director_Debug = CreateConVar( "Director_Debug", 0, FCVAR_CHEAT + FCVAR_NEVER_AS_STRING, "", 0, 1 )
 local Player_Debug_EyeOffset = CreateConVar( "Player_Debug_EyeOffset", 0, FCVAR_CHEAT + FCVAR_NEVER_AS_STRING, "", 0, 1 )
 
 function Director_GetThreat( ply, ent )
@@ -65,15 +64,11 @@ function Director_GetThreat( ply, ent )
 	end
 end
 
-DIRECTOR_STOP_THREAT_TIME = 12
-
 function Director_UpdateAwareness( ply, ent )
 	local t = Director_GetThreat( ply, ent )
 	if ply.DR_tMusicEntities && t > DIRECTOR_THREAT_NULL then ply.DR_tMusicEntities[ ent ] = true end
 	if t > ( ply.DR_ThreatAware || 0 ) then ply.DR_ThreatAware = t end
 	if t > ( ply.DR_Threat || 0 ) then ply.DR_Threat = t end
-	local v = ply.DR_tStopThreat
-	if v then v[ t ] = CurTime() + DIRECTOR_STOP_THREAT_TIME end
 	return t
 end
 
@@ -93,7 +88,7 @@ _reg.DirectorMusicPlayer = CDirectorMusicPlayer
 CDirectorMusicPlayer.__index = CDirectorMusicPlayer
 
 // Override This!
-function CDirectorMusicPlayer:Tick() ErrorNoHaltWithStack "CDirectorMusicPlayer::Tick Not Overriden!" end
+function CDirectorMusicPlayer:Tick() ErrorNoHaltWithStack "CDirectorMusicPlayer::Tick not overriden!" end
 
 function CDirectorMusicPlayer:Length() return math.Rand( 0, 360 ) end
 
@@ -115,13 +110,6 @@ function Director_CreateMusicPlayerFromTableInternal( ply, tbl, sSource )
 	return self
 end
 
-function CDirectorMusicPlayer:StopAll()
-	if Director_Debug:GetBool() then print "CDirectorMusicPlayer::StopAll" end
-	for _, d in pairs( self.m_tHandles ) do d[ 1 ]:Stop() end
-	table.Empty( self.tHandles )
-	table.Empty( self.m_tHandles )
-end
-
 local SysTime = SysTime
 local engine_TickInterval = engine.TickInterval
 function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flActualLength )
@@ -137,15 +125,6 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength - engine_TickInterval() * 2 }
 	self.m_tHandles[ Index ] = { Sound, flVolume, SysTime() + ( flActualLength || flHandleLength ) }
 	self:UpdateInternal()
-	if Director_Debug:GetBool() then
-		print "<CDirectorMusicPlayer::Play>"
-		print( "\tIndex: " .. tostring( Index ) )
-		print( "\tSound: " .. tostring( Sound ) )
-		print( "\tflVolume: " .. tostring( flVolume ) )
-		print( "\tflHandleLength: " .. tostring( flHandleLength ) )
-		print( "\tflActualLength: " .. tostring( flActualLength ) )
-		print "</CDirectorMusicPlayer::Play>"
-	end
 	return Sound // Just in Case
 end
 
@@ -190,13 +169,16 @@ local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Ite
 
 DIRECTOR_MELEE_DANGER = 2
 
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function()
 	for _, ply in player_Iterator() do
+		local PlyTable = CEntity_GetTable( ply )
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if v then
 			v = v.Think
-			if v then v( ply ) end
+			if v then v( ply, PlyTable ) end
 		end
 		if Player_Debug_EyeOffset:GetBool() then
 			if ply:GetViewOffsetDucked() == VectorZ28 then
@@ -235,37 +217,32 @@ hook.Add( "Tick", "Director", function()
 		ply:SetCanZoom( false )
 		local h = ply:Health() / ply:GetMaxHealth()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
-		if !ply.DR_ThreatAware then ply.DR_ThreatAware = DIRECTOR_THREAT_NULL end
-		if !ply.DR_Threat then ply.DR_Threat = DIRECTOR_THREAT_NULL end
+		if !PlyTable.DR_ThreatAware then PlyTable.DR_ThreatAware = DIRECTOR_THREAT_NULL end
+		if !PlyTable.DR_Threat then PlyTable.DR_Threat = DIRECTOR_THREAT_NULL end
 		// This is Used when a Theme Changes to CrossFade It
-		if !ply.DR_tShutMeUp then ply.DR_tShutMeUp = {} end
-		if !ply.DR_tMusic then ply.DR_tMusic = {} end
-		if !ply.DR_tMusicNext then ply.DR_tMusicNext = {} end
-		if !ply.DR_tStopThreat then ply.DR_tStopThreat = {} end
-		/*This is Made so The Music Doesnt Stop when We're Running Backwards to Whoever is Chasing Us,
-		Because Technically, We Dont See Him, But The Human Brain is on Average More Aware Than a Mote of Dust,
-		so It Approximates Where The Chaser is, Even While Moving Backwards and Not Seeing Him.*/
+		if !PlyTable.DR_tShutMeUp then PlyTable.DR_tShutMeUp = {} end
+		if !PlyTable.DR_tMusic then PlyTable.DR_tMusic = {} end
+		if !PlyTable.DR_tMusicNext then PlyTable.DR_tMusicNext = {} end
 		local tMusicEntities = {}
-		// Why Did I Put This Here? This Needs to be Lower
-		// ply.DR_tMusicEntities = tMusicEntities
-		ply.GAME_flSuppression = math.Approach( ply.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( ply.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
+		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( PlyTable.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
 		if CurTime() > ( ply.DR_flNextUpdate || 0 ) then
 			local THREAT, flIntensity = DIRECTOR_THREAT_NULL, 0
+			local vEye = ply:EyePos()
 			for _, ent in ents_Iterator() do
-				local bVisible = util_TraceLine( {
-					start = ply:EyePos(),
+				local bVisible = !util_TraceLine( {
+					start = vEye,
 					endpos = ent:GetPos() + ent:OBBCenter(),
 					mask = MASK_VISIBLE_AND_NPCS,
 					filter = { ply, ent }
-				} ).HitPos:DistToSqr( ent:GetPos() + ent:OBBCenter() ) <= 262144
+				} ).Hit
 				local b = bVisible
 				if b then
 					local c = ent:GetPos() + ent:OBBCenter()
 					local e = ply:EyeAngles()
-					local d = ( c - ply:EyePos() ):Angle()
+					local d = ( c - vEye ):Angle()
 					if math.abs( math.AngleDifference( e.y, d.y ) ) > ply:GetFOV() then b = nil end
 					if b then
-						if math.abs( math.AngleDifference( e.p, d.p ) ) > ply:GetFOV() * .5625/*9:16*/ then b = nil end
+						if math.abs( math.AngleDifference( e.p, d.p ) ) > ply:GetFOV() * .5625/*9 / 16*/ then b = nil end
 					end
 				end
 				if b then Director_UpdateAwareness( ply, ent ) end
@@ -288,105 +265,96 @@ hook.Add( "Tick", "Director", function()
 					flIntensity = flIntensity + math.max( a, ent.DR_bMusicActive && h || 0 )
 				end
 			end
-			ply.DR_flIntensity = math.Clamp( ( flIntensity + ply.GAME_flSuppression ) / ( ply:Health() * ( ply.GAME_flMaxIntensityHealthMultiplier || 4 ) ), 0, 1 )
-			ply.DR_Threat = THREAT
-			if ply.DR_ThreatAware > ply.DR_Threat then ply.DR_ThreatAware = ply.DR_Threat end
-			if !table.IsEmpty( DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_TERROR ] ) && ply.DR_ThreatAware == DIRECTOR_THREAT_COMBAT && ( ply:Health() <= ply:GetMaxHealth() * .33 || !HasMeleeAttack( ply ) && !HasRangeAttack( ply ) ) then ply.DR_ThreatAware = DIRECTOR_THREAT_TERROR end
-			ply.DR_flNextUpdate = CurTime() + math.Rand( .1, .2 )
-			for ent in pairs( ply.DR_tMusicEntities || {} ) do
-				if IsValid( ent ) && util_TraceLine( {
-					start = ply:EyePos(),
-					endpos = ent:GetPos() + ent:OBBCenter(),
+			PlyTable.DR_flIntensity = math.Clamp( ( flIntensity + PlyTable.GAME_flSuppression ) / ( ply:Health() * ( PlyTable.GAME_flMaxIntensityHealthMultiplier || 4 ) ), 0, 1 )
+			PlyTable.DR_Threat = THREAT
+			if PlyTable.DR_ThreatAware > PlyTable.DR_Threat then PlyTable.DR_ThreatAware = PlyTable.DR_Threat end
+			if PlyTable.DR_ThreatAware == DIRECTOR_THREAT_COMBAT && !table.IsEmpty( DIRECTOR_MUSIC_TABLE[ DIRECTOR_THREAT_TERROR ] ) &&
+			( ply:Health() <= ply:GetMaxHealth() * .33 || !HasMeleeAttack( ply ) && !HasRangeAttack( ply ) ) then PlyTable.DR_ThreatAware = DIRECTOR_THREAT_TERROR end
+			PlyTable.DR_flNextUpdate = CurTime() + math.Rand( .1, .2 )
+			local f = ply:OBBMaxs().x * 2
+			for ent in pairs( PlyTable.DR_tMusicEntities || {} ) do
+				if !IsValid( ent ) then continue end
+				local vTarget = ent:GetPos() + ent:OBBCenter()
+				if util_TraceLine( {
+					start = vEye + ( vTarget - vEye ):GetNormalized() * f,
+					endpos = vTarget,
 					mask = MASK_VISIBLE_AND_NPCS,
 					filter = { ply, ent }
-				} ).HitPos:DistToSqr( ent:GetPos() + ent:OBBCenter() ) <= 262144/*512*/ then
-					if Director_UpdateAwareness( ply, ent ) <= DIRECTOR_THREAT_NULL then continue end
-					tMusicEntities[ ent ] = true
-				end
+				} ).Fraction <= .66 then continue end
+				if Director_UpdateAwareness( ply, ent ) <= DIRECTOR_THREAT_NULL then continue end
+				tMusicEntities[ ent ] = true
 			end
 		end
-		ply:SetNW2Int( "DR_ThreatAware", ply.DR_ThreatAware )
-		// Lower Here, if You Even Read The Comment Above
-		ply.DR_tMusicEntities = tMusicEntities
-		local ThreatAware, bLayerFound, bNoLayer = ply.DR_ThreatAware
+		ply:SetNW2Int( "DR_ThreatAware", PlyTable.DR_ThreatAware )
+		PlyTable.DR_tMusicEntities = tMusicEntities
+		local ThreatAware, bLayer = PlyTable.DR_ThreatAware, true
 		local tMusic = {}
-		for l, s in pairs( ply.DR_tMusic ) do
+		for l, s in pairs( PlyTable.DR_tMusic ) do
 			s:Tick()
 			if l == ThreatAware then
-				bLayerFound = true
+				bLayer = nil
 				s:UpdateInternal( 1, DIRECTOR_CROSSFADE_SPEED * FrameTime() )
 			else s:UpdateInternal( 0, DIRECTOR_CROSSFADE_SPEED * FrameTime() ) end
-			if CurTime() > ( ply.DR_tMusicNext[ l ] || 0 ) then
+			if CurTime() > ( PlyTable.DR_tMusicNext[ l ] || 0 ) then
 				local t, n = table.Random( DIRECTOR_MUSIC_TABLE[ l ] )
 				if t then
 					local b = true
-					for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
+					for mus in pairs( PlyTable.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
 					if b then
-						for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end
+						for _, mus in pairs( PlyTable.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end
 						if b then
-							if Director_Debug:GetBool() then print( "Next Track of Type " .. Director_ThreatValueToName( l ) ) end
-							ply.DR_tShutMeUp[ s ] = true
-							tMusic[ l ] = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
-							ply.DR_tMusicNext[ l ] = CurTime() + tMusic[ l ]:Length()
+							bLayer = nil
+							PlyTable.DR_tShutMeUp[ s ] = true
+							local p = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
+							tMusic[ l ] = p
+							PlyTable.DR_tMusicNext[ l ] = CurTime() + p:Length()
+							continue
 						else
-							bNoLayer = true
-							if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
-							ply.DR_tMusicNext[ l ] = CurTime() + s:Length()
+							bLayer = nil
+							tMusic[ l ] = s
+							PlyTable.DR_tMusicNext[ l ] = CurTime() + s:Length()
 						end
 					end
-					continue
 				else
-					bNoLayer = true
-					// if Director_Debug:GetBool() then print( "No Next Track of Type " .. Director_ThreatValueToName( l ) ) end
+					bLayer = nil
 					tMusic[ l ] = s
-					ply.DR_tMusicNext[ l ] = CurTime() + ply.DR_tMusic[ l ]:Length()
+					PlyTable.DR_tMusicNext[ l ] = CurTime() + s:Length()
 				end
-			end
-			tMusic[ l ] = s
+			else tMusic[ l ] = s end
 		end
-		ply.DR_tMusic = tMusic
-		if !bLayerFound && !bNoLayer && ThreatAware > DIRECTOR_THREAT_NULL then
+		PlyTable.DR_tMusic = tMusic
+		if bLayer && ThreatAware > DIRECTOR_THREAT_NULL then
 			local t, n = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
 			if t then
 				local b = true
-				for mus in pairs( ply.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
-				if b then for _, mus in pairs( ply.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end end
+				for mus in pairs( PlyTable.DR_tShutMeUp ) do if mus.m_sSource == n then b = nil break end end
+				if b then for _, mus in pairs( PlyTable.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end end
 				if b then
-					if Director_Debug:GetBool() then print( "Creating New Track for Layer " .. Director_ThreatValueToName( ThreatAware ) ) end
 					tMusic[ ThreatAware ] = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
-					ply.DR_tMusicNext[ ThreatAware ] = CurTime() + tMusic[ ThreatAware ]:Length()
+					PlyTable.DR_tMusicNext[ ThreatAware ] = CurTime() + 1//tMusic[ ThreatAware ]:Length()
 				end
-			elseif Director_Debug:GetBool() then print( "No Next Track for Layer " .. Director_ThreatValueToName( l ) ) end
+			end
 		end
-		local t, bLayerFound = {}
-		for lv, tm in pairs( ply.DR_tStopThreat ) do
-			if lv == ThreatAware then
-				if CurTime() > tm then
-					bLayerFound = true
-					t[ ThreatAware ] = nil
-					ply.DR_ThreatAware = math.Clamp( ply.DR_ThreatAware - 1, DIRECTOR_THREAT_NULL, DIRECTOR_THREAT_COMBAT )
-				end
-			else t[ lv ] = CurTime() + DIRECTOR_STOP_THREAT_TIME end
-		end
-		if !bLayerFound then t[ ThreatAware ] = CurTime() + DIRECTOR_STOP_THREAT_TIME end
-		ply.DR_tStopThreat = t
 		local tShutMeUp = {}
-		for mus in pairs( ply.DR_tShutMeUp ) do
-			mus:UpdateInternal( 0, DIRECTOR_CROSSFADE_SPEED * FrameTime() )
-			// If It is Already Quiet,
+		for mus in pairs( PlyTable.DR_tShutMeUp ) do
+			// If it is already quiet,
 			if mus.m_flVolume <= 0 then
-				if Director_Debug:GetBool() then print "Removing a DR_tShutMeUp Track ( m_flVolume <= 0 )" end
 				// M U R D E R   I T
-				mus:StopAll()
-			else mus:Tick() tShutMeUp[ mus ] = true end // OtherWise, Play It so It Doesnt Get Cut Off
+				continue
+			end
+			// Otherwise, play it so it doesn't get cut off
+			mus:UpdateInternal( 0, DIRECTOR_CROSSFADE_SPEED * FrameTime() )
+			mus:Tick()
+			tShutMeUp[ mus ] = true
 		end
-		ply.DR_tShutMeUp = tShutMeUp
+		PlyTable.DR_tShutMeUp = tShutMeUp
 	end
 end )
 
 hook.Add( "PostCleanupMap", "Director", function()
 	for _, ply in player_Iterator() do
 		table.Empty( ply.DR_tMusic )
+		table.Empty( ply.DR_tMusicNext )
 		table.Empty( ply.DR_tShutMeUp )
 		ply:ConCommand "stopsound"
 	end

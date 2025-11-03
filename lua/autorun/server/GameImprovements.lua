@@ -10,6 +10,7 @@ ACCELERATION_ACTUAL = ACCELERATION_NORMAL
 
 HUMAN_RUN_SPEED, HUMAN_PROWL_SPEED, HUMAN_WALK_SPEED, HUMAN_JUMP_HEIGHT = 300, 200, 75, 52
 
+local RunConsoleCommand = RunConsoleCommand
 RunConsoleCommand( "sv_accelerate", ACCELERATION_NORMAL )
 RunConsoleCommand( "sv_friction", "4" )
 
@@ -107,7 +108,7 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 		if ent.__ACTOR__ then
 			if ent == Owner || Owner.Disposition && Owner:Disposition( ent ) == D_LI || ent.Disposition && ent:Disposition( Owner ) == D_LI then continue end
 			local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
-			if ent:CanSee( v ) then ent.bHoldFire = nil ent:SetupBullseye( Owner, vStart, ang ) end
+			if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
 		end
 	end
 	/*Too cheaty - makes silencers almost completely useless
@@ -420,31 +421,47 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 
 	if ply:GetNW2Bool "CTRL_bSliding" then cmd:RemoveKey( IN_ATTACK ) cmd:RemoveKey( IN_ATTACK2 ) end
 
-	// if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) cmd:AddKey( IN_WALK ) end
+	if ply.CTRL_bSprintBlockUnTilUnPressed then
+		if !cmd:KeyDown( IN_SPEED ) then ply.CTRL_bSprintBlockUnTilUnPressed = nil end
+		cmd:RemoveKey( IN_SPEED )
+	end
 
+	local bAllDirectionalSprint = Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && ( ( Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || ply:Crouching() )
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
-	if !Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && ( ( !Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || !ply:Crouching() ) && cmd:KeyDown( IN_SPEED ) then
-		if cmd:GetForwardMove() <= 0 || b then
-			ply:SetNW2Bool( "CTRL_bSprinting", false )
-			cmd:RemoveKey( IN_SPEED )
-		else
-			cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
-			if cmd:GetSideMove() < 0 then
-				cmd:SetSideMove( -cmd:GetForwardMove() )
-			elseif cmd:GetSideMove() > 0 then
-				cmd:SetSideMove( cmd:GetForwardMove() )
-			end
-			local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
-			ply:SetNW2Bool( "CTRL_bSprinting", b )
-			if b then
-				cmd:RemoveKey( IN_ATTACK )
-				cmd:RemoveKey( IN_ATTACK2 )
-				cmd:RemoveKey( IN_ZOOM )
-			end
-		end
-	else
+	if bAllDirectionalSprint then
 		ply:SetNW2Bool( "CTRL_bSprinting", false )
 		if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+	else
+		local bGroundCrouchingAndNotSliding = bGround && ply:Crouching() && !ply:GetNW2Bool "CTRL_bSliding"
+		if bGroundCrouchingAndNotSliding || Either( v && v.bCanFly, true, bGround ) && !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil end
+		if !bGroundCrouchingAndNotSliding && cmd:KeyDown( IN_SPEED ) || ply.CTRL_bHeldSprint then
+			ply.CTRL_bHeldSprint = true
+			cmd:AddKey( IN_SPEED )
+			if cmd:GetForwardMove() <= 0 then
+				// ply.CTRL_bSprintBlockUnTilUnPressed = true
+				if bGround then ply.CTRL_bHeldSprint = nil end
+				cmd:RemoveKey( IN_SPEED )
+				ply:SetNW2Bool( "CTRL_bSprinting", false )
+				if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+			else
+				cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
+				cmd:SetSideMove( math.Clamp( cmd:GetSideMove(), -cmd:GetForwardMove(), cmd:GetForwardMove() ) )
+				local b = ply:GetVelocity():Length() > ply:GetWalkSpeed()
+				ply:SetNW2Bool( "CTRL_bSprinting", b )
+				if b then
+					if cmd:KeyDown( IN_ATTACK ) || cmd:KeyDown( IN_ATTACK2 ) || cmd:KeyDown( IN_ZOOM ) then
+						ply.CTRL_bSprintBlockUnTilUnPressed = true
+						ply.CTRL_bHeldSprint = nil
+						cmd:RemoveKey( IN_SPEED )
+						ply:SetNW2Bool( "CTRL_bSprinting", false )
+						if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+					end
+				end
+			end
+		else
+			ply:SetNW2Bool( "CTRL_bSprinting", false )
+			if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+		end
 	end
 	if !ply:IsOnGround() then
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]

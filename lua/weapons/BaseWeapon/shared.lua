@@ -155,6 +155,7 @@ if CLIENT then
 	SWEP.flViewModelAimSwayMultiplier = 0
 	SWEP.flLastEyeYaw = 0
 	SWEP.flBobScale = 1
+	SWEP.flAimRoll = 45
 	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
 	local math_sin = math.sin
@@ -262,6 +263,7 @@ if CLIENT then
 		local t = tr.HitPos:ToScreen()
 		return t.x, t.y
 	end
+	SWEP.flAimTiltTime = 0
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
@@ -405,6 +407,12 @@ if CLIENT then
 				else MyTable.vBezier = nil MyTable.vBezierAngle = nil end
 			else MyTable.vBezier = nil MyTable.vBezierAngle = nil end
 		end
+		local flRoll = MyTable.flAimRoll
+		local flAimTiltTime = MyTable.flAimTiltTime
+		flAimTiltTime = Lerp( 10 * FrameTime(), flAimTiltTime, bZoom && flRoll || 0 )
+		local flTime = ( -( flAimTiltTime - ( flRoll * .5 ) ) ^ 2 + ( flRoll * .5 ) ^ 2 ) / ( flRoll * .5 )
+		MyTable.flAimTiltTime = flAimTiltTime
+		vTargetAngle = vTargetAngle + ( bZoom && Vector( -flTime / ( flRoll / 3 ), 0, -flTime ) || Vector( 3 * flTime / flRoll, 0, flTime ) )
 		if MyTable.aLastEyePosition == nil then MyTable.aLastEyePosition = Angle( 0, 0, 0 ) end
 		vTarget, vTargetAngle = vTarget, vTargetAngle
 		local flAnimSpeed = 5

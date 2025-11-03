@@ -81,6 +81,14 @@ sound.Add {
 	}
 }
 
+sound.Add {
+	name = "Combine_Soldier_HoldFire",
+	channel = CHAN_AUTO,
+	level = 150,
+	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
+	sound = "npc/combine_soldier/vo/hasnegativemovement.wav"
+}
+
 list.Set( "NPC", "npc_combine_s", {
 	Name = "#CombineSoldier",
 	Class = "CombineSoldier",
@@ -104,6 +112,7 @@ function ENT:DLG_FiringAtAnExposedTarget() CEntity_EmitSound( self, "Combine_Sol
 function ENT:DLG_Advancing() CEntity_EmitSound( self, "Combine_Soldier_Advancing" ) end
 function ENT:DLG_Retreating() CEntity_EmitSound( self, "Combine_Soldier_Retreating" ) end
 function ENT:DLG_TakeCoverGeneral() CEntity_EmitSound( self, "Combine_Soldier_TakeCover" ) end
+function ENT:DLG_HoldFire() CEntity_EmitSound( self, "Combine_Soldier_HoldFire" ) end
 
 ENT.iDefaultClass = CLASS_COMBINE
 

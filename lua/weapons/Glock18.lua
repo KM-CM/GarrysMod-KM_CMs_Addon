@@ -14,8 +14,8 @@ SWEP.Primary.Automatic = false
 SWEP.Primary.Ammo = "Pistol"
 SWEP.Primary_flSpreadX = .0094
 SWEP.Primary_flSpreadY = .0094
-SWEP.Primary_flDamage = 60
-SWEP.Primary_flDelay = .05
+SWEP.Primary_flDamage = 40
+SWEP.Primary_flDelay = .04285714285
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Automatic = false
@@ -24,6 +24,7 @@ SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
 SWEP.bPistolSprint = true
+SWEP.vViewModelAim = Vector( -5.79, -8, 2.99 )
 
 sound.Add {
 	name = "Glock18_Shot",

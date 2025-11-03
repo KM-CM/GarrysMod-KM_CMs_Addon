@@ -3,7 +3,7 @@ ENT.vHullMaxs = HULL_HUMAN_MAXS
 ENT.vHullDuckMins = HULL_HUMAN_DUCK_MINS
 ENT.vHullDuckMaxs = HULL_HUMAN_DUCK_MAXS
 
-ENT.flReach = 64
+ENT.GAME_flReach = 64
 
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
@@ -40,7 +40,9 @@ function ENT:MoveAlongPathToCover( pPath, tFilter )
 	self:MoveAlongPath( pPath, math.abs( pPath:GetLength() - pPath:GetCursorPosition() ) <= self.flWalkSpeed && self.flWalkSpeed || self.flTopSpeed, 1, tFilter )
 end
 
-ENT.bHoldFire = false
+ENT.bHoldFire = true
+
+function ENT:OnTakeDamage() CEntity_GetTable( self ).bHoldFire = nil end
 
 ENT.flHearDistanceMultiplier = 1
 

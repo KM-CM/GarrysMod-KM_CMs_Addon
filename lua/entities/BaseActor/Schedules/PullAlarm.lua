@@ -16,7 +16,7 @@ Actor_RegisterSchedule( "PullAlarm", function( self, sched )
 	local _, b = self:ComputePath( sched.Path, vAlarm )
 	if b == false then self:SetSchedule "TakeCover" return end // NOT !b
 	local v = self:GetShootPos()
-	local f = self.flReach
+	local f = self.GAME_flReach
 	if v:DistToSqr( pAlarm:NearestPoint( v ) ) <= ( f * f ) then
 		if sched.bOff then pAlarm:TurnOff( self )
 		else pAlarm:TurnOn( self ) end

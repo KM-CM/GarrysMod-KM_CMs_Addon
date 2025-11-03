@@ -92,6 +92,21 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		if !self.vCover && self:CanExpose() then return end
 	end
 	if self.vCover then
+		if self.bHoldFire then
+			local tAllies = self:GetAlliesByClass()
+			if math.random( table.Count( tAllies ) ) == 1 then
+				local b = true
+				for ent in pairs( tAllies ) do
+					if !IsValid( ent ) || ent == self || !ent.__ACTOR__ || !IsValid( ent.Enemy ) then continue end
+					local _, pTrueEnemy = ent:SetupEnemy( ent.Enemy )
+					if pTrueEnemy == trueenemy then b = nil break end
+				end
+				if b then
+					self:SetSchedule( "HoldFireCheckEnemy" ).pEnemy = trueenemy
+					return
+				end
+			end
+		end
 		local vec = self.vCover
 		self.vActualCover = vec
 		if !sched.Path then sched.Path = Path "Follow" end
