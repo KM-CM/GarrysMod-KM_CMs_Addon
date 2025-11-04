@@ -331,7 +331,7 @@ hook.Add( "Tick", "Director", function()
 				if b then for _, mus in pairs( PlyTable.DR_tMusic ) do if mus.m_sSource == n then b = nil break end end end
 				if b then
 					tMusic[ ThreatAware ] = Director_CreateMusicPlayerFromTableInternal( ply, t, n )
-					PlyTable.DR_tMusicNext[ ThreatAware ] = CurTime() + 1//tMusic[ ThreatAware ]:Length()
+					PlyTable.DR_tMusicNext[ ThreatAware ] = CurTime() + tMusic[ ThreatAware ]:Length()
 				end
 			end
 		end
@@ -393,3 +393,4 @@ if SERVER then
 else function Director_CreateSimpleMusicPlayer( _, sName, sPath, _ ) Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" ) end end
 
 for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end
+
