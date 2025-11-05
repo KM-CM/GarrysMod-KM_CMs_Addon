@@ -18,7 +18,7 @@ sound.Add {
 	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
 	sound = {
 		"npc/combine_soldier/vo/contact.wav",
-		"npc/combine_soldier/vo/contactconfirm.wav",
+		"npc/combine_soldier/vo/contactconfim.wav",
 		"npc/combine_soldier/vo/contactconfirmprosecuting.wav",
 		"npc/combine_soldier/vo/fullactive.wav"
 	}
@@ -49,8 +49,6 @@ sound.Add {
 		"npc/combine_soldier/vo/coverhurt.wav",
 		"npc/combine_soldier/vo/stabilizationteamholding.wav",
 		"npc/combine_soldier/vo/sharpzone.wav",
-		"npc/combine_soldier/vo/isholdingatcode.wav",
-		"npc/combine_soldier/vo/isfinalteamunitbackup.wav",
 		"npc/combine_soldier/vo/heavyresistance.wav"
 	}
 }
@@ -65,7 +63,6 @@ sound.Add {
 		"npc/combine_soldier/vo/displace2.wav",
 		"npc/combine_soldier/vo/sharpzone.wav",
 		"npc/combine_soldier/vo/heavyresistance.wav",
-		"npc/combine_soldier/vo/isfinalteamunitbackup.wav"
 	}
 }
 
@@ -102,8 +99,6 @@ list.Set( "NPC", "npc_combine_s", {
 	}
 } )
 
-if CLIENT then language.Add( "CombineSoldier", "Combine Soldier" ) end
-
 if !SERVER then return end
 
 local CEntity_EmitSound = FindMetaTable( "Entity" ).EmitSound
@@ -112,7 +107,7 @@ function ENT:DLG_FiringAtAnExposedTarget() CEntity_EmitSound( self, "Combine_Sol
 function ENT:DLG_Advancing() CEntity_EmitSound( self, "Combine_Soldier_Advancing" ) end
 function ENT:DLG_Retreating() CEntity_EmitSound( self, "Combine_Soldier_Retreating" ) end
 function ENT:DLG_TakeCoverGeneral() CEntity_EmitSound( self, "Combine_Soldier_TakeCover" ) end
-function ENT:DLG_HoldFire() CEntity_EmitSound( self, "Combine_Soldier_HoldFire" ) end
+function ENT:DLG_HoldFire() CEntity_EmitSound( self, "Combine_Soldier_HoldFire" ) BaseClass.DLG_HoldFire( self ) end
 
 ENT.iDefaultClass = CLASS_COMBINE
 

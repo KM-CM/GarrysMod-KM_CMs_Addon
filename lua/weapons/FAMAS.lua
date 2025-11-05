@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Assault Rifles"
 SWEP.PrintName = "#FAMAS"
-if CLIENT then language.Add( "FAMAS", "FAMAS" ) end
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Fusil d'Assaut de la Manufacture d'Armes de Saint-Étienne, Assault rifle from the Saint-Étienne Weapon Factory."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_rif_famas.mdl"

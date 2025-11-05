@@ -1,7 +1,10 @@
 local table_IsEmpty = table.IsEmpty
 local HasRangeAttack, HasMeleeAttack = HasRangeAttack, HasMeleeAttack
+local util = util
 local util_TraceLine = util.TraceLine
 local util_TraceHull = util.TraceHull
+local util_DistanceToLine = util.DistanceToLine
+local math = math
 local math_Rand = math.Rand
 local unpack = unpack
 local CurTime = CurTime
@@ -11,6 +14,8 @@ function ENT:DLG_MeleeUnReachable( pEnemy ) end
 
 local developer = GetConVar "developer"
 
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+
 Actor_RegisterSchedule( "Combat", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table_IsEmpty( tEnemies ) then return {} end
@@ -18,8 +23,28 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 	if IsValid( enemy ) then enemy = enemy
 	else enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	local enemy, trueenemy = self:SetupEnemy( enemy )
-	if CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) && !self.bHoldFire then self:DLG_HoldFire() end
+	if !self.bHoldFire && CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) then self:DLG_HoldFire() end
 	if sched.bAdvance || sched.bRetreat then
+		if !sched.bFromCombatFormation && sched.bAdvance && !sched.bCheckedFormation then
+			local p = sched.pEnemyPath
+			if !p then p = Path "Follow" self:ComputePath( p, enemy:GetPos() ) end
+			local i = self:FindPathStackUpLine( p, tEnemies )
+			if i && i > 256 then
+				p:MoveCursorTo( i )
+				local g = p:GetCurrentGoal()
+				if g then
+					local b = self:CreateBehaviour "CombatFormation"
+					local v = p:GetPositionOnPath( i )
+					b.Vector = v
+					b.Direction = ( p:GetPositionOnPath( i + 1 ) - v ):GetNormalized()
+					b:AddParticipant( self )
+					b:GatherParticipants()
+					b:Initialize()
+					return
+				end
+			end
+			sched.bCheckedFormation = true
+		end
 		self.vActualCover = self.vCover
 		self:Stand( self:GetCrouchTarget() )
 		local bAdvance = sched.bAdvance
@@ -53,9 +78,9 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		sched.vCoverBounds = v
 		local tAllies = sched.tAllies || self:GetAlliesByClass()
 		sched.tAllies = tAllies
-		local f = sched.flBoundingRadiusTwo || ( self:BoundingRadius() ^ 2 )
+		local f = sched.flBoundingRadiusTwo || ( ( self:BoundingRadius() * 2 ) ^ 2 )
 		sched.flBoundingRadiusTwo = f
-		local d = self.vHullMaxs.x * 4 // We check somewhat distant positions, so give them some range to consider "cover"...
+		local d = self.vHullMaxs.x * 4 // We check somewhat distant positions, so give them some range to consider "cover"
 		for _ = 0, 32 do
 			local vec = pIterator()
 			if vec == nil then
@@ -85,6 +110,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				self.vActualCover = vec
 				self.vCover = vec
 				local s = self:SetSchedule "TakeCoverMove"
+				s.bFromCombatFormation = sched.bFromCombatFormation
 				s.bAdvancing = true
 				return
 			end
@@ -207,14 +233,13 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 						table.insert( tPitchAngles, a )
 					end
 				end
-				local bDontCheckDistance, flDistSqr = self.flCombatState > 0
-				if !bDontCheckDistance then
+				local bCheckDistance, flDistSqr = self.flCombatState > 0
+				if bCheckDistance then
 					flDistSqr = RANGE_ATTACK_SUPPRESSION_BOUND_SIZE
 					flDistSqr = flDistSqr * flDistSqr
 				end
 				local function fDo( tr, vOrigin, tAngles )
 					if !tr.Hit then
-						debugoverlay.SweptBox( vOrigin, vOrigin, self.vHullDuckMins, self.vHullDuckMaxs, angle_zero, 5, Color( 0, 255, 255 ) )
 						local vPos = vOrigin + vHeight
 						local tWholeFilter = IsValid( trueenemy ) && { self, enemy, trueenemy } || { self, enemy }
 						for i, flGlobalAnglePitch in ipairs( tPitchAngles ) do
@@ -233,18 +258,13 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 									endpos = vTarget,
 									mask = MASK_SHOT_HULL,
 									filter = tWholeFilter
-								} ).Hit && ( bDontCheckDistance || vPoint:DistToSqr( vTarget ) > flDistSqr ) then
-									if developer:GetInt() > 0 then debugoverlay.Line( tr.StartPos, tr.HitPos, 5, Color( 255, 0, 0, 85 ), true ) end
+								} ).Hit || bCheckDistance && vPoint:DistToSqr( vTarget ) > flDistSqr then
 									continue
-								end
-								if developer:GetInt() > 0 then
-									debugoverlay.Line( tr.StartPos, tr.HitPos, 5, Color( 0, 255, 255 ), true )
-									debugoverlay.Cross( vPoint, 10, 5, Color( 0, 255, 255 ), true )
 								end
 								return vPoint
 							end
 						end
-					else debugoverlay.SweptBox( vOrigin, vOrigin, self.vHullDuckMins, self.vHullDuckMaxs, angle_zero, 5, Color( 255, 0, 0 ) ) end
+					end
 				end
 				local aGeneral = Angle( aDirection )
 				aGeneral[ 1 ] = 0
@@ -252,9 +272,10 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				local dLeft = -dRight
 				local flDistance = self:OBBMaxs().x * 2
 				local vLeft = vec + dLeft * flDistance
+				local flAdd = self:OBBMaxs().x
 				local trLeft = util_TraceLine {
 					start = vec + vHeight,
-					endpos = vLeft + vHeight,
+					endpos = vLeft + dLeft * flAdd + vHeight,
 					filter = self
 				}
 				local tAngles = { 0 }
@@ -267,7 +288,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				local vRight = vec + dRight * flDistance
 				local trRight = util_TraceLine {
 					start = vec + vHeight,
-					endpos = vRight + vHeight,
+					endpos = vRight + dRight * flAdd + vHeight,
 					filter = self
 				}
 				tAngles = { 0 }
@@ -312,7 +333,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				end
 				if !sched.pEnemyPath then sched.pEnemyPath = Path "Follow" end
 				self:ComputeFlankPath( sched.pEnemyPath, enemy )
-				if self.flCombatState > 0 then
+				if !sched.bFromCombatFormation && self.flCombatState > 0 then
 					local p = sched.pEnemyPath
 					local i = self:FindPathStackUpLine( p, tEnemies )
 					if i && i > 256 then

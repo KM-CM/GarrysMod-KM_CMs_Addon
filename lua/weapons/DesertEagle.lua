@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Pistols"
 SWEP.PrintName = "#DesertEagle"
-if CLIENT then language.Add( "DesertEagle", "Desert Eagle" ) end
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Desert Eagle, .50 Action Express."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_pist_deagle.mdl"

@@ -2,9 +2,8 @@ AddCSLuaFile()
 DEFINE_BASECLASS "base_anim"
 
 ENT.PrintName = "#Flare"
-if CLIENT then language.Add( "Flare", "Flare" ) end
 
-ENT.__FLARE__ = true // Dont Confuse with __FLARE_ACTIVE__
+ENT.__FLARE__ = true // Don't confuse with __FLARE_ACTIVE__!
 
 sound.Add {
 	name = "FlareBurn",

@@ -41,8 +41,10 @@ ENT.bCantSeeUnderWater = true
 ENT.bVisNot360 = true
 // ENT.flVisionYaw = 99
 // ENT.flVisionPitch = 33 // Rougly 99 * ( 6 / 19 ). 31 would be More Exact But 33 Looks Cooler
-ENT.flVisionYaw = UNIVERSAL_FOV
-ENT.flVisionPitch = UNIVERSAL_FOV * ( 9 / 16 )
+// Must be half of the actual value, since it's calculated as an absolute difference
+local f = UNIVERSAL_FOV * .5
+ENT.flVisionYaw = f
+ENT.flVisionPitch = f * ( 9 / 16 )
 function ENT:CanSee( vec, MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	local veh, ent
@@ -321,13 +323,17 @@ function ENT:Look( MyTable )
 	if bClear && IsValid( ne ) then MyTable.OnAcquireEnemy( self, MyTable ) end
 end
 
+local math_max = math.max
 function ENT:OnHeardSomething( Other, Data )
 	local MyTable = CEntity_GetTable( self )
 	local d = MyTable.Disposition( self, Other, MyTable )
 	if d == D_LI then
 		local OtherTable = CEntity_GetTable( Other )
 		if !OtherTable.__ACTOR__ then return end
-		if !OtherTable.bHoldFire then MyTable.bHoldFire = nil end
+		if !OtherTable.bHoldFire then
+			MyTable.bHoldFire = nil
+			MyTable.flLastEnemy = math_max( MyTable.flLastEnemy, OtherTable.flLastEnemy )
+		end
 		for k, d in pairs( OtherTable.tBullseyes ) do
 			local beye = d[ 1 ]
 			if IsValid( beye ) then
@@ -347,6 +353,7 @@ function ENT:OnHeardSomething( Other, Data )
 		end
 	elseif d == D_HT || d == D_FR then
 		if !MyTable.WillAttackFirst( self, Other ) then return end
+		MyTable.flLastEnemy = CurTime()
 		MyTable.SetupBullseye( self, Other, nil, nil, MyTable )
 	end
 end

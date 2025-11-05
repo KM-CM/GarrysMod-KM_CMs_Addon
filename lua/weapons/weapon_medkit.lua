@@ -1,7 +1,6 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-SWEP.PrintName = "#weapon_medkit"
-if CLIENT then language.Add( "weapon_medkit", "Combine Medical Kit" ) end
+SWEP.PrintName = "#weapon_medkit"
 SWEP.Instructions = "Primary to heal, secondary to heal other."
 SWEP.Slot = 5
 SWEP.SlotPos = 3

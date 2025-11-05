@@ -31,7 +31,6 @@ sound.Add {
 }
 
 ENT.PrintName = "#env_explosion"
-if CLIENT then language.Add( "env_explosion", "Explosion" ) return end
 
 ENT.flMagnitude = 100
 

@@ -1,8 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Assault Rifles"
-SWEP.PrintName = "#weapon_ar2"
-if CLIENT then language.Add( "weapon_ar2", "OSIPR" ) end
+SWEP.PrintName = "#weapon_ar2"
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Overwatch Standard Issue Pulse Rifle."
 SWEP.ViewModel = Model "models/weapons/c_irifle.mdl"

@@ -25,8 +25,6 @@ list.Set( "NPC", "CombineElite", {
 	}
 } )
 
-if CLIENT then language.Add( "CombineElite", "Combine Elite" ) end
-
 if !SERVER then return end
 
 function ENT:Initialize()

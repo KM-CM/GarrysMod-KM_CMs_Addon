@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Pistols"
 SWEP.PrintName = "#Glock18"
-if CLIENT then language.Add( "Glock18", "Glock-18" ) end
 SWEP.Instructions = "Primary to shoot, secondary to switch semi/auto."
 SWEP.Purpose = "Glock-18."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_pist_glock18.mdl"

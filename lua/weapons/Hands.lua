@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Hands"
 SWEP.PrintName = "#Hands"
-if CLIENT then language.Add( "Hands", "Hands" ) end
 SWEP.Instructions = ""
 SWEP.Purpose = ""
 SWEP.ViewModel = Model "models/weapons/c_arms.mdl"

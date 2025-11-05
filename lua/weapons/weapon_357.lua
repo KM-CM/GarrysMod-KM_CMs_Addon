@@ -1,8 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Revolvers"
-SWEP.PrintName = "#weapon_357"
-if CLIENT then language.Add( "weapon_357", "Colt Python" ) end
+SWEP.PrintName = "#weapon_357"
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Colt Python."
 SWEP.ViewModel = Model "models/weapons/c_357.mdl"

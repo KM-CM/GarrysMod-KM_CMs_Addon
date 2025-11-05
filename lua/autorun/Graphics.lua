@@ -106,7 +106,7 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	tDrawColorModify[ "$pp_colour_mulb" ] = tDrawColorModify[ "$pp_colour_mulb" ] + flFogB * flMultiplier
 	local flTarget = UTIL_IsUnderSkybox() && math.Remap( flColor, 0, 1, 512, 6084 ) || math.Remap( flColor, 0, 1, 512, 3072 )
 	self.GP_FogDistance = math.Approach( self.GP_FogDistance || 0, flTarget, math.max( 64, math.abs( flTarget - ( self.GP_FogDistance || 0 ) ) * .2 ) * FrameTime() )
-	DrawBloom( math.Remap( flBloom, 0, 1, .25, 0 ), math.Remap( flBloom, 0, 1, .9, 2 ), 10, 10, 5, math.Remap( flBloom, 0, 1, 1, 2 ), 1, 1, 1 )
+	DrawBloom( 0, math.Remap( flBloom, 0, 1, .8, 1.5 ), 10, 10, 5, math.Remap( flBloom, 0, 1, 2, 4 ), 1, 1, 1 )
 	DrawColorModify( tDrawColorModify )
 end )
 

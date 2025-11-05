@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Shotguns"
 SWEP.PrintName = "#BenelliM4Super90"
-if CLIENT then language.Add( "BenelliM4Super90", "Benelli M4 Super 90" ) end
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Benelli M4 Super 90, a.k.a XM1014."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_shot_xm1014.mdl"

@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Assault Rifles"
 SWEP.PrintName = "#AK47"
-if CLIENT then language.Add( "AK47", "AK-47" ) end
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "Автомат Калашникова, also known as the AK-47, with the AK standing for its name, and the 47 being the year it was designed in."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_rif_ak47.mdl"

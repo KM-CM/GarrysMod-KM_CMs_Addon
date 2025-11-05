@@ -1,18 +1,12 @@
-/*
-
-There has been a debate going on if it is called the Airboat or the Mudskipper.
-Airboat is actually the general term, like "jeep" or "car", and the MudSkipper is the model.
-End of story. There is just nothing else to say.
-
-*/
+// There has been a debate going on if it's the Airboat or the Mudskipper.
+// Airboat is actually the general term, like "jeep" or "car", and the MudSkipper is the model.
+// End of story. There's just nothing else to say.
 
 AddCSLuaFile()
 DEFINE_BASECLASS "BaseVehicleAirBoat"
 
 scripted_ents.Register( ENT, "MudSkipper" )
 scripted_ents.Alias( "prop_vehicle_airboat", "MudSkipper" )
-
-if CLIENT then language.Add( "MudSkipper", "Mudskipper" ) end
 
 local CEntity_LookupSequence = FindMetaTable( "Entity" ).LookupSequence
 function ENT:HandleAnimation( ply ) return CEntity_LookupSequence( ply, "drive_airboat" ) end

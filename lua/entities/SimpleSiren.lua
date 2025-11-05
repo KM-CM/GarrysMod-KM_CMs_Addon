@@ -28,7 +28,6 @@ function ENT:SetupDataTables()
 end
 
 ENT.PrintName = "#SimpleSiren"
-if CLIENT then language.Add( "SimpleSiren", "Siren" ) return end
 
 ENT.CATEGORIZE = { Siren = true }
 

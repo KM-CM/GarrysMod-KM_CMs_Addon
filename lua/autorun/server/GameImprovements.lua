@@ -463,14 +463,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
 		end
 	end
-	if !ply:IsOnGround() then
-		local v = __PLAYER_MODEL__[ ply:GetModel() ]
-		if CEntity_WaterLevel( ply ) <= 0 && !Either( v == nil, ply.CTRL_bAllowMovingWhileInAir, v && v.bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
-			// cmd:SetForwardMove( 0 )
-			cmd:SetSideMove( 0 )
-		end
-		// ply:SetNW2Bool( "CTRL_bSprinting", false )
-	end
+	//	if !ply:IsOnGround() then
+	//		local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	//		if CEntity_WaterLevel( ply ) <= 0 && !Either( v == nil, ply.CTRL_bAllowMovingWhileInAir, v && v.bAllowMovingWhileInAir ) && ply:GetMoveType() == MOVETYPE_WALK then
+	//			// cmd:SetForwardMove( 0 )
+	//			cmd:SetSideMove( 0 )
+	//		end
+	//		// ply:SetNW2Bool( "CTRL_bSprinting", false )
+	//	end
 
 	local bInCover
 	local bGunUsesCoverStance // Used in Very Special Circumstances
@@ -787,8 +787,21 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 			act:OnHeardSomething( dent, Data )
 		end
 	end
+	local sColor
+	if dent.GAME_sCaptionColor then
+		sColor = Format( "%q", dent.GAME_sCaptionColor )
+	elseif dent.GetPlayerColor then
+		local c = dent:GetPlayerColor() * 255
+		sColor = Format( "%q", Format( "<clr:%d,%d,%d>", c[ 1 ], c[ 2 ], c[ 3 ] ) )
+	else sColor = "\"\"" end
+	local sCaption = Format( "%q", Data.SoundName )
 	local dts = dt * dt
-	for _, ply in player_Iterator() do if ply:EyePos():DistToSqr( vPos ) <= dts then Director_UpdateAwareness( ply, ent ) end end
+	for _, ply in player_Iterator() do
+		if ply:EyePos():DistToSqr( vPos ) <= dts then
+			Director_UpdateAwareness( ply, ent )
+			ply:SendLua( "CaptionSound(" .. sColor .. "," .. sCaption .. ")" )
+		end
+	end
 	return true
 end )
 

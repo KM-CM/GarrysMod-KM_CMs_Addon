@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Assault Rifles"
 SWEP.PrintName = "#M16A4"
-if CLIENT then language.Add( "M16A4", "M16A4" ) end
 SWEP.Instructions = "Primary to shoot, secondary to attach or detach the silencer."
 SWEP.Purpose = "Universal Self-Loading Pistol, with a Silencer."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_rif_m4a1.mdl"

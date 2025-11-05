@@ -33,7 +33,6 @@ sound.Add {
 	pitch = VOICE_PITCH,
 	sound = {
 		"vo/npc/male01/takecover02.wav",
-		"vo/npc/male01/squad_away01.wav",
 		"vo/npc/male01/squad_away02.wav",
 		"vo/npc/male01/squad_away03.wav"
 	}
@@ -62,8 +61,7 @@ sound.Add {
 		"vo/npc/male01/squad_follow02.wav",
 		"vo/npc/male01/squad_follow03.wav",
 		"vo/npc/male01/squad_approach02.wav",
-		"vo/npc/male01/squad_approach03.wav",
-		"vo/canals/male01/stn6_go_nag02.wav"
+		"vo/npc/male01/squad_approach03.wav"
 	}
 }
 

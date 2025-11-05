@@ -37,7 +37,6 @@ function ENT:SetupDataTables()
 end
 
 if CLIENT then
-	language.Add( "env_projectedtexture", "Light" )
 	function ENT:Initialize() self:Update() end
 	function ENT:Think()
 		local d = self:GetShadows() && self:GetDistance() || self:GetTrueDistance()

@@ -9,13 +9,13 @@ function ENT:RangeAttack()
 	return true
 end
 
-// Small Suppressed, Does NOT want Someone Else to Help Yet
+// Small suppressed, does NOT want someone else to help yet
 function ENT:DLG_Suppressed() end
 
-// See The Code, I have No Easy Way of Explaining This One
+// See the code, I have no easy way of explaining this one
 ENT.flSuppressionTraceFraction = .8
 
-// Try to Guess from Where This Enemy Might Shoot Us from
+// Try to guess from where this enemy might shoot us from
 function ENT:CalcEnemyShootPositions( enemy )
 	local vPos = enemy:GetPos()
 	local dir = ( vPos - self:GetPos() ):GetNormalized()
@@ -351,15 +351,14 @@ end
 ENT.flHoldFireTime = 16
 
 function ENT:DLG_HoldFire()
+	self.bHoldFire = true
 	local tAllies = self:GetAlliesByClass()
 	if tAllies then
-		local f = self.flLastEnemy
 		for _, ent in ipairs( tAllies ) do
-			if IsValid( ent ) && ( ent.flLastEnemy == 0 && ent.flLastEnemy > f ) then continue end
+			if !IsValid( ent ) then continue end
 			ent.bHoldFire = true
 		end
 	end
-	self.bHoldFire = true
 end
 
 function ENT:DLG_FiringAtAnExposedTarget( enemy ) end
@@ -424,17 +423,17 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	if sched.bSuppressing then
 		local vStand, vDuck = Vector( 0, 0, self.vHullMaxs.z )
 		if self.vHullDuckMaxs && vStand.z != self.vHullDuckMaxs.z then vDuck = Vector( 0, 0, self.vHullDuckMaxs.z ) end
-		local v = enemy:GetPos() + enemy:OBBCenter()
+		local vEnemy = enemy:GetPos() + enemy:OBBCenter()
 		local trStand, trDuck = util_TraceLine {
 			start = sched.vFrom + vStand,
-			endpos = v,
+			endpos = vEnemy,
 			mask = MASK_SHOT_HULL,
 			filter = { self, enemy, trueenemy }
 		}
 		if vDuck then
 			trDuck = util_TraceLine {
 				start = sched.vFrom + vDuck,
-				endpos = v,
+				endpos = vEnemy,
 				mask = MASK_SHOT_HULL,
 				filter = { self, enemy, trueenemy }
 			}
@@ -482,6 +481,13 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				filter = { self, enemy, trueenemy }
 			}
 		end
+		if self.flCombatState > 0 && v:DistToSqr( vEnemy ) > ( RANGE_ATTACK_SUPPRESSION_BOUND_SIZE * RANGE_ATTACK_SUPPRESSION_BOUND_SIZE ) ||
+		util_TraceLine( {
+			start = v,
+			endpos = vEnemy,
+			mask = MASK_SHOT_HULL,
+			filter = { self, enemy, trueenemy }
+		} ).Hit then return false end
 		local f = self.flPathTolerance
 		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )

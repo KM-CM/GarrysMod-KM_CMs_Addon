@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Sniper Rifles"
 SWEP.PrintName = "#AWM"
-if CLIENT then language.Add( "AWM", "AI AWM" ) end
 SWEP.Instructions = "Primary to shoot, secondary + mouse forward/backward to zoom in/out."
 SWEP.Purpose = "Accuracy International Arctic Warfare Magnum."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_snip_awp.mdl"

@@ -25,8 +25,6 @@ list.Set( "NPC", "HumanSWAT", {
 	}
 } )
 
-if CLIENT then language.Add( "HumanSWAT", "SWAT Operative" ) end
-
 if !SERVER then return end
 
 ENT.iDefaultClass = CLASS_HUMAN

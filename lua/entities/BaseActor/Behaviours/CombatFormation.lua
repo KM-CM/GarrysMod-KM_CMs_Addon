@@ -104,9 +104,11 @@ Actor_RegisterBehaviour( "CombatFormation", {
 					if s.bReached then iNum = iNum + 1 end
 				end
 				if iCount >= iNum then
-					lead:DLG_CombatFormationMove()
+					lead:DLG_CombatFormationMove( self.sType )
 					for ent in pairs( self.tPositions ) do
-						ent:SetSchedule( "Combat" ).bAdvance = true
+						local s = ent:SetSchedule "Combat"
+						s.bAdvance = true
+						s.bFromCombatFormation = true
 					end
 					self:Finish()
 					return

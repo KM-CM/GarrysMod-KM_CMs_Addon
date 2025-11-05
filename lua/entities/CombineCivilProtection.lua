@@ -82,8 +82,6 @@ list.Set( "NPC", "npc_metropolice", {
 	}
 } )
 
-if CLIENT then language.Add( "CombineCivilProtection", "Combine Civil Protection Unit" ) end
-
 if !SERVER then return end
 
 local CEntity_EmitSound = FindMetaTable( "Entity" ).EmitSound

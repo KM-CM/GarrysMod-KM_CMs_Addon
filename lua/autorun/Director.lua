@@ -393,4 +393,3 @@ if SERVER then
 else function Director_CreateSimpleMusicPlayer( _, sName, sPath, _ ) Director_RegisterNonStandardMusicSound( sName, "Music/" .. sPath .. ".wav" ) end end
 
 for _, n in ipairs( file.Find( "Director/*.lua", "LUA" ) ) do ProtectedCall( function() include( "Director/" .. n ) end ) end
-

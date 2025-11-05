@@ -27,6 +27,24 @@ if SERVER then
 		[ TRAVERSES_GROUND ] = {},
 		[ TRAVERSES_AIR ] = {}
 	}
+else
+	ReadSpeed = CreateClientConVar(
+		"ReadSpeed",
+		6,
+		true,
+		true,
+		"How fast can you read, in characters per second?",
+		2.220446049250313e-16 // Epsilon to avoid division by zero
+	)
+
+	local gui_AddCaption = gui.AddCaption
+	local language_GetPhrase = language.GetPhrase
+	function CaptionSound( sColor, sSound )
+		sSound = "Caption_" .. sSound
+		local sCaption = language_GetPhrase( sSound )
+		if sCaption == sSound then return end
+		gui_AddCaption( sColor .. sCaption, #select( 1, sCaption:gsub( "<.->", "" ) ) / ReadSpeed:GetFloat() )
+	end
 end
 
 local IsValid = IsValid

@@ -1,8 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Light Machine Guns"
-SWEP.PrintName = "#M249SAW"
-if CLIENT then language.Add( "M249SAW", "M249 SAW" ) end
+SWEP.PrintName = "#M249SAW"
 SWEP.Instructions = "Primary to shoot."
 SWEP.Purpose = "M249 Squad Automatic Weapon."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_mach_m249para.mdl"

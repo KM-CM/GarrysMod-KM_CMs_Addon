@@ -185,24 +185,27 @@ end
 function ENT:GetWeaponClipPrimary() local w = ( MyTable || CEntity_GetTable( self ) ).Weapon if IsValid( w ) then return w:Clip1() else return -1 end end
 function ENT:GetWeaponClipSizePrimary() local w = ( MyTable || CEntity_GetTable( self ) ).Weapon if IsValid( w ) then return w:GetMaxClip1() else return -1 end end
 
-local util_TraceLine = util.TraceLine
+local util_TraceHull = util.TraceHull
 local math_abs = math.abs
+local math_max = math.max
 local math_AngleDifference = math.AngleDifference
 function ENT:CanAttackHelper( vec, MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	if MyTable.GetWeaponClipPrimary( self, MyTable ) <= 0 then return end
-	local v, a = MyTable.GetShootPos( self, MyTable ), MyTable.GetAimVector( self, MyTable )
-	local tr = util_TraceLine {
-		start = v,
-		endpos = v + a * 999999,
-		mask = MASK_SHOT_HULL,
-		filter = self
-	}
-	local e = tr.Entity
-	if IsValid( e ) && MyTable.Disposition( e, MyTable ) == D_LI then return end
+	local vShoot, vAim = MyTable.GetShootPos( self, MyTable ), MyTable.GetAimVector( self, MyTable )
+	local pWeapon = MyTable.Weapon
+	local flDot = IsValid( pWeapon ) && ( 1 - math_max( pWeapon.Primary_flSpreadX || .05, pWeapon.Primary_flSpreadY || .05 ) ) || .95
+	local tAllies = MyTable.GetAlliesByClass( self, MyTable )
+	if tAllies then
+		for pAlly in pairs( tAllies ) do
+			if !IsValid( pAlly ) || self == pAlly then continue end
+			local vPoint = pAlly:NearestPoint( vShoot )
+			if ( vPoint - vShoot ):GetNormalized():Dot( vAim ) > flDot then return end
+		end
+	end
 	if vec then
-		local ang, aim = ( vec - v ):Angle(), a:Angle()
-		if math_abs( math_AngleDifference( ang.y, aim.y ) ) > 1 || math_abs( math_AngleDifference( ang.p, aim.p ) ) > 1 then return end
+		local aCurrent, aAim = ( vec - vShoot ):Angle(), vAim:Angle()
+		if math_abs( math_AngleDifference( aCurrent.y, aAim.y ) ) > 1 || math_abs( math_AngleDifference( aCurrent.p, aAim.p ) ) > 1 then return end
 	end
 	return true
 end

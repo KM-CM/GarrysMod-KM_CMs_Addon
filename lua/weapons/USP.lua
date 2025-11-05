@@ -1,8 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
 SWEP.Category = "Pistols"
-SWEP.PrintName = "#USP"
-if CLIENT then language.Add( "USP", "USP" ) end
+SWEP.PrintName = "#USP"
 SWEP.Instructions = "Primary to shoot, secondary to attach or detach the silencer."
 SWEP.Purpose = "Universal Self-Loading Pistol, with a Silencer."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_pist_usp.mdl"

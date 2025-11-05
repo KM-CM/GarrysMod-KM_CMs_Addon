@@ -2,7 +2,6 @@ DEFINE_BASECLASS "BaseThrowable"
 
 SWEP.Category = "Throwables"
 SWEP.PrintName = "#FlashBang"
-if CLIENT then language.Add( "FlashBang", "Flashbang" ) end
 SWEP.Purpose = "Flashbang grenade. Unknown manufacturer."
 SWEP.ViewModel = Model "models/weapons/cstrike/c_eq_flashbang.mdl"
 SWEP.WorldModel = Model "models/weapons/w_eq_flashbang.mdl"

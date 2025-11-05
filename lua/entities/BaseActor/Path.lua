@@ -299,69 +299,65 @@ function ENT:ComputeFlankPath( Path, pEnemy ) return self:ComputePath( Path, pEn
 //	end
 
 local sv_gravity = GetConVar "sv_gravity"
+
+// Tries to jump to vTarget
+function ENT:Jump( vTarget )
+	local flGravity = sv_gravity:GetFloat()
+	local vVelocity = self.loco:GetVelocity()
+	if vVelocity == vector_origin then vVelocity = ( vTarget - self:GetPos() ):GetNormalized() end
+	local dVelocityFlat = Vector( vVelocity )
+	dVelocityFlat.z = 0
+	dVelocityFlat:Normalize()
+	local dTargetFlat = vTarget - self:GetPos()
+	dTargetFlat.z = 0
+	dTargetFlat:Normalize()
+	local flFlatDistance = self:GetPos():Distance2D( vTarget )
+	local flDifference = ( 1 - math.max( 0, dVelocityFlat:Dot( dTargetFlat ) ) ) * flFlatDistance
+	if flDifference > ( self.flPathTolerance * .5 ) then return end
+	local flOriginal = self.loco:GetJumpHeight() // NOT flJumpHeight!!!
+	local vStart = self:GetPos()
+	local vMiddle = LerpVector( .5, vStart, vTarget )
+	local flZ = vStart.z
+	local flJumpHeight = flOriginal * math.min( util.TraceLine( {
+		start = vStart,
+		endpos = vStart + Vector( 0, 0, flOriginal ),
+		mask = MASK_SOLID,
+		filter = self
+	} ).HitPos.z - flZ, util.TraceLine( {
+		start = vMiddle,
+		endpos = vMiddle + Vector( 0, 0, flOriginal ),
+		mask = MASK_SOLID,
+		filter = self
+	} ).HitPos.z - flZ, util.TraceLine( {
+		start = vTarget,
+		endpos = vTarget + Vector( 0, 0, flOriginal ),
+		mask = MASK_SOLID,
+		filter = self
+	} ).HitPos.z - flZ )
+	local flJumpLength = vVelocity:Length() * 2 * ( 2 * flGravity * flJumpHeight ) ^ .5 / flGravity
+	if self:GetPos():DistToSqr( vTarget ) > ( flJumpLength * flJumpLength ) then return end
+	self.loco:SetJumpHeight( vTarget.z - vStart.z + ( flFlatDistance <= ( self.flPathTolerance * 8 ) && 0 || ( ( ( flFlatDistance * .5 + self:OBBMaxs().x ) / vVelocity:Length() ) * flGravity ) ^ 2 / ( 2 * flGravity ) ) )
+	self.loco:Jump()
+	self.loco:SetJumpHeight( flOriginal )
+	self.m_flJumpStartTime = CurTime()
+	self.m_bJumping = true
+end
+
+ENT.vLastAcceleration = Vector()
 function ENT:HandleJumpingAlongPath( Path, tFilter )
 	Path:Update( self )
-	local goal = Path:GetCurrentGoal()
-	if goal && CurTime() > ( self.flNextJumpInternal || 0 ) then
-		local vel = GetVelocity( self )
-		local vlen = vel:Length()
-		local len = math.min( math.max( self:OBBMaxs().z * 2, vlen ), Path:GetLength() )
-		local dir
-		if Path:GetClosestPosition( self:GetPos() ):DistToSqr( self:GetPos() ) <= ( self.flPathTolerance * self.flPathTolerance ) then
-			dir = goal.forward
-			dir.z = 0
-			dir:Normalize()
-		else
-			dir = goal.pos - self:GetPos()
-			dir.z = 0
-			dir:Normalize()
-		end
-		local tr = util.TraceLine {
-			start = self:GetPos() + self:OBBCenter(),
-			endpos = self:GetPos() + self:OBBCenter() + dir * len,
-			filter = tFilter || { self },
-			mask = MASK_SOLID
-		}
-		local ent = tr.Entity
-		// FROM KM_CM's RANDOM THINGS:
-		/*At First I Thought It was a Good Idea to Jump Above Allies, But in Practice,
-		That Just Made Hordes of Antlion Chaotic. Because They werent Jumping to Intercept,
-		Which was a Mechanic I was Creating, But Instead Jumping Above EachOther*/
-		if tr.Hit && ( !IsValid( ent ) || self:Disposition( ent ) != D_LI ) then
-			if self:IsOnGround() then
-				local flNewHeight = 0 // NOT Related to flHeight!
-				local flMaxJumpLength = ( 2 * sv_gravity:GetFloat() * self.loco:GetJumpHeight() ) ^ .5
-				local bCantClimb = !self.bCanClimb
-				while true do
-					flNewHeight = flNewHeight + 16
-					if bCantClimb && flNewHeight > self.loco:GetJumpHeight() || util.TraceLine( {
-						start = self:GetPos() + self:GetUp() * self:OBBMaxs().z,
-						endpos = self:GetPos() + self:GetUp() * self:OBBMaxs().z + Vector( 0, 0, flNewHeight ),
-						filter = { self },
-						mask = MASK_SOLID
-					} ).Hit then break end
-					local tr = util.TraceLine {
-						start = self:GetPos() + self:OBBCenter() + Vector( 0, 0, flNewHeight ),
-						endpos = self:GetPos() + self:OBBCenter() + Vector( 0, 0, flNewHeight ) + dir * len,
-						filter = { self },
-						mask = MASK_SOLID
-					}
-					if tr.Hit then continue end
-					local flDist = tr.HitPos:Distance( self:GetPos() )
-					if tr.HitPos:Distance2D( self:GetPos() ) > flMaxJumpLength then break end
-					local ntr = util.TraceLine {
-						start = tr.HitPos,
-						endpos = tr.HitPos + Vector( 0, 0, flDist ),
-						filter = { self },
-						mask = MASK_SOLID
-					}
-					if ntr.Hit then continue end
-					self:SetCrouchTarget( 0 )
-					self.loco:JumpAcrossGap( tr.HitPos, self:GetForward() )
-					hook.Run( "OnPlayerJump", self, self:GetJumpPower() )
-					self.flNextJumpInternal = CurTime() + .1
-				end
+	local goal, tNextGoal = Path:GetCurrentGoal(), Path:NextSegment()
+	if goal && tNextGoal then
+		if self:IsOnGround() then
+			self.vLastAcceleration = Vector()
+			self.loco:Approach( goal.pos, 1 )
+			if goal.type == 2 || goal.type == 3 then
+				self:Jump( tNextGoal.pos )
 			end
+		//	else
+		//		// Air acceleration, maybe? I'm too lazy to find out how sv_airaccelerate works
 		end
 	end
 end
+
+function ENT:HandleStuck() self.loco:ClearStuck() end

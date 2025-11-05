@@ -24,8 +24,6 @@ list.Set( "NPC", "HumanTerrorist", {
 	}
 } )
 
-if CLIENT then language.Add( "HumanTerrorist", "Terrorist" ) end
-
 if !SERVER then return end
 
 if !CLASS_HUMAN_TERRORIST then Add_NPC_Class "CLASS_HUMAN_TERRORIST" end

@@ -47,7 +47,7 @@ function ENT:SearchNodes( vPos, flSpacing, fWeighter )
 	if !vPos then vPos = self:GetPos() end
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return function() return nil end end
-	if !flSpacing then flSpacing = self:BoundingRadius() end
+	flSpacing = self:BoundingRadius() * ( flSpacing || 1 )
 	local tQueue, tVisited = { { true, area, 0, 0, self:GetPos() } }, { [ area:GetID() ] = true }
 	local bCantClimb, flJumpHeight, flNegDeathDrop = !self.bCanClimb, self.loco:GetJumpHeight(), -self.loco:GetDeathDropHeight()
 	local tAllies = self:GetAlliesByClass()
