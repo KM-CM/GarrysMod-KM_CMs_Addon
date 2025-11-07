@@ -1,6 +1,5 @@
-/*NOTE: Pitch Shifting is Not Supported for Now!
-Do NOT Use CSoundPatch::ChangePitch UnTil It is Implemented,
-Because when It is ( and if It is ) - It Might Break!*/
+// NOTE: Pitch shifting is not supported yet! Do NOT use CSoundPatch::ChangePitch until it is implemented,
+// because when it is (and if it is, tell me if you need it) - it will break!
 
 local sound_Add = sound.Add
 sound_Add {
@@ -436,7 +435,19 @@ hook.Add( "Tick", "Director", function()
 					PlyTable.DR_tMusic[ PlyTable.DR_ThreatAware ] = pPlayer
 				end
 			end
-			if bEnd then PlyTable.DR_pCombatAfterBurner = nil end
+			if bEnd then
+				local tMusic = {}
+				for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+					if ELayer == ThreatAware then
+						tMusic[ ELayer ] = pPlayer
+					else
+						if ELayer != EFromCombatWhich then tMusic[ ELayer ] = pPlayer end
+					end
+					pPlayer:Tick()
+				end
+				PlyTable.DR_tMusic = tMusic
+				PlyTable.DR_pCombatAfterBurner = nil
+			end
 		elseif bFromCombat then
 			PlyTable.DR_bBeganCombatAfterBurner = nil
 			local tAfterBurner = table.Random( DIRECTOR_MUSIC_TABLE[ DIRECTOR_COMBAT_AFTERBURNER ] )
