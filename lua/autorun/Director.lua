@@ -281,7 +281,6 @@ hook.Add( "Tick", "Director", function()
 		if !PlyTable.DR_tMusicNext then PlyTable.DR_tMusicNext = {} end
 		local tMusicEntities = {}
 		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( PlyTable.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
-		local bToCombat, bFromCombat, EFromCombatWhich
 		if CurTime() > ( PlyTable.DR_flNextUpdate || 0 ) then
 			local ThreatAwareLast = PlyTable.DR_ThreatAwareLast || -1
 			local THREAT, flIntensity = DIRECTOR_THREAT_NULL, 0
@@ -342,50 +341,74 @@ hook.Add( "Tick", "Director", function()
 				if Director_UpdateAwareness( ply, ent ) <= DIRECTOR_THREAT_NULL then continue end
 				tMusicEntities[ ent ] = true
 			end
-			if PlyTable.DR_ThreatAware >= DIRECTOR_THREAT_COMBAT && ThreatAwareLast < DIRECTOR_THREAT_COMBAT then bToCombat = true
-			elseif PlyTable.DR_ThreatAware < DIRECTOR_THREAT_COMBAT && ThreatAwareLast >= DIRECTOR_THREAT_COMBAT then
-				bFromCombat = true
-				EFromCombatWhich = PlyTable.DR_ThreatAwareLast
-			end
-			PlyTable.DR_ThreatAwareLast = PlyTable.DR_ThreatAware
 		end
-		ply:SetNW2Int( "DR_ThreatAware", PlyTable.DR_ThreatAware )
-		PlyTable.DR_tMusicEntities = tMusicEntities
 		// TODO: Add support for crossfading the themes of other types and next theme selection
 		local ThreatAware = PlyTable.DR_ThreatAware
+		local bToCombat, bFromCombat, EFromWhich
+		if ThreatAware >= DIRECTOR_THREAT_COMBAT then
+			local bAnyway = true
+			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+				if ELayer == ThreatAware && pPlayer.m_flVolume > 0 then bAnyway = nil continue end
+				if ELayer < DIRECTOR_THREAT_COMBAT && pPlayer.m_flVolume > 0 then
+					bToCombat = true
+					EFromWhich = ELayer
+				end
+			end
+			if bAnyway then bToCombat = true end
+		else
+			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+				if ELayer >= DIRECTOR_THREAT_COMBAT && pPlayer.m_flVolume > 0 then
+					bFromCombat = true
+					EFromWhich = ELayer
+				end
+			end
+		end
+		ply:SetNW2Int( "DR_ThreatAware", ThreatAware )
+		PlyTable.DR_tMusicEntities = tMusicEntities
 		for l, s in pairs( PlyTable.DR_tMusic ) do s:Tick() s:UpdateInternal() end
 		local pCombatTransition = PlyTable.DR_pCombatTransition
-		local pCombatAfterBurner = PlyTable.DR_pCombatAfterBurner
 		if pCombatTransition then
-			local flOriginalVolumeA, flOriginalVolumeB
-			EFromCombatWhich = pCombatTransition.m_EFromCombatWhich
-			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
-				if ELayer == ThreatAware then
-					flOriginalVolumeB = pPlayer.m_flVolume
-				elseif ELayer == EFromCombatWhich then
-					flOriginalVolumeA = pPlayer.m_flVolume
+			if !PlyTable.DR_bBeganCombatAfterBurner then
+				local flOriginalVolumeA, flOriginalVolumeB
+				EFromWhich = pCombatTransition.m_EFromWhich
+				for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+					if ELayer == ThreatAware then
+						flOriginalVolumeB = pPlayer.m_flVolume
+					elseif ELayer == EFromWhich then
+						flOriginalVolumeA = pPlayer.m_flVolume
+					end
+				end
+				local flVolumeA, flVolumeB, bEnd = pCombatTransition:Tick( flOriginalVolumeA, flOriginalVolumeB )
+				pCombatTransition:UpdateInternal()
+				flVolumeA = flVolumeA || 0
+				local bLayer = true
+				for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+					if ELayer == ThreatAware then
+						pPlayer:UpdateInternal( flVolumeB )
+						bLayer = nil
+					else pPlayer:UpdateInternal( flVolumeA ) end
+					pPlayer:Tick()
+				end
+				if flVolumeB && bLayer && ThreatAware >= DIRECTOR_THREAT_COMBAT then
+					local tPlayer = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
+					if tPlayer then
+						local pPlayer = Director_CreateMusicPlayerFromTableInternal( ply, tPlayer )
+						pPlayer:UpdateInternal( flVolumeB )
+						PlyTable.DR_tMusic[ ThreatAware ] = pPlayer
+					end
+				end
+				if bEnd then
+					local tMusic = {}
+					for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
+						if ELayer >= DIRECTOR_THREAT_COMBAT then
+							tMusic[ ELayer ] = pPlayer
+						end
+						pPlayer:Tick()
+					end
+					PlyTable.DR_tMusic = tMusic
+					PlyTable.DR_pCombatTransition = nil
 				end
 			end
-			local flVolumeA, flVolumeB, bEnd = pCombatTransition:Tick( flOriginalVolumeA, flOriginalVolumeB )
-			pCombatTransition:UpdateInternal()
-			flVolumeA = flVolumeA || 0
-			local bLayer = true
-			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
-				if ELayer == ThreatAware then
-					pPlayer:UpdateInternal( flVolumeB )
-					bLayer = nil
-				else pPlayer:UpdateInternal( flVolumeA ) end
-				pPlayer:Tick()
-			end
-			if flVolumeB && bLayer && ThreatAware >= DIRECTOR_THREAT_COMBAT then
-				local tPlayer = table.Random( DIRECTOR_MUSIC_TABLE[ ThreatAware ] )
-				if tPlayer then
-					local pPlayer = Director_CreateMusicPlayerFromTableInternal( ply, tPlayer )
-					pPlayer:UpdateInternal( flVolumeB )
-					PlyTable.DR_tMusic[ ThreatAware ] = pPlayer
-				end
-			end
-			if bEnd then PlyTable.DR_pCombatTransition = nil end
 		elseif bToCombat then
 			local tTransition = table.Random( DIRECTOR_MUSIC_TABLE[ DIRECTOR_COMBAT_TRANSITION ] )
 			if tTransition then
@@ -393,22 +416,23 @@ hook.Add( "Tick", "Director", function()
 				pCombatTransition.m_flVolume = 1
 				for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
 					if pPlayer.m_flVolume >= 0 then
-						pCombatTransition.m_EFromCombatWhich = ELayer
+						pCombatTransition.m_EFromWhich = ELayer
 						break
 					end
 				end
 				PlyTable.DR_pCombatTransition = pCombatTransition
 			end
 		end
+		local pCombatAfterBurner = PlyTable.DR_pCombatAfterBurner
 		if pCombatAfterBurner then
 			if !PlyTable.DR_bBeganCombatAfterBurner && pCombatTransition then continue end
 			PlyTable.DR_bBeganCombatAfterBurner = true
 			local flOriginalVolumeA, flOriginalVolumeB
-			EFromCombatWhich = pCombatAfterBurner.m_EFromCombatWhich
+			EFromWhich = pCombatAfterBurner.m_EFromWhich
 			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
 				if ELayer == ThreatAware then
 					flOriginalVolumeB = pPlayer.m_flVolume
-				elseif ELayer == EFromCombatWhich then
+				elseif ELayer == EFromWhich then
 					flOriginalVolumeA = pPlayer.m_flVolume
 				end
 			end
@@ -421,7 +445,7 @@ hook.Add( "Tick", "Director", function()
 					pPlayer:UpdateInternal( flVolumeB )
 					bLayer = nil
 				else
-					if ELayer == EFromCombatWhich then
+					if ELayer == EFromWhich then
 						pPlayer:UpdateInternal( flVolumeA )
 					else pPlayer:UpdateInternal( 0 ) end
 				end
@@ -438,24 +462,24 @@ hook.Add( "Tick", "Director", function()
 			if bEnd then
 				local tMusic = {}
 				for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do
-					if ELayer == ThreatAware then
+					if ELayer < DIRECTOR_THREAT_COMBAT then
 						tMusic[ ELayer ] = pPlayer
-					else
-						if ELayer != EFromCombatWhich then tMusic[ ELayer ] = pPlayer end
 					end
 					pPlayer:Tick()
 				end
 				PlyTable.DR_tMusic = tMusic
 				PlyTable.DR_pCombatAfterBurner = nil
 			end
-		elseif bFromCombat then
+		else
 			PlyTable.DR_bBeganCombatAfterBurner = nil
-			local tAfterBurner = table.Random( DIRECTOR_MUSIC_TABLE[ DIRECTOR_COMBAT_AFTERBURNER ] )
-			if tAfterBurner then
-				pCombatAfterBurner = Director_CreateMusicPlayerFromTableInternal( ply, tAfterBurner )
-				pCombatAfterBurner.m_flVolume = 1
-				pCombatAfterBurner.m_EFromCombatWhich = EFromCombatWhich
-				PlyTable.DR_pCombatAfterBurner = pCombatAfterBurner
+			if bFromCombat then
+				local tAfterBurner = table.Random( DIRECTOR_MUSIC_TABLE[ DIRECTOR_COMBAT_AFTERBURNER ] )
+				if tAfterBurner then
+					pCombatAfterBurner = Director_CreateMusicPlayerFromTableInternal( ply, tAfterBurner )
+					pCombatAfterBurner.m_flVolume = 1
+					pCombatAfterBurner.m_EFromWhich = EFromWhich
+					PlyTable.DR_pCombatAfterBurner = pCombatAfterBurner
+				end
 			end
 		end
 	end
@@ -469,6 +493,7 @@ hook.Add( "PostCleanupMap", "Director", function()
 		PlyTable.DR_pCombatTransition = nil
 		PlyTable.DR_pCombatAfterBurner = nil
 		PlyTable.DR_ThreatAwareLast = nil
+		PlyTable.DR_bBeganCombatAfterBurner = nil
 		ply:ConCommand "stopsound"
 	end
 end )
