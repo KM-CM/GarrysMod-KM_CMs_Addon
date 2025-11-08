@@ -1,4 +1,4 @@
-// See Hands.lua for credits!
+// See Hands.lua for the credits!
 
 DEFINE_BASECLASS "BaseWeapon"
 
@@ -68,9 +68,6 @@ function SWEP:OnRemove()
 	local pWaterLoop = self.pWaterLoop
 	if pWaterLoop then pWaterLoop:Stop() end
 end
-
-// Don't allow switching
-function SWEP:Holster() end
 
 local CEntity_Remove = FindMetaTable( "Entity" ).Remove
 
