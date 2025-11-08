@@ -423,8 +423,16 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		return
 	else
 		local p = ply:GetWeapon "Hands"
-		if !IsValid( p ) then p = ply:Give "Hands" end
-		if !IsValid( ply:GetActiveWeapon() ) && IsValid( p ) then cmd:SelectWeapon( p ) end
+		if !IsValid( p ) then
+			local sRestoreGun = ply.GAME_sRestoreGun
+			p = ply:Give "Hands"
+			ply.GAME_sRestoreGun = sRestoreGun
+		end
+		if IsValid( p ) && !IsValid( ply:GetActiveWeapon() ) then
+			local sRestoreGun = ply.GAME_sRestoreGun
+			cmd:SelectWeapon( p )
+			ply.GAME_sRestoreGun = sRestoreGun
+		end
 		local p = ply:GetWeapon "HandsSwimInternal"
 		if IsValid( p ) then p:Remove() end
 	end
