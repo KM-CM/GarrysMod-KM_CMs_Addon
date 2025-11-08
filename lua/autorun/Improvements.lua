@@ -134,7 +134,7 @@ hook.Add( "PlayerFootstep", "Improvements", function( ply, ... )
 	if ply:GetNW2Bool "CTRL_bSliding" then return true end
 	if ply:WaterLevel() > 0 then
 		local pEffectData = EffectData()
-		pEffectData:SetOrigin( vec )
+		pEffectData:SetOrigin( vec || ply:GetPos() )
 		pEffectData:SetScale( ply:BoundingRadius() * .2 )
 		pEffectData:SetFlags( 0 )
 		util.Effect( "watersplash", pEffectData )
