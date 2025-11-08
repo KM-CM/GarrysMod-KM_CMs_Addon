@@ -218,6 +218,12 @@ hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, 
 	end
 end )
 
+hook.Add( "GetFallDamage", "GameImprovements", function( ply, flSpeed )
+	local flRatio = flSpeed / ( ply:GetJumpPower() * 1.5 )
+	if flRatio <= 1 then return 0 end
+	return flRatio * 32
+end )
+
 TRACER_COLOR = {
 	Bullet = "255 48 0 1024",
 	AR2Tracer = "48 255 255 1024"
@@ -372,9 +378,6 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 
 	ply:SetLadderClimbSpeed( ply:IsSprinting() && ply:GetRunSpeed() || ply:IsWalking() && ply:GetSlowWalkSpeed() || ply:GetWalkSpeed() )
 
-	local p = ply:GetWeapon "Hands"
-	if !IsValid( p ) then p = CPlayer_Give( ply, "Hands" ) end
-	if !IsValid( ply:GetActiveWeapon() ) then ply:SetActiveWeapon( p ) end
 	local veh = ply.GAME_pVehicle
 	if IsValid( veh ) then
 		if !ply.GAME_sRestoreGun then
@@ -390,7 +393,11 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		end
 		veh:PlayerControls( ply, cmd )
 		cmd:AddKey( IN_DUCK )
-		cmd:SelectWeapon( p )
+		local p = ply:GetWeapon "Hands"
+		if !IsValid( p ) then p = ply:Give "Hands" end
+		if IsValid( p ) then cmd:SelectWeapon( p ) end
+		local p = ply:GetWeapon "HandsSwimInternal"
+		if IsValid( p ) then p:Remove() end
 		return
 	end
 
@@ -407,9 +414,19 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			local w = ply:GetActiveWeapon()
 			if IsValid( w ) then ply.GAME_sRestoreGun = w:GetClass() end
 		end
-		cmd:SelectWeapon( p )
+		local p = ply:GetWeapon "Hands"
+		if IsValid( p ) then p:Remove() end
+		local p = ply:GetWeapon "HandsSwimInternal"
+		if !IsValid( p ) then p = ply:Give "HandsSwimInternal" end
+		if IsValid( p ) then cmd:SelectWeapon( p ) end
 		ply:SetNW2Bool( "CTRL_bSliding", false )
 		return
+	else
+		local p = ply:GetWeapon "Hands"
+		if !IsValid( p ) then p = ply:Give "Hands" end
+		if !IsValid( ply:GetActiveWeapon() ) && IsValid( p ) then cmd:SelectWeapon( p ) end
+		local p = ply:GetWeapon "HandsSwimInternal"
+		if IsValid( p ) then p:Remove() end
 	end
 
 	local s = ply.GAME_sRestoreGun
@@ -769,6 +786,16 @@ hook.Add( "Move", "GameImprovements", function( ply, mv )
 			if CPlayer_KeyDown( ply, IN_SPEED ) && CPlayer_KeyDown( ply, IN_DUCK ) && QuickSlide_Can( ply, t ) then QuickSlide_Start( ply, t ) end
 		end
 		local v = QuickSlide_Handle( ply ) if v then mv:SetVelocity( v ) end
+	end
+end )
+
+hook.Add( "PlayerFootstep", "GameImprovements", function( ply, vec, _, _, flVolume )
+	if CEntity_WaterLevel( ply ) > 0 then
+		local pEffectData = EffectData()
+		pEffectData:SetOrigin( vec )
+		pEffectData:SetScale( ply:BoundingRadius() * .2 )
+		pEffectData:SetFlags( 0 )
+		util.Effect( "watersplash", pEffectData )
 	end
 end )
 

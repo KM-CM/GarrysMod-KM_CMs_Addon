@@ -101,14 +101,9 @@ function ENT:Behaviour()
 	end
 end
 
-function ENT:OnDeath( dmg ) end
-
 function ENT:OnKilled( dmg )
-	if self.bDead then return end
+	if BaseClass.OnKilled( self, dmg ) then return end
 	self:EmitSound( dmg:IsDamageType( DMG_FALL ) && "Player.FallGib" || "Player.Death" )
-	self:OnDeath( dmg )
-	self.bDead = true
-	self:ActorOnDeath()
 	hook.Run( "OnNPCKilled", self, dmg:GetAttacker(), dmg:GetInflictor() )
 	self:BecomeRagdoll( dmg )
 end

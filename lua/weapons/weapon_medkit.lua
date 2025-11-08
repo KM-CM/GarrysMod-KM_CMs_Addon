@@ -93,7 +93,8 @@ function SWEP:DoHeal( ent, MyTable )
 	if flHeal > 0 then
 		flHeal = math_min( flMaxHealth - flHealth, flHeal )
 		local flAmmo = self:Clip1()
-		if flAmmo < flHeal then MyTable.HealFail( self, ent, MyTable ) return false end
+		if flAmmo <= 0 then MyTable.HealFail( self, ent, MyTable ) return false end
+		flHeal = math_min( flAmmo, flHeal )
 		self:SetClip1( flAmmo - flHeal )
 		ent:SetHealth( flHealth + flHeal )
 	else flHeal = 0 end

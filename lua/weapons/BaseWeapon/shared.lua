@@ -216,10 +216,12 @@ if CLIENT then
 		elseif bRight then
 			vViewTargetAngle.z = vViewTargetAngle.z + MOVE_RIGHT_ROLL
 		end
+		local flRatio = BEZIER_MIMICRY_RATIO
+		if MyTable.bJumpingNotAnimated then flRatio = 1 end
 		local f = MyTable.vBezier
-		if f then vViewTarget = vViewTarget + f * BEZIER_MIMICRY_RATIO end
+		if f then vViewTarget = vViewTarget + f * flRatio end
 		f = MyTable.vBezierAngle
-		if f then f = f.x vViewTargetAngle.x = vViewTargetAngle.x + f * BEZIER_MIMICRY_RATIO end
+		if f then f = f.x vViewTargetAngle.x = vViewTargetAngle.x + f * flRatio end
 		vViewFinal = LerpVector( 5 * FrameTime(), vViewFinal, vViewTarget )
 		vViewFinalAngle = LerpVector( 5 * FrameTime(), vViewFinalAngle, vViewTargetAngle )
 		ang:RotateAroundAxis( ang:Right(), vViewFinalAngle.x )
@@ -282,7 +284,7 @@ if CLIENT then
 		else
 			vTarget, vTargetAngle = Vector( 0, 0, 0 ), Vector( 0, 0, 0 )
 		end
-		if bInCover then
+		if !MyTable.bCoverNotAnimated && bInCover then
 			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
 				local f = CEntity_GetNW2Int( ply, "CTRL_Variants" )
 				if f == COVER_VARIANTS_RIGHT then
@@ -318,15 +320,14 @@ if CLIENT then
 					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelY )
 				elseif p == COVER_BLINDFIRE_LEFT then
 					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelX )
-				elseif p == COVER_BLINDFIRE_RIGHT then
-				end
+				elseif p == COVER_BLINDFIRE_RIGHT then end
 			end
 			local bOnGround = CEntity_IsOnGround( ply )
 			if CPlayer_InVehicle( ply ) then
 				bOnGroundLast = true
 			elseif bOnGround then
 				bOnGroundLast = true
-				if !bSliding && bSprinting then
+				if !bSliding && bSprinting && !MyTable.bSprintNotAnimated then
 					local f = CEntity_GetVelocity( ply ):Length() / CPlayer_GetRunSpeed( ply ) * ( MyTable.bPistolSprint && 1.25 || .625 ) * MyTable.flBobScale
 					local flBreathe = RealTime() * 18
 					if MyTable.bPistolSprint then
@@ -377,7 +378,7 @@ if CLIENT then
 					local pt = BezierY( f, 0, -4.36, 10 )
 					local yw = xx
 					local rl = BezierY( f, 0, -10.82, -5 )
-					local v = Vector( xx, yy, zz )
+					local v = MyTable.bJumpingNotAnimated && Vector( xx, 0, 0 ) || Vector( xx, yy, zz )
 					MyTable.vBezier = v
 					vTarget = vTarget + v * 2
 					local v = Vector( pt, yw, rl )
@@ -387,7 +388,7 @@ if CLIENT then
 					local flBreathe = RealTime() * 30
 					MyTable.vBezier = Vector( 0, 0, -5 )
 					MyTable.vBezierAngle = Vector( 10, 0, -5 )
-					local f = ( 1 / BEZIER_MIMICRY_RATIO )
+					local f = 1 / BEZIER_MIMICRY_RATIO
 					vTarget = vTarget + Vector( math_cos( flBreathe * .5 ) * .0625, 0, -5 * f + ( math_sin( flBreathe / 3 ) * .0625 ) )
 					vTargetAngle = vTargetAngle + Vector( 10 * f - ( math_sin( flBreathe / 3 ) * .25 ), math_cos( flBreathe * .5 ) * .25, -5 )
 				elseif RealTime() <= flLandTime then
@@ -398,7 +399,7 @@ if CLIENT then
 					local pt = BezierY( f, 0, -4.36, 10 )
 					local yw = xx
 					local rl = BezierY( f, 0, -10.82, -5 )
-					local v = Vector( xx, yy, zz )
+					local v = MyTable.bJumpingNotAnimated && Vector( xx, 0, 0 ) || Vector( xx, yy, zz )
 					MyTable.vBezier = v
 					vTarget = vTarget + v * 2
 					local v = Vector( pt, yw, rl )

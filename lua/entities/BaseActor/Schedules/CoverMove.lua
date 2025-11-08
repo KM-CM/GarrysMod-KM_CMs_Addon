@@ -15,13 +15,6 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
 	local enemy, trueenemy = self:SetupEnemy( enemy )
-	local tShootables = {}
-	for enemy in pairs( tEnemies ) do
-		if !IsValid( enemy ) || !HasRangeAttack( enemy ) then continue end
-		for _, vec in ipairs( self:CalcEnemyShootPositions( enemy ) ) do
-			table.insert( tShootables, { vec, enemy } )
-		end
-	end
 	local c = self:GetWeaponClipPrimary()
 	if c != -1 && c <= 0 then self:WeaponReload() end
 	if self.vCover then

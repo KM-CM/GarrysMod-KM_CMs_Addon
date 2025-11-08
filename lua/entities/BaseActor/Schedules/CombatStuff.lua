@@ -15,61 +15,6 @@ function ENT:DLG_Suppressed() end
 // See the code, I have no easy way of explaining this one
 ENT.flSuppressionTraceFraction = .8
 
-// Try to guess from where this enemy might shoot us from
-function ENT:CalcEnemyShootPositions( enemy )
-	local vPos = enemy:GetPos()
-	local dir = ( vPos - self:GetPos() ):GetNormalized()
-	local dright = dir:Angle():Right()
-	if enemy.GetHull && enemy.GetHullDuck then
-		local vMins, vMaxs = enemy:GetHull()
-		local vDuckMins, vDuckMaxs = enemy:GetHullDuck()
-		local vOffStanding, vOffDucking = Vector( 0, 0, vMaxs.z ), Vector( 0, 0, vDuckMaxs.z )
-		local flOff = math.max( math.abs( enemy:OBBMaxs().x ), math.abs( enemy:OBBMins().x ) ) * 4
-		local vLeft = vPos + dright * flOff
-		local vRight = vPos - dright * flOff
-		if util.TraceHull( {
-			start = vLeft,
-			endpos = vLeft,
-			mins = enemy:OBBMins(),
-			maxs = enemy:OBBMaxs(),
-			filter = enemy
-		} ).Hit then vLeft = nil end
-		if util.TraceHull( {
-			start = vRight,
-			endpos = vRight,
-			mins = enemy:OBBMins(),
-			maxs = enemy:OBBMaxs(),
-			filter = enemy
-		} ).Hit then vRight = nil end
-		if vLeft && vRight then return { vPos + enemy:OBBCenter(), vLeft + vOffStanding, vLeft + vOffDucking, vRight + vOffStanding, vRight + vOffDucking }
-		elseif vLeft then return { vPos + vOffStanding, vPos + vOffDucking, vLeft + vOffStanding, vLeft + vOffDucking }
-		elseif vRight then return { vPos + vOffStanding, vPos + vOffDucking, vRight + vOffStanding, vRight + vOffDucking }
-		else return { vPos + vOffStanding, vPos + vOffDucking } end
-		return
-	end
-	local flOff = math.max( math.abs( enemy:OBBMaxs().x ), math.abs( enemy:OBBMins().x ) ) * 4
-	local vLeft = vPos + dright * flOff
-	local vRight = vPos - dright * flOff
-	if util.TraceHull( {
-		start = vLeft,
-		endpos = vLeft,
-		mins = enemy:OBBMins(),
-		maxs = enemy:OBBMaxs(),
-		filter = enemy
-	} ).Hit then vLeft = nil end
-	if util.TraceHull( {
-		start = vRight,
-		endpos = vRight,
-		mins = enemy:OBBMins(),
-		maxs = enemy:OBBMaxs(),
-		filter = enemy
-	} ).Hit then vRight = nil end
-	if vLeft && vRight then return { vPos + enemy:OBBCenter(), vLeft, vRight }
-	elseif vLeft then return { vPos + enemy:OBBCenter(), vLeft }
-	elseif vRight then return { vPos + enemy:OBBCenter(), vRight }
-	else return { vPos + enemy:OBBCenter() } end
-end
-
 ENT.flCoverMoveStart = 1
 ENT.flCoverMoveStartSuppressed = 0
 ENT.flCoverMoveStep = 1
@@ -77,6 +22,7 @@ ENT.flCoverMoveShort = 4
 ENT.flCoverMoveNotShort = 8
 
 local util_TraceLine = util.TraceLine
+local util_TraceHull = util.TraceHull
 
 function ENT:CalcMyExposedShootPositions( enemy, vPos, bDuck, vStand, vDuck )
 	local enemy, trueenemy = self:SetupEnemy( enemy )
@@ -489,7 +435,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			filter = { self, enemy, trueenemy }
 		} ).Hit then return false end
 		local f = self.flPathTolerance
-		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) then
+		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && !util_TraceHull( {
+			start = self:GetShootPos(),
+			endpos = v,
+			mask = MASK_SHOT_HULL,
+			mins = Vector( -12, -12, -12 ),
+			maxs = Vector( 12, 12, 12 ),
+			filter = { self, enemy, trueenemy }
+		} ).Hit then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
 			elseif sched.Time == -1 then
 				local b = true

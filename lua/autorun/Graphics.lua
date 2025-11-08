@@ -7,6 +7,16 @@ function GetBrightnessVC( v ) return v[ 1 ]  * .2126 + v[ 2 ] * .7152  + v[ 3 ] 
 // Also Same as Above Except Uses Red/Green/Blue Floats
 function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 + b * .00028313725 end
 
+if SERVER then
+	CreateConVar(
+		"bAllowThirdPerson",
+		0,
+		FCVAR_CHEAT + FCVAR_NEVER_AS_STRING,
+		"Allow clients to use thirdperson mode (bThirdPerson)?",
+		0, 1
+	)
+end
+
 if !CLIENT_DLL then return end
 
 local cThirdPerson = CreateClientConVar( "bThirdPerson", "0", true, nil, "Enable thirdperson?", 0, 1 )
@@ -126,6 +136,8 @@ local Vector, Angle = Vector, Angle
 
 local vThirdPersonCameraOffset = Vector()
 
+local bAllowThirdPerson = GetConVar "bAllowThirdPerson"
+
 hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfar )
 	local view = {
 		origin = origin,
@@ -136,7 +148,8 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 		drawviewer = false,
 	}
 	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then return view end
-	if cThirdPerson:GetBool() then
+	if !bAllowThirdPerson:GetBool() then cThirdPerson:SetBool()
+	elseif cThirdPerson:GetBool() then
 		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
 		view.drawviewer = true
 		local vTarget = Vector( -64, cThirdPersonShoulder:GetBool() && 24 || -24, ply:Crouching() && 24 || 8 )
@@ -158,6 +171,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 			start = view.origin,
 			endpos = view.origin + v:GetNormalized() * ( v:Length() + f ),
 			mask = MASK_VISIBLE_AND_NPCS,
+			filter = ply
 		} )
 		view.origin = tr.HitPos - tr.Normal * f
 		return view

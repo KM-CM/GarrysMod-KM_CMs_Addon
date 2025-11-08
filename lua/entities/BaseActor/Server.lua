@@ -8,6 +8,17 @@ ENT.GAME_flReach = 64
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
 
+function ENT:OnKilled( dmg )
+	if self.bDead then return true end
+	self.bDead = true
+	for wep in pairs( self.tWeapons ) do self:DropWeapon( wep ) end
+	local pAttacker = dmg:GetAttacker()
+	if IsValid( pAttacker ) then
+		local fAddFrags = pAttacker.AddFrags
+		if fAddFrags then fAddFrags( pAttacker, 1 ) end
+	end
+end
+
 function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
 	if flDuck < .5 then return end
 	local MyTable = CEntity_GetTable( self )
@@ -166,8 +177,6 @@ function ENT:KeyValue( k, v )
 	if f then f( self, k, v ) return end
 	self:HandleKeyValue( k, v )
 end
-
-function ENT:ActorOnDeath() for wep in pairs( self.tWeapons ) do self:DropWeapon( wep ) end end
 
 ENT.GAME_flSuppression = 0
 ENT.flSuppressionMax = 2
