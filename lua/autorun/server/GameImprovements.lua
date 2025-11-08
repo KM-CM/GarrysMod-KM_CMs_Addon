@@ -450,8 +450,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		cmd:RemoveKey( IN_SPEED )
 	end
 
-	local bAllDirectionalSprint = Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) && ( ( Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || ply:Crouching() )
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
+	local bAllDirectionalSprint = Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) || ( ( Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || ply:Crouching() )
 	if bAllDirectionalSprint then
 		ply:SetNW2Bool( "CTRL_bSprinting", false )
 		if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
@@ -796,16 +796,6 @@ hook.Add( "Move", "GameImprovements", function( ply, mv )
 	end
 end )
 
-hook.Add( "PlayerFootstep", "GameImprovements", function( ply, vec, _, _, flVolume )
-	if CEntity_WaterLevel( ply ) > 0 then
-		local pEffectData = EffectData()
-		pEffectData:SetOrigin( vec )
-		pEffectData:SetScale( ply:BoundingRadius() * .2 )
-		pEffectData:SetFlags( 0 )
-		util.Effect( "watersplash", pEffectData )
-	end
-end )
-
 local player_Iterator = player.Iterator
 hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	if _Comp then return end
@@ -850,4 +840,3 @@ if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 function CPlayer:GetNPCClass() return self.m_iClass || CLASS_HUMAN end
 function CPlayer:Classify() return self:GetNPCClass() end
 function CPlayer:SetNPCClass( i ) self.m_iClass = i end
-
