@@ -6,7 +6,6 @@ concommand.Add( "+drop", function() end )
 concommand.Add( "-drop", function( ply ) ply:DropWeapon() end )
 
 ACCELERATION_NORMAL = 5
-ACCELERATION_ACTUAL = ACCELERATION_NORMAL
 
 HUMAN_RUN_SPEED, HUMAN_PROWL_SPEED, HUMAN_WALK_SPEED, HUMAN_JUMP_HEIGHT = 300, 200, 75, 52
 
@@ -851,3 +850,4 @@ if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 function CPlayer:GetNPCClass() return self.m_iClass || CLASS_HUMAN end
 function CPlayer:Classify() return self:GetNPCClass() end
 function CPlayer:SetNPCClass( i ) self.m_iClass = i end
+
