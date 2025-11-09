@@ -160,7 +160,8 @@ function Director_CreateMusicPlayerFromTableInternal( ply, tbl, sSource )
 		// flVolume is completely up to the user,
 		// the actual volume is chosen in CDirectorMusicPlayer::UpdateInternal
 		tHandles = {}, // This one is used for public handles and uses the user's custom time
-		m_tHandles = {} // This one is used for private handles and uses the sound's true end time
+		m_tHandles = {}, // This one is used for private handles and uses the sound's true end time
+		m_tDeleteMeSoonEnough = {}
 	}, { __index = function( self, Key )
 		v = rawget( tbl, Key )
 		if v == nil then return rawget( CDirectorMusicPlayer, Key )
@@ -170,6 +171,7 @@ function Director_CreateMusicPlayerFromTableInternal( ply, tbl, sSource )
 end
 
 local SysTime = SysTime
+local table_insert = table.insert
 function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flActualLength )
 	if !flActualLength then flActualLength = SoundDuration( sound.GetProperties( Sound ).sound ) end
 	if !flHandleLength then flHandleLength = SoundDuration( sound.GetProperties( Sound ).sound ) end
@@ -181,9 +183,10 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 	ply.GAME_bNextSoundMute = true
 	Sound:Play()
 	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength - engine_TickInterval() * 3 }
-	self.m_tHandles[ Index ] = { Sound, flVolume, SysTime() + ( flActualLength || flHandleLength ) }
+	local t = self.m_tHandles[ Index ]
+	if t then table_insert( self.m_tDeleteMeSoonEnough, t ) end
+	self.m_tHandles[ Index ] = { Sound, flVolume, SysTime() + ( flActualLength || flHandleLength ) + engine_TickInterval() * 2 }
 	self:UpdateInternal()
-	return Sound // Just in Case
 end
 
 function CDirectorMusicPlayer:ApproachVolume( Index, flVolume, flSpeed )
@@ -209,18 +212,26 @@ function CDirectorMusicPlayer:UpdateInternal( f, s )
 	self.m_flVolume = flVolume
 	local tHandles = {}
 	for i, d in pairs( self.tHandles ) do
-		if SysTime() > d[ 2 ] then d[ 1 ]:Stop() continue end
+		if SysTime() > d[ 2 ] then continue end
 		tHandles[ i ] = d
 	end
 	self.tHandles = tHandles
 	local m_tHandles = {}
 	for i, d in pairs( self.m_tHandles ) do
-		if SysTime() > d[ 3 ] then d[ 1 ]:Stop() continue end
+		if SysTime() > d[ 3 ] then continue end
 		local s = d[ 1 ]
 		s:ChangeVolume( math.Clamp( .02, d[ 2 ] * flVolume, 1 ) )
 		m_tHandles[ i ] = d
 	end
 	self.m_tHandles = m_tHandles
+	local m_tDeleteMeSoonEnough = {}
+	for i, d in ipairs( self.m_tHandles ) do
+		if SysTime() > d[ 3 ] then continue end
+		local s = d[ 1 ]
+		s:ChangeVolume( math.Clamp( .02, d[ 2 ] * flVolume, 1 ) )
+		m_tDeleteMeSoonEnough[ i ] = d
+	end
+	self.m_tDeleteMeSoonEnough = m_tDeleteMeSoonEnough
 end
 
 local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Iterator, util.TraceLine

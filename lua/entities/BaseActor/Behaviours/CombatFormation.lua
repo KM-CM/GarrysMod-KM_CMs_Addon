@@ -6,12 +6,13 @@ function ENT:DLG_CombatFormationStack() return self:DLG_CombatFormationGeneral()
 // Used by SWAT; Stack Up by The Sides of The Lead
 function ENT:DLG_CombatFormationSide() return self:DLG_CombatFormationGeneral() end
 // Used Mid-Combat; Find Covers Around The Lead
-function ENT:DLG_CombatFormationCover() return self:DLG_CombatFormationGeneral() end // “WE'RE GOING IN, IN POSITION!”
+function ENT:DLG_CombatFormationCover() return self:DLG_CombatFormationGeneral() end
+
+function ENT:DLG_CombatFormationGeneral() end // “ALTOGETHER, WE'RE GOIN' IN!”
 
 function ENT:DLG_CombatFormationReady() end // “BEHIND COVER AND IN POSITION!”
-function ENT:DLG_CombatFormationMove() end // “Harakha, Yalla!”
 
-function ENT:DLG_CombatFormationGeneral() end
+function ENT:DLG_CombatFormationMove() end // “WHAT ARE YOU WAITIN' FO'?! GO! GET IN THERE!”
 
 Actor_RegisterSchedule( "CombatFormationMove", function( self, sched )
 	local vec = sched.Vector
@@ -103,7 +104,7 @@ Actor_RegisterBehaviour( "CombatFormation", {
 					s.bLead = nil
 					if s.bReached then iNum = iNum + 1 end
 				end
-				if iCount >= iNum then
+				if iNum >= iCount then
 					lead:DLG_CombatFormationMove( self.sType )
 					for ent in pairs( self.tPositions ) do
 						local s = ent:SetSchedule "Combat"

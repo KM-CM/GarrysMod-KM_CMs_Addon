@@ -229,10 +229,7 @@ TRACER_COLOR = {
 }
 local TRACER_COLOR = TRACER_COLOR
 
-TRACER_SIZE = {
-	Bullet = 4,
-	AR2Tracer = 4
-}
+TRACER_SIZE = { Bullet = 4 }
 local TRACER_SIZE = TRACER_SIZE
 
 local IsValid = IsValid

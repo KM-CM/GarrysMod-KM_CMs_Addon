@@ -25,18 +25,18 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 	local enemy, trueenemy = self:SetupEnemy( enemy )
 	if !self.bHoldFire && CurTime() > ( self.flLastEnemy + self.flHoldFireTime ) then self:DLG_HoldFire() end
 	if sched.bAdvance || sched.bRetreat then
+		local pPath = sched.pEnemyPath
+		if !pPath then pPath = Path "Follow" self:ComputeFlankPath( pPath, enemy ) sched.pEnemyPath = pPath end
 		if !sched.bFromCombatFormation && sched.bAdvance && !sched.bCheckedFormation then
-			local p = sched.pEnemyPath
-			if !p then p = Path "Follow" self:ComputePath( p, enemy:GetPos() ) end
-			local i = self:FindPathStackUpLine( p, tEnemies )
+			local i = self:FindPathStackUpLine( pPath, tEnemies )
 			if i && i > 256 then
-				p:MoveCursorTo( i )
-				local g = p:GetCurrentGoal()
+				pPath:MoveCursorTo( i )
+				local g = pPath:GetCurrentGoal()
 				if g then
 					local b = self:CreateBehaviour "CombatFormation"
-					local v = p:GetPositionOnPath( i )
+					local v = pPath:GetPositionOnPath( i )
 					b.Vector = v
-					b.Direction = ( p:GetPositionOnPath( i + 1 ) - v ):GetNormalized()
+					b.Direction = ( pPath:GetPositionOnPath( i + 1 ) - v ):GetNormalized()
 					b:AddParticipant( self )
 					b:GatherParticipants()
 					b:Initialize()
@@ -49,13 +49,10 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		self:Stand( self:GetCrouchTarget() )
 		local bAdvance = sched.bAdvance
 		local pIterator = sched[ bAdvance && "pAdvanceIterator" || "pRetreatIterator" ]
-		local vEnemy = enemy:GetPos()
-		local tFilter = IsValid( enemy.GAME_pVehicle ) && { self, enemy, enemy.GAME_pVehicle } || { self, enemy }
+		local vEnemy = enemy:GetPos() + enemy:OBBCenter()
 		if !pIterator then
 			local vPos
 			if bAdvance then
-				local pPath = Path "Follow"
-				self:ComputeFlankPath( pPath, enemy )
 				local p = self:FindPathBattleLineNoAllies( pPath, tEnemies )
 				if p then vPos = pPath:GetPositionOnPath( p ) end
 			end
@@ -81,7 +78,12 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		local f = sched.flBoundingRadiusTwo || ( ( self:BoundingRadius() * 2 ) ^ 2 )
 		sched.flBoundingRadiusTwo = f
 		local d = self.vHullMaxs.x * 4 // We check somewhat distant positions, so give them some range to consider "cover"
-		for _ = 0, 32 do
+		d = d * d
+		local t = { [ self ] = true, [ enemy ] = true, [ trueenemy ] = true }
+		local vMins, vMaxs = self:GatherShootingBounds()
+		local flTooCloseSqr = RANGE_ATTACK_SUPPRESSION_BOUND_SIZE
+		flTooCloseSqr = flTooCloseSqr * flTooCloseSqr
+		for _ = 0, 16 do // TODO: Fix huge lag spikes, seemingly due to next cover (these) calculations
 			local vec = pIterator()
 			if vec == nil then
 				// REPEAT!!! AND TRY HARDER!!!
@@ -89,28 +91,41 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				return
 			end
 			if vec:DistToSqr( self:GetPos() ) <= 134656/*256*/ then continue end
+			pPath:MoveCursorToClosestPosition( vec )
+			if pPath:GetCursorPosition() <= 0 then continue end
 			local p = vec + v
-			local dir = vEnemy - vec
-			dir.z = 0
-			dir:Normalize()
-			if util_TraceLine( {
+			local tr = util_TraceHull {
 				start = p,
-				endpos = p + dir * d,
+				endpos = vEnemy,
 				mask = MASK_SHOT_HULL,
-				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-			} ).Hit then
+				mins = vMins,
+				maxs = vMaxs,
+				filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+			}
+			if !tr.Hit && p:DistToSqr( vEnemy ) <= flTooCloseSqr then
+				local s = self:SetSchedule "RangeAttack"
+				s.vFrom = vec
+				s.Enemy = enemy
+				s.bFromCombatFormation = sched.bFromCombatFormation
+				s.bMove = true
+				return
+			end
+			if tr.HitPos:Distance2DSqr( p ) <= d then
 				if tAllies then
 					local b
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then b = true break end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f || ally.vActualTarget && ally.vActualTarget:DistToSqr( vec ) <= f then b = true break end
 					end
 					if b then continue end
 				end
 				self.vActualCover = vec
 				self.vCover = vec
 				local s = self:SetSchedule "TakeCoverMove"
-				s.bFromCombatFormation = sched.bFromCombatFormation
+				if sched.bFromCombatFormation then
+					s.bFromCombatFormation = true
+					s.bActed = true
+				end
 				s.bAdvancing = true
 				return
 			end
@@ -139,46 +154,50 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		self:ComputePath( sched.Path, self.vCover )
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
-			local pCover = self.pCover
+			local f = self:BoundingRadius()
+			f = f * f
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self:SetSchedule "TakeCover" return end
+				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f || ally.vActualTarget && ally.vActualTarget:DistToSqr( vec ) <= f then self.vCover = nil self:SetSchedule "TakeCover" return end
 			end
 		end
-		local o = vec + Vector( 0, 0, self.vHullMaxs.z )
-		local v = o
-		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then v = vec + Vector( 0, 0, self.vHullDuckMaxs.z ) end
-		local dir = enemy:GetPos() - vec
-		dir.z = 0
-		dir:Normalize()
-		if !util_TraceLine( {
-			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 4,
-			mask = MASK_SHOT_HULL,
-			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-		} ).Hit then self.vCover = nil return end
-		local v = self:GetPos() + self:GatherCoverBounds()
-		local dir = enemy:GetPos() - vec
-		dir.z = 0
-		dir:Normalize()
 		local f = self.flPathTolerance
-		if !util_TraceLine( {
+		if self:GetPos():DistToSqr( vec ) > ( f * f ) then self.vCover = nil return end
+		local v, o = vec + Vector( 0, 0, self.vHullMaxs.z )
+		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then o = vec + Vector( 0, 0, self.vHullDuckMaxs.z ) end
+		local t = { [ self ] = true, [ enemy ] = true, [ trueenemy ] = true }
+		local vMins, vMaxs = self:GatherShootingBounds()
+		local tr = util_TraceHull {
 			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 4,
+			endpos = enemy:GetPos() + enemy:OBBCenter(),
 			mask = MASK_SHOT_HULL,
-			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-		} ).Hit || self:GetPos():DistToSqr( vec ) > ( f * f ) then self.vCover = nil return end
-		if !util_TraceLine( {
+			mins = vMins,
+			maxs = vMaxs,
+			filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		}
+		local d = self.vHullMaxs.x * 4
+		d = d * d
+		local bPrimaryFailed = tr.HitPos:Distance2DSqr( v ) > d
+		if !o && bPrimaryFailed then self.vCover = nil return end
+		local dir = enemy:GetPos() - vec
+		dir.z = 0
+		dir:Normalize()
+		local tr = o && util_TraceHull {
 			start = o,
-			endpos = o + dir * self.vHullMaxs.x * 4,
+			endpos = enemy:GetPos() + enemy:OBBCenter(),
 			mask = MASK_SHOT_HULL,
-			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-		} ).Hit then sched.bDuck = nil
+			mins = vMins,
+			maxs = vMaxs,
+			filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		}
+		if o && tr.HitPos:Distance2DSqr( o ) > d then
+			if bPrimaryFailed then self.vCover = nil self:SetSchedule "TakeCover" return end
+			sched.bDuck = nil
 		elseif sched.bDuck == nil then sched.bDuck = math.random( 3 ) == 1 end
 		self:Stand( ( sched.bDuck == nil || sched.bDuck ) && 0 || 1 )
 		self.vDesAim = dir
 		if self:CanExpose() then
-			if CurTime() > ( sched.flSuppressed || 0 ) then
+			if CurTime() > ( self.flSuppressed || 0 ) then
 				local flAlarm, vPos, pAlarm = math.huge, self:GetShootPos(), NULL // NULL because ent.pAlarm ( if nil ) == pAlarm ( which is nil )
 				local t = __ALARMS__[ self:Classify() ]
 				if t then
@@ -273,9 +292,11 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				local flDistance = self:OBBMaxs().x * 2
 				local vLeft = vec + dLeft * flDistance
 				local flAdd = self:OBBMaxs().x
-				local trLeft = util_TraceLine {
+				local trLeft = util_TraceHull {
 					start = vec + vHeight,
 					endpos = vLeft + dLeft * flAdd + vHeight,
+					mins = vMins,
+					maxs = vMaxs,
 					filter = self
 				}
 				local tAngles = { 0 }
@@ -286,9 +307,11 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				local vLeftTarget = fDo( trLeft, vLeft, tAngles )
 				local flDistance = self:OBBMaxs().x * 2
 				local vRight = vec + dRight * flDistance
-				local trRight = util_TraceLine {
+				local trRight = util_TraceHull {
 					start = vec + vHeight,
 					endpos = vRight + dRight * flAdd + vHeight,
+					mins = vMins,
+					maxs = vMaxs,
 					filter = self
 				}
 				tAngles = { 0 }
@@ -352,7 +375,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 					end
 				end
 			end
-		else sched.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .2 ), 0, 2 ) end
+		else self.flSuppressed = CurTime() + math.Clamp( math.min( 0, ( self:GetExposedWeight() / self:Health() ) * .2 ), 0, 2 ) end
 	else
 		local vec = self:GetPos()
 		local v, pEnemy = self:FindExposedEnemy( vec, tEnemies, sched.bDuck )

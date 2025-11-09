@@ -28,9 +28,11 @@ Actor_RegisterSchedule( "TakeCoverMove", function( self, sched )
 		local vec = self.vCover
 		local tAllies = self:GetAlliesByClass()
 		if tAllies then
+			local f = self:BoundingRadius()
+			f = f * f
 			for ally in pairs( tAllies ) do
 				if self == ally then continue end
-				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= self:BoundingRadius() ^ 2 then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
+				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f || ally.vActualTarget && ally.vActualTarget:DistToSqr( vec ) <= f then self.vCover = nil self.pCover = nil self:SetSchedule "TakeCover" return end
 			end
 			if !sched.bTriedRangeAttack then
 				local b

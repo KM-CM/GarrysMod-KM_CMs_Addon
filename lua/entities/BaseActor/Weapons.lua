@@ -148,10 +148,21 @@ function ENT:WeaponReload( MyTable )
 	end )
 end
 
+local cDamageMultiplier = CreateConVar(
+	"flActorDamageMultiplier",
+	1,
+	FCVAR_CHEAT + FCVAR_NEVER_AS_STRING,
+	"Allows to make Actors more/less deadly\nDefault, Realistic: 1\nFun: From .05 to .2"
+)
+
 function ENT:WeaponPrimaryAttack( MyTable )
 	local wep = ( MyTable || CEntity_GetTable( self ) ).Weapon
 	if !IsValid( wep ) && CurTime() <= wep:GetNextPrimaryFire() then return end
+	local WeaponTable = CEntity_GetTable( wep )
+	local flDamage = WeaponTable.Primary_flDamage
+	if flDamage then WeaponTable.Primary_flDamage = flDamage * cDamageMultiplier:GetFloat() end
 	wep:PrimaryAttack()
+	WeaponTable.Primary_flDamage = flDamage
 	self:RestartGesture( MyTable.TranslateActivity( self, MyTable.Crouching( self, MyTable ) && ACT_MP_ATTACK_CROUCH_PRIMARYFIRE || ACT_MP_ATTACK_STAND_PRIMARYFIRE, MyTable ) )
 	return true
 end
@@ -208,4 +219,15 @@ function ENT:CanAttackHelper( vec, MyTable )
 		if math_abs( math_AngleDifference( aCurrent.y, aAim.y ) ) > 1 || math_abs( math_AngleDifference( aCurrent.p, aAim.p ) ) > 1 then return end
 	end
 	return true
+end
+
+function ENT:GatherShootingBounds()
+	local pWeapon = CEntity_GetTable( self ).Weapon
+	if IsValid( pWeapon ) then
+		local f = TRACER_SIZE[ CEntity_GetTable( pWeapon ).Primary_sTracer || "Bullet" ] || TRACER_SIZE.Bullet
+		return Vector( -f, -f, -f ), Vector( f, f, f )
+	else
+		local f = TRACER_SIZE.Bullet
+		return Vector( -f, -f, -f ), Vector( f, f, f )
+	end
 end

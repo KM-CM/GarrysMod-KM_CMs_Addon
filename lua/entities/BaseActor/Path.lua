@@ -304,17 +304,8 @@ local sv_gravity = GetConVar "sv_gravity"
 function ENT:Jump( vTarget )
 	local flGravity = sv_gravity:GetFloat()
 	local vVelocity = self.loco:GetVelocity()
-	if vVelocity == vector_origin then vVelocity = ( vTarget - self:GetPos() ):GetNormalized() end
-	local dVelocityFlat = Vector( vVelocity )
-	dVelocityFlat.z = 0
-	dVelocityFlat:Normalize()
-	local dTargetFlat = vTarget - self:GetPos()
-	dTargetFlat.z = 0
-	dTargetFlat:Normalize()
-	local flFlatDistance = self:GetPos():Distance2D( vTarget )
-	local flDifference = ( 1 - math.max( 0, dVelocityFlat:Dot( dTargetFlat ) ) ) * flFlatDistance
-	if flDifference > ( self.flPathTolerance * .5 ) then return end
 	local flOriginal = self.loco:GetJumpHeight() // NOT flJumpHeight!!!
+	if vVelocity:LengthSqr() < self.flWalkSpeed * .5 then vVelocity = ( vTarget - self:GetPos() ):GetNormalized() * flOriginal end
 	local vStart = self:GetPos()
 	local vMiddle = LerpVector( .5, vStart, vTarget )
 	local flZ = vStart.z
@@ -335,8 +326,17 @@ function ENT:Jump( vTarget )
 		filter = self
 	} ).HitPos.z - flZ )
 	local flJumpLength = vVelocity:Length() * 2 * ( 2 * flGravity * flJumpHeight ) ^ .5 / flGravity
+	local dVelocityFlat = Vector( vVelocity )
+	dVelocityFlat.z = 0
+	dVelocityFlat:Normalize()
+	local dTargetFlat = vTarget - self:GetPos()
+	dTargetFlat.z = 0
+	dTargetFlat:Normalize()
+	local flFlatDistance = self:GetPos():Distance2D( vTarget )
+	local flDifference = ( 1 - math.max( 0, dVelocityFlat:Dot( dTargetFlat ) ) ) * flFlatDistance
+	if flDifference > ( self.flPathTolerance * .5 ) then return end
 	if self:GetPos():DistToSqr( vTarget ) > ( flJumpLength * flJumpLength ) then return end
-	self.loco:SetJumpHeight( vTarget.z - vStart.z + ( flFlatDistance <= ( self.flPathTolerance * 8 ) && 0 || ( ( ( flFlatDistance * .5 + self:OBBMaxs().x ) / vVelocity:Length() ) * flGravity ) ^ 2 / ( 2 * flGravity ) ) )
+	self.loco:SetJumpHeight( vTarget.z - vStart.z + ( ( ( flFlatDistance * .5 + self:OBBMaxs().x ) / vVelocity:Length() ) * flGravity ) ^ 2 / ( 2 * flGravity ) )
 	self.loco:Jump()
 	self.loco:SetJumpHeight( flOriginal )
 	self.m_flJumpStartTime = CurTime()

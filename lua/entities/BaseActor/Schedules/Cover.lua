@@ -1,4 +1,5 @@
 ENT.tPreScheduleResetVariables.vActualCover = false
+ENT.tPreScheduleResetVariables.vActualTarget = false
 
 function ENT:GatherCoverBounds()
 	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then return Vector( 0, 0, self.vHullDuckMaxs.z * .65625 ) end
@@ -9,40 +10,57 @@ include "CoverMove.lua"
 include "CoverUnReachable.lua"
 
 local util_TraceLine = util.TraceLine
+local util_TraceHull = util.TraceHull
 
 Actor_RegisterSchedule( "TakeCover", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
 	if table.IsEmpty( tEnemies ) then return {} end
 	local enemy = sched.Enemy
 	if !IsValid( enemy ) then enemy = self.Enemy if !IsValid( enemy ) then return {} end end
+	local enemy, trueenemy = self:SetupEnemy( enemy )
 	self.bWantsCover = true
 	if self.vCover then
 		sched.pIterator = nil
 		local vec = self.vCover
 		self.vActualCover = self.vCover
-		local v = vec + self:GatherCoverBounds()
-		local dir = enemy:GetPos() - vec
-		dir.z = 0
-		dir:Normalize()
-		if !util_TraceLine( {
+		local tAllies = self:GetAlliesByClass()
+		if tAllies then
+			local f = self:BoundingRadius()
+			f = f * f
+			for ally in pairs( tAllies ) do
+				if self == ally then continue end
+				if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f || ally.vActualTarget && ally.vActualTarget:DistToSqr( vec ) <= f then self.vCover = nil return end
+			end
+		end
+		local v, o = vec + Vector( 0, 0, self.vHullMaxs.z )
+		if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then o = vec + Vector( 0, 0, self.vHullDuckMaxs.z ) end
+		local t = { [ self ] = true, [ enemy ] = true, [ trueenemy ] = true }
+		local vMins, vMaxs = self:GatherShootingBounds()
+		local tr = util_TraceHull {
 			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 4,
+			endpos = enemy:GetPos() + enemy:OBBCenter(),
 			mask = MASK_SHOT_HULL,
-			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-		} ).Hit then self.vCover = nil return end
-		local v = self:GetPos() + self:GatherCoverBounds()
-		local dir = enemy:GetPos() - vec
-		dir.z = 0
-		dir:Normalize()
-		local f = self.flPathTolerance // self.flPathTolerance
-		if util_TraceLine( {
-			start = v,
-			endpos = v + dir * self.vHullMaxs.x * 4,
+			mins = vMins,
+			maxs = vMaxs,
+			filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		}
+		local d = self.vHullMaxs.x * 4
+		d = d * d
+		local bPrimaryFailed = tr.HitPos:Distance2DSqr( v ) > d
+		if !o && bPrimaryFailed then self.vCover = nil return end
+		local tr = o && util_TraceHull {
+			start = o,
+			endpos = enemy:GetPos() + enemy:OBBCenter(),
 			mask = MASK_SHOT_HULL,
-			filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-		} ).Hit && self:GetPos():DistToSqr( vec ) <= ( f * f ) then return true end
+			mins = vMins,
+			maxs = vMaxs,
+			filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+		}
+		if o && tr.HitPos:Distance2DSqr( o ) > d && bPrimaryFailed then self.vCover = nil return end
 		if !sched.Path then sched.Path = Path "Follow" end
 		self:ComputePath( sched.Path, self.vCover )
+		local f = self.flPathTolerance
+		if self:GetPos():DistToSqr( vec ) <= ( f * f ) then return true end
 		local tNearestEnemies = {}
 		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
 		table.SortByMember( tNearestEnemies, 2, true )
@@ -133,7 +151,10 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		sched.tAllies = tAllies
 		local f = sched.flBoundingRadiusTwo || ( self:BoundingRadius() ^ 2 )
 		sched.flBoundingRadiusTwo = f
-		local d = self.vHullMaxs.x * 4 // We check somewhat distant positions, so give them some range to consider "cover"...
+		local d = self.vHullMaxs.x * 4 // We check somewhat distant positions, so give them some range to consider "cover"
+		d = d * d
+		local t = { [ self ] = true, [ enemy ] = true, [ trueenemy ] = true }
+		local vMins, vMaxs = self:GatherShootingBounds()
 		for _ = 0, 16 do
 			local vec = pIterator()
 			if vec == nil then
@@ -142,20 +163,20 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 				return
 			end
 			local p = vec + v
-			local dir = vEnemy - vec
-			dir.z = 0
-			dir:Normalize()
-			if util_TraceLine( {
+			local tr = util_TraceHull {
 				start = p,
-				endpos = p + dir * d,
+				endpos = vEnemy,
 				mask = MASK_SHOT_HULL,
-				filter = function( ent ) return !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
-			} ).Hit then
+				mins = vMins,
+				maxs = vMaxs,
+				filter = function( ent ) return !t[ ent ] && !( ent:IsPlayer() || ent:IsNPC() || ent:IsNextBot() ) end
+			}
+			if tr.Hit && tr.HitPos:Distance2DSqr( p ) <= d then
 				if tAllies then
 					local b
 					for ally in pairs( tAllies ) do
 						if self == ally then continue end
-						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f then b = true break end
+						if ally.vActualCover && ally.vActualCover:DistToSqr( vec ) <= f || ally.vActualTarget && ally.vActualTarget:DistToSqr( vec ) <= f then b = true break end
 					end
 					if b then continue end
 				end

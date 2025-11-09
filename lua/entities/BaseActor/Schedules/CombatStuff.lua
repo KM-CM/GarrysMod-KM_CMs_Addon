@@ -318,6 +318,7 @@ ENT.flLastAttackCombatState = 1
 
 Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 	self.vActualCover = self.vCover
+	self.vActualTarget = sched.vFrom
 	self.bSuppressing = true
 	local f, o = self.flCombatState, self.flLastAttackCombatState
 	if f < -.2 && o >= -.2 then
@@ -435,12 +436,13 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			filter = { self, enemy, trueenemy }
 		} ).Hit then return false end
 		local f = self.flPathTolerance
+		local vMins, vMaxs = self:GatherShootingBounds()
 		if self:GetPos():DistToSqr( sched.vFrom ) <= ( f * f ) && !util_TraceHull( {
 			start = self:GetShootPos(),
 			endpos = v,
 			mask = MASK_SHOT_HULL,
-			mins = Vector( -12, -12, -12 ),
-			maxs = Vector( 12, 12, 12 ),
+			mins = vMins,
+			maxs = vMaxs,
 			filter = { self, enemy, trueenemy }
 		} ).Hit then
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
@@ -516,7 +518,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				local goal = sched.Path:GetCurrentGoal()
 				if goal then
 					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-					// self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+					if sched.bMove then self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 ) end
 				end
 				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 				local flDist = self.flWalkSpeed * 4
@@ -635,7 +637,7 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 					local goal = sched.Path:GetCurrentGoal()
 					if goal then
 						self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-						// self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+						if sched.bMove then self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 ) end
 					end
 					if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 					local flDist = self.flWalkSpeed * 4

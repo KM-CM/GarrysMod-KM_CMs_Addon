@@ -103,6 +103,8 @@ end
 
 function ENT:OnKilled( dmg )
 	if BaseClass.OnKilled( self, dmg ) then return end
+	local v = self.CTRL_pSlideLoop
+	if v then v:Stop() end
 	self:EmitSound( dmg:IsDamageType( DMG_FALL ) && "Player.FallGib" || "Player.Death" )
 	hook.Run( "OnNPCKilled", self, dmg:GetAttacker(), dmg:GetInflictor() )
 	self:BecomeRagdoll( dmg )
