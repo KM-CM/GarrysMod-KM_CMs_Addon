@@ -82,7 +82,7 @@ function ENT:ReportPositionAsClear( vec )
 	local tAllies = MyTable.GetAlliesByClass( self, MyTable )
 	if tAllies then
 		for pAlly in pairs( tAllies ) do
-			for tData in pairs( CEntity_GetTable( pAlly ).tBullseyes ) do
+			for _, tData in pairs( CEntity_GetTable( pAlly ).tBullseyes ) do
 				local p = tData[ 1 ]
 				if CEntity_GetPos( p ):DistToSqr( vec ) <= 65536/*256*/ then CEntity_Remove( p ) end
 			end
