@@ -142,6 +142,7 @@ hook.Add( "OnNPCKilled", "GameImprovements", function( ent, at )
 end )
 
 hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
+	if !ply:Alive() then if IsValid( ply.GAME_pFlashlight ) then ply:EmitSound "FlashlightOff" ply.GAME_pFlashlight:Remove() end return end
 	if IsValid( ply.GAME_pFlashlight ) then ply:EmitSound "FlashlightOff" ply.GAME_pFlashlight:Remove() else
 		local pt = ents.Create "env_projectedtexture"
 		pt:SetPos( ply:EyePos() )
