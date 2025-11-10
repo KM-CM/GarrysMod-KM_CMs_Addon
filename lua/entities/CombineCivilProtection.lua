@@ -101,4 +101,7 @@ function ENT:Initialize()
 	BaseClass.Initialize( self )
 end
 
-function ENT:OnDeath( dmg ) self:EmitSound "Combine_CivilProtection_Death" end
+function ENT:OnKilled( ... )
+	CEntity_EmitSound( self, "Combine_CivilProtection_Death" )
+	return BaseClass.OnKilled( self, ... )
+end

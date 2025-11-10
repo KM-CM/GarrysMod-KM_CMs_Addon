@@ -4,7 +4,7 @@ ENT.flAnimationSpeed = 4
 
 function ENT:PromoteSequence( seq, flSpeed )
 	if isnumber( seq ) then seq = self:GetSequenceName( seq ) end
-	self.tPromoteSequences[ seq ] = flSpeed
+	self.tPromoteSequences[ seq ] = flSpeed || 1
 end
 
 function ENT:AnimationSystemTick()

@@ -1,15 +1,30 @@
 ENT.flPathTolerance = 32
+ENT.flRePathTolerance = 64
 
-local CEntity = FindMetaTable( "Entity" )
+local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
+local CEntity_GetPos = CEntity.GetPos
+
+local math = math
+local math_Remap = math.Remap
+local math_Clamp = math.Clamp
+local math_max = math.max
+
+function ENT:TryRePathing( pPath, vPos, vGoal, MyTable )
+	pPath:MoveCursorToClosestPosition( vPos )
+	local f = MyTable.flRePathTolerance
+	local flCursor = pPath:GetCursorPosition()
+	if pPath:GetPositionOnPath( flCursor ):DistToSqr( vPos ) <= f * f then
+		pPath:MoveCursorToClosestPosition( vGoal )
+		f = math_max( MyTable.flRePathTolerance, vPos:Distance( vGoal ) * 8 )
+		if pPath:GetPositionOnPath( pPath:GetCursorPosition() ):DistToSqr( vGoal ) <= f * f then return true end
+	end
+end
 
 function ENT:ComputePath( Path, vGoal, Weighter )
 	local MyTable = CEntity_GetTable( self )
-	local f = MyTable.flPathTolerance
-	Path:SetGoalTolerance( f )
-	f = f * f
-	Path:MoveCursorToClosestPosition( self:GetPos() )
-	if Path:GetPositionOnPath( Path:GetCursorPosition() ):DistToSqr( self:GetPos() ) <= f && Path:GetEnd():DistToSqr( vGoal ) <= f then return true end
+	local vPos = CEntity_GetPos( self )
+	if MyTable.TryRePathing( self, Path, vPos, vGoal, MyTable ) then return true end
 	if Weighter then return Path, Path:Compute( self, vGoal, Weighter ) end
 	local loco = MyTable.loco
 	local bCantClimb = !( MyTable.bCanClimb || MyTable.bCanFly )
@@ -198,107 +213,102 @@ function ENT:ComputeVehiclePath( Path, vGoal )
 	end )
 end
 
-// I give up on implementing this, the lower one isn't that good anyway
-function ENT:ComputeFlankPath( Path, pEnemy ) return self:ComputePath( Path, pEnemy:GetPos() ) end
+// Done really roughly and needs to be improved... but whatever
+local ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE = 256
 
-//	// Really Roughly Done and Needs to be Improved... But Whatever
-//	local ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE = 256
-//	
-//	__ACTOR_FLANK_PATHS__ = __ACTOR_FLANK_PATHS__ || {}
-//	local __ACTOR_FLANK_PATHS_LOCAL__ = __ACTOR_FLANK_PATHS__
-//	
-//	hook.Add( "Think", "ActorFlankPath", function()
-//		local tNew = {}
-//		for iClass, tPartition in pairs( __ACTOR_FLANK_PATHS_LOCAL__ ) do
-//			for sPartition, tActorToTable in pairs( tPartition ) do
-//				for pActor, tData in pairs( tActorToTable ) do
-//					if !IsValid( pActor ) then continue end
-//					local v = tNew[ iClass ]
-//					if v then
-//						local n = v[ sPartition ]
-//						if n then
-//							n[ pActor ] = tData
-//						else
-//							v[ sPartition ] = { [ pActor ] = tData }
-//						end
-//					else tNew[ iClass ] = { [ sPartition ] = { [ pActor ] = tData } } end
-//				end
-//			end
-//		end
-//		__ACTOR_FLANK_PATHS__, __ACTOR_FLANK_PATHS_LOCAL__ = tNew, tNew
-//	end )
-//	
-//	local CEntity_GetPos = CEntity.GetPos
-//	
-//	local math_Round = math.Round
-//	
-//	local Format = Format
-//	
-//	local IsValid = IsValid
-//	
-//	function ENT:ComputeFlankPath( Path, pEnemy )
-//		local MyTable = CEntity_GetTable( self )
-//		local f = MyTable.flPathTolerance
-//		f = f * f
-//		local vPos = CEntity_GetPos( self )
-//		local vGoal = CEntity_GetPos( pEnemy )
-//		Path:MoveCursorToClosestPosition( vPos )
-//		if Path:GetPositionOnPath( Path:GetCursorPosition() ):DistToSqr( vPos ) <= f && Path:GetEnd():DistToSqr( vGoal ) <= f then return true end
-//		local tPath, tAlready = {}, {}
-//		local iClass = self:Classify()
-//		local iX = math_Round( vGoal[ 1 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
-//		local iY = math_Round( vGoal[ 2 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
-//		local iZ = math_Round( vGoal[ 3 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
-//		local sPartition = tostring( iX ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" ) .. "," .. tostring( iY ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" ) .. "," .. tostring( iZ ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" )
-//		local iAlliesPathingTotal = 0
-//		local v = __ACTOR_FLANK_PATHS_LOCAL__[ iClass ]
-//		if v then
-//			local n = v[ sPartition ]
-//			if n then
-//				for ent, t in pairs( n ) do
-//					if !IsValid( ent ) || ent == self then continue end
-//					iAlliesPathingTotal = iAlliesPathingTotal + 1
-//					for area in pairs( t ) do
-//						local v = area:GetID()
-//						local i = tAlready[ v ]
-//						tAlready[ v ] = i && ( i + 1 ) || 2
-//					end
-//				end
-//				n[ self ] = tPath
-//			else v[ sPartition ] = { [ self ] = tPath } end
-//		else __ACTOR_FLANK_PATHS_LOCAL__[ iClass ] = { [ sPartition ] = { [ self ] = tPath } } end
-//		local loco = MyTable.loco
-//		local bCantClimb = !( MyTable.bCanClimb || MyTable.bCanFly )
-//		local bDisAllowWater = !MyTable.bCanSwim
-//		local flDeathDropNeg = -loco:GetDeathDropHeight()
-//		local flStepHeight = loco:GetStepHeight()
-//		local flJumpHeight
-//		if bCantClimb then flJumpHeight = loco:GetMaxJumpHeight() end
-//		local IsAreaTraversable = loco.IsAreaTraversable
-//		local bStatus = Path:Compute( self, vGoal, function( area, from, ladder, elevator, length )
-//			if !IsValid( from ) then return 0 end
-//			if !IsAreaTraversable( loco, area ) || bDisAllowWater && area:IsUnderwater() then return -1 end
-//			local dist = 0
-//			if IsValid( ladder ) then
-//				dist = ladder:GetLength()
-//			elseif length > 0 then
-//				dist = length
-//			else
-//				dist = ( area:GetCenter() - from:GetCenter() ):GetLength()
-//			end
-//			local cost = dist + from:GetCostSoFar()
-//			local d = from:ComputeAdjacentConnectionHeightChange( area )
-//			if d >= flStepHeight then
-//				if bCantClimb && d >= flJumpHeight then return -1 end
-//				cost = cost + 1.5 * dist
-//			elseif d < flDeathDropNeg then return -1 end
-//			return cost * ( ( tAlready[ area:GetID() ] || 1 ) / iAlliesPathingTotal )
-//		end )
-//		for _, seg in ipairs( Path:GetAllSegments() ) do tPath[ seg.area ] = true end
-//		return Path, bStatus
-//	end
+__ACTOR_FLANK_PATHS__ = __ACTOR_FLANK_PATHS__ || {}
+local __ACTOR_FLANK_PATHS_LOCAL__ = __ACTOR_FLANK_PATHS__
+
+hook.Add( "Think", "ActorFlankPath", function()
+	local tNew = {}
+	for iClass, tPartition in pairs( __ACTOR_FLANK_PATHS_LOCAL__ ) do
+		for sPartition, tActorToTable in pairs( tPartition ) do
+			for pActor, tData in pairs( tActorToTable ) do
+				if !IsValid( pActor ) then continue end
+				local v = tNew[ iClass ]
+				if v then
+					local n = v[ sPartition ]
+					if n then
+						n[ pActor ] = tData
+					else
+						v[ sPartition ] = { [ pActor ] = tData }
+					end
+				else tNew[ iClass ] = { [ sPartition ] = { [ pActor ] = tData } } end
+			end
+		end
+	end
+	__ACTOR_FLANK_PATHS__, __ACTOR_FLANK_PATHS_LOCAL__ = tNew, tNew
+end )
+
+local math_Round = math.Round
+
+local Format = Format
+
+local IsValid = IsValid
+
+function ENT:ComputeFlankPath( Path, pEnemy )
+	local MyTable = CEntity_GetTable( self )
+	local vPos = CEntity_GetPos( self )
+	local vGoal = CEntity_GetPos( pEnemy )
+	if MyTable.TryRePathing( self, Path, vPos, vGoal, MyTable ) then return true end
+	local tPath, tAlready = {}, {}
+	local iClass = self:Classify()
+	local iX = math_Round( vGoal[ 1 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
+	local iY = math_Round( vGoal[ 2 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
+	local iZ = math_Round( vGoal[ 3 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE
+	local sPartition = tostring( iX ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" ) .. "," .. tostring( iY ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" ) .. "," .. tostring( iZ ):gsub( "(%d)0+$", "%1" ):gsub( "%.$", "" )
+	local iAlliesPathingTotal = 0
+	local v = __ACTOR_FLANK_PATHS_LOCAL__[ iClass ]
+	if v then
+		local n = v[ sPartition ]
+		if n then
+			for ent, t in pairs( n ) do
+				if !IsValid( ent ) || ent == self then continue end
+				iAlliesPathingTotal = iAlliesPathingTotal + 1
+				for area in pairs( t ) do
+					local v = area:GetID()
+					local i = tAlready[ v ]
+					tAlready[ v ] = i && ( i + 1 ) || 2
+				end
+			end
+			n[ self ] = tPath
+		else v[ sPartition ] = { [ self ] = tPath } end
+	else __ACTOR_FLANK_PATHS_LOCAL__[ iClass ] = { [ sPartition ] = { [ self ] = tPath } } end
+	local loco = MyTable.loco
+	local bCantClimb = !( MyTable.bCanClimb || MyTable.bCanFly )
+	local bDisAllowWater = !MyTable.bCanSwim
+	local flDeathDropNeg = -loco:GetDeathDropHeight()
+	local flStepHeight = loco:GetStepHeight()
+	local flJumpHeight
+	if bCantClimb then flJumpHeight = loco:GetMaxJumpHeight() end
+	local IsAreaTraversable = loco.IsAreaTraversable
+	local bStatus = Path:Compute( self, vGoal, function( area, from, ladder, elevator, length )
+		if !IsValid( from ) then return 0 end
+		if !IsAreaTraversable( loco, area ) || bDisAllowWater && area:IsUnderwater() then return -1 end
+		local dist = 0
+		if IsValid( ladder ) then
+			dist = ladder:GetLength()
+		elseif length > 0 then
+			dist = length
+		else
+			dist = ( area:GetCenter() - from:GetCenter() ):GetLength()
+		end
+		local cost = dist + from:GetCostSoFar()
+		local d = from:ComputeAdjacentConnectionHeightChange( area )
+		if d >= flStepHeight then
+			if bCantClimb && d >= flJumpHeight then return -1 end
+			cost = cost + 1.5 * dist
+		elseif d < flDeathDropNeg then return -1 end
+		return cost + ( math_max( 1, tAlready[ area:GetID() ] || 1 ) * 262144 )
+	end )
+	for _, seg in ipairs( Path:GetAllSegments() || {} ) do tPath[ seg.area ] = true end
+	return Path, bStatus
+end
 
 local sv_gravity = GetConVar "sv_gravity"
+
+local util_TraceLine = util.TraceLine
+local math_min = math.min
 
 // Tries to jump to vTarget
 function ENT:Jump( vTarget )
@@ -309,34 +319,34 @@ function ENT:Jump( vTarget )
 	local vStart = self:GetPos()
 	local vMiddle = LerpVector( .5, vStart, vTarget )
 	local flZ = vStart.z
-	local flJumpHeight = flOriginal * math.min( util.TraceLine( {
+	local flJumpHeight = flOriginal * math_min( util_TraceLine( {
 		start = vStart,
 		endpos = vStart + Vector( 0, 0, flOriginal ),
 		mask = MASK_SOLID,
 		filter = self
-	} ).HitPos.z - flZ, util.TraceLine( {
+	} ).HitPos.z - flZ, util_TraceLine( {
 		start = vMiddle,
 		endpos = vMiddle + Vector( 0, 0, flOriginal ),
 		mask = MASK_SOLID,
 		filter = self
-	} ).HitPos.z - flZ, util.TraceLine( {
+	} ).HitPos.z - flZ, util_TraceLine( {
 		start = vTarget,
 		endpos = vTarget + Vector( 0, 0, flOriginal ),
 		mask = MASK_SOLID,
 		filter = self
 	} ).HitPos.z - flZ )
-	local flJumpLength = vVelocity:Length() * 2 * ( 2 * flGravity * flJumpHeight ) ^ .5 / flGravity
+	local flJumpLength = vVelocity:Length() * ( 2 * flGravity * flJumpHeight ) ^ .5 / flGravity
 	local dVelocityFlat = Vector( vVelocity )
 	dVelocityFlat.z = 0
 	dVelocityFlat:Normalize()
 	local dTargetFlat = vTarget - self:GetPos()
 	dTargetFlat.z = 0
 	dTargetFlat:Normalize()
-	local flFlatDistance = self:GetPos():Distance2D( vTarget )
-	local flDifference = ( 1 - math.max( 0, dVelocityFlat:Dot( dTargetFlat ) ) ) * flFlatDistance
+	local flFlatDistance = vStart:Distance2D( vTarget )
+	local flDifference = ( 1 - math_max( 0, dVelocityFlat:Dot( dTargetFlat ) ) ) * flFlatDistance
 	if flDifference > ( self.flPathTolerance * .5 ) then return end
 	if self:GetPos():DistToSqr( vTarget ) > ( flJumpLength * flJumpLength ) then return end
-	self.loco:SetJumpHeight( vTarget.z - vStart.z + ( ( ( flFlatDistance * .5 + self:OBBMaxs().x ) / vVelocity:Length() ) * flGravity ) ^ 2 / ( 2 * flGravity ) )
+	self.loco:SetJumpHeight( math_Clamp( vTarget.z - vStart.z + ( ( ( flFlatDistance + self:OBBMaxs().x ) / vVelocity:Length() ) * .5 * flGravity ) ^ 2 / ( 2 * flGravity ), 0, flOriginal ) )
 	self.loco:Jump()
 	self.loco:SetJumpHeight( flOriginal )
 	self.m_flJumpStartTime = CurTime()
@@ -345,6 +355,7 @@ end
 
 ENT.vLastAcceleration = Vector()
 function ENT:HandleJumpingAlongPath( Path, tFilter )
+	self.loco:SetStepHeight( 16 )
 	Path:Update( self )
 	local goal, tNextGoal = Path:GetCurrentGoal(), Path:NextSegment()
 	if goal && tNextGoal then

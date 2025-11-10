@@ -1,12 +1,18 @@
 ENT.vHullMins = HULL_HUMAN_MINS
 ENT.vHullMaxs = HULL_HUMAN_MAXS
-ENT.vHullDuckMins = HULL_HUMAN_DUCK_MINS
-ENT.vHullDuckMaxs = HULL_HUMAN_DUCK_MAXS
+ENT.vHullDuckMins = HULL_HUMAN_MINS // HULL_HUMAN_DUCK_MINS
+ENT.vHullDuckMaxs = HULL_HUMAN_MAXS // HULL_HUMAN_DUCK_MAXS
 
 ENT.GAME_flReach = 64
 
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
+
+local math = math
+local math_max = math.max
+local math_ceil = math.ceil
+
+function ENT:Stand() self.loco:Approach( self:GetPos(), 1 ) end
 
 function ENT:OnKilled( dmg )
 	if self.bDead then return true end
@@ -15,8 +21,9 @@ function ENT:OnKilled( dmg )
 	local pAttacker = dmg:GetAttacker()
 	if IsValid( pAttacker ) then
 		local fAddFrags = pAttacker.AddFrags
-		if fAddFrags then fAddFrags( pAttacker, 1 ) end
+		if fAddFrags then fAddFrags( pAttacker, math_max( 1, math_ceil( self:GetMaxHealth() / 100 ) ) ) end
 	end
+	hook.Run( "OnNPCKilled", self, dmg:GetAttacker(), dmg:GetInflictor() )
 end
 
 function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
@@ -195,7 +202,6 @@ function ENT:Behaviour() end
 local ProtectedCall = ProtectedCall
 local ai_disabled, developer = GetConVar "ai_disabled", GetConVar "developer"
 local coroutine_yield = coroutine.yield
-local math = math
 local math_Approach = math.Approach
 local math_Clamp = math.Clamp
 local math_abs = math.abs
@@ -241,6 +247,8 @@ function ENT:RunBehaviour()
 	while true do
 		if ai_disabled:GetInt() == 1 then coroutine_yield() continue end
 		local MyTable = CEntity_GetTable( self )
+		local f = MyTable.CallMeInRunBehaviour
+		if f then f( self, MyTable ) end
 		local f = CEntity_Health( self )
 		MyTable.GAME_flSuppression = math_Approach( math_Clamp( MyTable.GAME_flSuppression, 0, f * MyTable.flSuppressionMax ), 0, f * MyTable.flSuppressionRec * FrameTime() )
 		MyTable.flCombatStateSuppressionShort = math_Approach( math_Clamp( MyTable.flCombatStateSuppressionShort, 0, f * MyTable.flCombatStateSuppressionShortMax ), 0, f * MyTable.flCombatStateSuppressionShortRec * FrameTime() )

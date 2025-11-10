@@ -57,7 +57,7 @@ function ENT:Explode()
 	local flMagnitude = self.flMagnitude
 	local flRange = flMagnitude * 3
 	local flDist = flRange + 64
-	local flDamage = flMagnitude * 32
+	local flDamage = flMagnitude * 64
 	util_BlastDamage( self, GetOwner( self ), self:GetPos(), flDist, flDamage )
 	util_ScreenShake( self:GetPos(), flMagnitude * 256, flMagnitude * .001, math.min( 12, flMagnitude * .2 ), flMagnitude * 64 )
 	for _ = 1, math.max( 5, flRange * .2 ) do // Effects

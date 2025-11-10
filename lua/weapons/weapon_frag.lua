@@ -25,8 +25,8 @@ local CEntity_EmitSound = CEntity.EmitSound
 local EffectData = EffectData
 local util_Effect = util.Effect
 
-SWEP.GRENADE_flRadius = 256
-SWEP.GRENADE_flDamage = 512
+SWEP.GRENADE_flRadius = 384
+SWEP.GRENADE_flDamage = 4096
 
 SWEP.flNextTick = 0
 

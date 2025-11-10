@@ -1,17 +1,8 @@
-ENT.flAnimalTooCloseRange = 1536
+ENT.flIdleStandTimeMin = 0
+ENT.flIdleStandTimeMax = 4
 
 Actor_RegisterSchedule( "Idle", function( self, sched )
 	if !table.IsEmpty( self.tEnemies ) then return {} end
-	local b
-	local f = self.flAnimalTooCloseRange
-	f = f * f
-	for ent in pairs( self.tAlertEntities ) do
-		if ent:GetPos():DistToSqr( self:GetPos() ) <= f then
-			self:SetupBullseye( ent )
-			b = true
-		end
-	end
-	if b then return {} end
 	if CurTime() > self.flWeaponReloadTime then
 		local t = {}
 		for wep in pairs( self.tWeapons ) do if wep:Clip1() < wep:GetMaxClip1() then table.insert( t, wep ) end end
@@ -61,7 +52,13 @@ Actor_RegisterSchedule( "Idle", function( self, sched )
 				return
 			end
 			local area, vec = self:GetLastKnownArea() || navmesh.GetNearestNavArea( self:GetPos() )
-			if !area then sched.flStandTime = CurTime() + math.Rand( 0, 4 ) return end
+			if !area then
+				sched.flStandTime = CurTime() + math.Rand( self.flIdleStandTimeMin, self.flIdleStandTimeMax )
+				self.vDesAim = nil
+				sched.Path = nil
+				sched.vGoal = nil
+				return
+			end
 			local tQueue, tVisited, flDistSqr = { { area, 0 } }, {}, math.Rand( 0, 1024 )
 			flDistSqr = flDistSqr * flDistSqr
 			local bDisAllowWater = !self.bCanSwim
@@ -85,6 +82,11 @@ Actor_RegisterSchedule( "Idle", function( self, sched )
 		if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
 		self:ComputePath( sched.Path, sched.vGoal )
 		self:MoveAlongPath( sched.Path, self.flWalkSpeed )
-		if math.abs( sched.Path:GetCursorPosition() - sched.Path:GetLength() ) <= self.flPathTolerance then sched.flStandTime = CurTime() + math.Rand( 0, 4 ) end
-	else self.vDesAim = nil sched.Path = nil sched.vGoal = nil end
+		if math.abs( sched.Path:GetCursorPosition() - sched.Path:GetLength() ) <= self.flPathTolerance then
+			sched.flStandTime = CurTime() + math.Rand( self.flIdleStandTimeMin, self.flIdleStandTimeMax )
+			self.vDesAim = nil
+			sched.Path = nil
+			sched.vGoal = nil
+		end
+	else self.vDesAim = nil sched.Path = nil sched.vGoal = nil self:Stand() end
 end )

@@ -15,6 +15,7 @@ function ENT:Stand( flHeight )
 	if flHeight == nil then flHeight = 1 end
 	self:SetCrouchTarget( flHeight )
 	self:SetNW2Bool( "CTRL_bSliding", false )
+	BaseClass.Stand( self )
 end
 
 function ENT:Tick()

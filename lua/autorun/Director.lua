@@ -183,8 +183,6 @@ function CDirectorMusicPlayer:Play( Index, Sound, flVolume, flHandleLength, flAc
 	ply.GAME_bNextSoundMute = true
 	Sound:Play()
 	self.tHandles[ Index ] = { Sound, SysTime() + flHandleLength - engine_TickInterval() * 3 }
-	local t = self.m_tHandles[ Index ]
-	if t then table_insert( self.m_tDeleteMeSoonEnough, t ) end
 	self.m_tHandles[ Index ] = { Sound, flVolume, SysTime() + ( flActualLength || flHandleLength ) + engine_TickInterval() * 2 }
 	self:UpdateInternal()
 end
@@ -224,14 +222,6 @@ function CDirectorMusicPlayer:UpdateInternal( f, s )
 		m_tHandles[ i ] = d
 	end
 	self.m_tHandles = m_tHandles
-	local m_tDeleteMeSoonEnough = {}
-	for i, d in ipairs( self.m_tHandles ) do
-		if SysTime() > d[ 3 ] then continue end
-		local s = d[ 1 ]
-		s:ChangeVolume( math.Clamp( .02, d[ 2 ] * flVolume, 1 ) )
-		m_tDeleteMeSoonEnough[ i ] = d
-	end
-	self.m_tDeleteMeSoonEnough = m_tDeleteMeSoonEnough
 end
 
 local player_Iterator, ents_Iterator, util_TraceLine = player.Iterator, ents.Iterator, util.TraceLine
