@@ -113,6 +113,9 @@ function ENT:Think()
 		MyTable.DoPhysicsStuff( self, phys, MyTable )
 		if MyTable.bPhysics then
 			phys:Wake()
+			local loco = MyTable.loco
+			loco:SetStepHeight( 0 )
+			loco:SetJumpHeight( 0 )
 		else
 			if IsValid( CEntity_GetParent( self ) ) then CEntity_PhysicsDestroy( self ) else
 				if CEntity_WaterLevel( self ) == 0 then

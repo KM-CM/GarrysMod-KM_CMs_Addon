@@ -318,8 +318,8 @@ hook.Add( "Think", "GameImprovements", function()
 	for _, ent in ents_Iterator() do
 		if ent.GAME_Think then ent:GAME_Think() end
 		if !ent.GAME_bPhysCollideHook then ent:AddCallback( "PhysicsCollide", function( ... ) PhysicsCollide( ... ) end ) ent.GAME_bPhysCollideHook = true end
-		if CEntity_WaterLevel( ent ) > 0 then CEntity_Extinguish( ent ) elseif CEntity_IsOnFire( ent ) then CEntity_Ignite( ent, 999999 ) end
-		if CEntity_IsOnFire( ent ) && math.random( ( ent.GAME_bFireBall && 200000 || ( 400000 / ent:BoundingRadius() ) ) * FrameTime() ) == 1 then
+		if CEntity_WaterLevel( ent ) > 0 || ent.GAME_bDontIgnite then CEntity_Extinguish( ent ) elseif CEntity_IsOnFire( ent ) then CEntity_Ignite( ent, 999999 ) end
+		if !ent.GAME_bDontIgnite && CEntity_IsOnFire( ent ) && math.random( ( ent.GAME_bFireBall && 200000 || ( 400000 / ent:BoundingRadius() ) ) * FrameTime() ) == 1 then
 			for _ = 0, 3 do
 				local dir = VectorRand()
 				local tr = util_TraceLine {

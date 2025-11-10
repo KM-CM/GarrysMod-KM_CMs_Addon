@@ -76,6 +76,20 @@ end
 ENT.tEnemies = {} // Entity ( Even InValid, will be Filtered ) -> true
 ENT.tBullseyes = {} // EntityUniqueIdentifier -> { BaseActorBullseye ( Even InValid ), Source Entity ( Even InValid ), Entity ( Even InValid ) }
 
+local CEntity_Remove = CEntity.Remove
+function ENT:ReportPositionAsClear( vec )
+	local MyTable = CEntity_GetTable( self )
+	local tAllies = MyTable.GetAlliesByClass( self, MyTable )
+	if tAllies then
+		for pAlly in pairs( tAllies ) do
+			for tData in pairs( CEntity_GetTable( pAlly ).tBullseyes ) do
+				local p = tData[ 1 ]
+				if CEntity_GetPos( p ):DistToSqr( vec ) <= 65536/*256*/ then CEntity_Remove( p ) end
+			end
+		end
+	end
+end
+
 // function ENT:UpdateEnemyMemory( enemy, vec ) self:SetupBullseye( enemy, vec, enemy:GetAngles() ) end
 function ENT:UpdateEnemyMemory( enemy, vec, ang ) self:SetupBullseye( enemy, vec || enemy:GetPos(), ang || enemy:GetAngles() ) end
 

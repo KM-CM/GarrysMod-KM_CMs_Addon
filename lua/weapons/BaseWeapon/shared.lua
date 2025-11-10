@@ -222,21 +222,21 @@ if CLIENT then
 		if f then vViewTarget = vViewTarget + f * flRatio end
 		f = MyTable.vBezierAngle
 		if f then f = f.x vViewTargetAngle.x = vViewTargetAngle.x + f * flRatio end
-		vViewFinal = LerpVector( 5 * FrameTime(), vViewFinal, vViewTarget )
-		vViewFinalAngle = LerpVector( 5 * FrameTime(), vViewFinalAngle, vViewTargetAngle )
+		vViewFinal = LerpVector( math_min( 1, 5 * FrameTime() ), vViewFinal, vViewTarget )
+		vViewFinalAngle = LerpVector( math_min( 1, 5 * FrameTime() ), vViewFinalAngle, vViewTargetAngle )
 		ang:RotateAroundAxis( ang:Right(), vViewFinalAngle.x )
 		ang:RotateAroundAxis( ang:Up(), vViewFinalAngle.y )
 		ang:RotateAroundAxis( ang:Forward(), vViewFinalAngle.z )
 		pos = pos + vViewFinal.z * ang:Up()
 		pos = pos + vViewFinal.y * ang:Forward()
 		pos = pos + vViewFinal.x * ang:Right()
-		aViewAim = LerpAngle( 5 * FrameTime(), aViewAim, ply:EyeAngles() )
+		aViewAim = LerpAngle( math_min( 1, 5 * FrameTime() ), aViewAim, ply:EyeAngles() )
 		MyTable.aLastViewEyePosition = aViewAim - ply:EyeAngles()
 		local flMultiplier = MyTable.flAimMultiplier || 0
 		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
 		local flSwayAngleNeg = -flSwayAngle
 		local eye = ply:EyeAngles()
-		MyTable.flLastEyeYaw = Lerp( 5 * FrameTime(), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
+		MyTable.flLastEyeYaw = Lerp( math_min( 1, 5 * FrameTime() ), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
 		MyTable.flLastTrueEyeYaw = eye[ 2 ]
 		MyTable.aLastViewEyePosition[ 2 ] = -MyTable.flLastEyeYaw
 		ang:RotateAroundAxis( ang:Right(), -math_Clamp( flSwayAngle * MyTable.aLastViewEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
@@ -410,7 +410,7 @@ if CLIENT then
 		end
 		local flRoll = MyTable.flAimRoll
 		local flAimTiltTime = MyTable.flAimTiltTime
-		flAimTiltTime = Lerp( 10 * FrameTime(), flAimTiltTime, bZoom && flRoll || 0 )
+		flAimTiltTime = Lerp( math_min( 1, 10 * FrameTime() ), flAimTiltTime, bZoom && flRoll || 0 )
 		local flTime = ( -( flAimTiltTime - ( flRoll * .5 ) ) ^ 2 + ( flRoll * .5 ) ^ 2 ) / ( flRoll * .5 )
 		MyTable.flAimTiltTime = flAimTiltTime
 		vTargetAngle = vTargetAngle + ( bZoom && Vector( -flTime / ( flRoll / 3 ), 0, -flTime ) || Vector( 3 * flTime / flRoll, 0, flTime ) )
@@ -429,7 +429,7 @@ if CLIENT then
 		local eye = ply:EyeAngles()
 		MyTable.aLastEyePosition[ 1 ] = math_AngleDifference( aAim[ 1 ], eye[ 1 ] )
 		MyTable.aLastEyePosition[ 3 ] = math_AngleDifference( aAim[ 3 ], eye[ 3 ] )
-		aAim = LerpAngle( 5 * FrameTime(), aAim, eye )
+		aAim = LerpAngle( math_min( 1, 5 * FrameTime() ), aAim, eye )
 		local flMultiplier
 		if bZoom then
 			flMultiplier = vAim && vFinal:Distance( vTarget ) / vTarget:Length() || math_Clamp( MyTable.flAimMultiplier - FrameTime(), 0, 1 )
@@ -439,7 +439,7 @@ if CLIENT then
 		MyTable.flAimMultiplier = math_Remap( flMultiplier, 1, 0, 1, MyTable.flViewModelAimSwayMultiplier )
 		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
 		local flSwayAngleNeg = -flSwayAngle
-		MyTable.flLastEyeYaw = Lerp( 5 * FrameTime(), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
+		MyTable.flLastEyeYaw = Lerp( math_min( 1, 5 * FrameTime() ), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), flSwayAngleNeg * MyTable.flSwayScale, flSwayAngle * MyTable.flSwayScale ), 0 )
 		MyTable.flLastTrueEyeYaw = eye[ 2 ]
 		MyTable.aLastEyePosition[ 2 ] = -MyTable.flLastEyeYaw
 		ang:RotateAroundAxis( ang:Right(), math_Clamp( flSwayAngle * MyTable.aLastEyePosition.p / MyTable.flSwayScale, flSwayAngleNeg, flSwayAngle ) )
