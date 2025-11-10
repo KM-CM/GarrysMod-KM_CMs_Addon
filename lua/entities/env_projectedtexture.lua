@@ -123,6 +123,7 @@ else
 			end
 		end
 	end
+	function ENT:OnRemove() if IsValid( self.Sprite ) then self.Sprite:Remove() end end
 	function ENT:KeyValue( k, v )
 		k = string.lower( k )
 		if self:SetNetworkKeyValue( k, v ) then return end
