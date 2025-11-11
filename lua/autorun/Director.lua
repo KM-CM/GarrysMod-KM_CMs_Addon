@@ -97,11 +97,11 @@ DIRECTOR_MUSIC_TABLE = {
 						return 0, 1, true
 					else
 						self:Play( "Main", "MUS_Default_Transition_Riser" )
-						self.flEndTime = RealTime() + 6.682 - engine_TickInterval() * 3
+						self.flEndTime = SysTime() + 6.682 - engine_TickInterval() * 3
 						self.bPartStarted = true
 					end
 				end
-				return flVolumeA, Either( RealTime() > self.flEndTime, 1 )
+				return flVolumeA, Either( SysTime() > self.flEndTime, 1 )
 			end
 		},
 		Default_Instant = {
@@ -126,11 +126,11 @@ DIRECTOR_MUSIC_TABLE = {
 						return 0, 1, true
 					else
 						self:Play( "Main", "MUS_Default_Transition_Riser" )
-						self.flEndTime = RealTime() + 6.682 - engine_TickInterval() * 3
+						self.flEndTime = SysTime() + 6.682 - engine_TickInterval() * 3
 						self.bPartStarted = true
 					end
 				end
-				if RealTime() > self.flEndTime then return 0, 1
+				if SysTime() > self.flEndTime then return 0, 1
 				else return flVolumeA, flVolumeB end
 			end
 		}
