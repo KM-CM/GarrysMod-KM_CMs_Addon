@@ -11,6 +11,8 @@ function ENT:MoveAlongPath( Path, flSpeed, flHeight, tFilter, bAllowSliding )
 	self:HandleJumpingAlongPath( Path, tFilter )
 end
 
+DEFINE_BASECLASS "BaseActor"
+
 function ENT:Stand( flHeight )
 	if flHeight == nil then flHeight = 1 end
 	self:SetCrouchTarget( flHeight )
