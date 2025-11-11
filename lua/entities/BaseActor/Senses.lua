@@ -77,8 +77,8 @@ ENT.tEnemies = {} // Entity ( Even InValid, will be Filtered ) -> true
 ENT.tBullseyes = {} // EntityUniqueIdentifier -> { BaseActorBullseye ( Even InValid ), Source Entity ( Even InValid ), Entity ( Even InValid ) }
 
 local CEntity_Remove = CEntity.Remove
-function ENT:ReportPositionAsClear( vec )
-	local MyTable = CEntity_GetTable( self )
+function ENT:ReportPositionAsClear( vec, MyTable )
+	MyTable = MyTable || CEntity_GetTable( self )
 	local tAllies = MyTable.GetAlliesByClass( self, MyTable )
 	if tAllies then
 		for pAlly in pairs( tAllies ) do
@@ -103,8 +103,6 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	if !ang then ang = ( enemy.GetAimVector && enemy:GetAimVector() || enemy:GetForward() ):Angle() end
 	local ent = enemy
 	if ent.__ACTOR_BULLSEYE__ then
-		// We Dont want to Create Billions of Bullseyes for Others' Bullseyes so They Create Them for Our Bullseyes and Then Recursion
-		// ( Because That is Literally Stupid I have No Idea Why I Clarified That It's Obvious )
 		while ent.__ACTOR_BULLSEYE__ && IsValid( ent.Enemy ) do
 			ent = ent.Enemy
 		end
@@ -181,9 +179,10 @@ local math_Clamp = math.Clamp
 
 local CurTime = CurTime
 
-// If We are in Combat with Multiple Enemies, and We See That There is
-// No Enemy at One Position, We can Remove That Bullseye
+// If we are in combat with multiple enemies, and we see that there is
+// no enemy at a position, can we remove that bullseye?
 ENT.bCombatForgetHostiles = true
+// ENT.bCombatForgetLastHostile = true // Same as above but for one enemy
 ENT.flLastLookTime = 0
 ENT.flNextLookTime = 0
 // If we've seen something, and then it went out of sight, don't delete the info about it yet!
@@ -213,6 +212,9 @@ function ENT:Look( MyTable )
 	local flVisionDistSqr = MyTable.flMaxVisionRange * MyTable.flMaxVisionRange
 	local vEyePos = MyTable.GetShootPos( self )
 	local tAllies = MyTable.GetAlliesByClass( self )
+	local bCombatForgetHostiles = MyTable.bCombatForgetHostiles
+	local bCombatForgetLastHostile = MyTable.bCombatForgetLastHostile
+	local fReportPositionAsClear = MyTable.ReportPositionAsClear
 	local bClear = !IsValid( MyTable.Enemy )
 	for _, ent in ipairs(
 		// This is the piece of shit that is necessary but absolutely CONSUMES the CPU!
@@ -234,25 +236,13 @@ function ENT:Look( MyTable )
 				if tAllies && TheirTable.Owner == self then
 					local f = tOldVisionStrength[ ent ]
 					if f && f >= 1 then
-						if iNumEnemies > 1 then
+						if bCombatForgetLastHostile || bCombatForgetHostiles && iNumEnemies > 1 then
 							local p = ent.Enemy
 							if IsValid( p ) then
 								local v = tOldVisionStrength[ p ]
 								if v && v >= 1 then continue end
 							end
-							local sOwner = EntityUniqueIdentifier( p )
-							if sOwner then
-								for ent in pairs( tAllies ) do
-									local t = ent.tBullseyes
-									local p = t[ sOwner ]
-									if p then
-										p = p[ 1 ]
-										if IsValid( p ) then p:Remove() end
-									end
-									t[ sOwner ] = nil
-								end
-							end
-							ent:Remove()
+							fReportPositionAsClear( self, CEntity_GetPos( ent ), MyTable )
 							iNumEnemies = iNumEnemies - 1
 						end
 					else tVisionStrength[ ent ] = math.Clamp( f + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 ) end
