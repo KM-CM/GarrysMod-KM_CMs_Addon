@@ -235,7 +235,9 @@ local Vector = Vector
 local CurTime = CurTime
 function GetVelocity( ent )
 	local EntTable = CEntity_GetTable( ent )
-	local v = EntTable.GAME_pVehicle
+	local v = EntTable.__VELOCITY__
+	if v then return v end
+	v = EntTable.GAME_pVehicle
 	if IsValid( v ) then return GetVelocity( v ) end
 	if EntTable.__GetVelocity__ then return EntTable:__GetVelocity__() end
 	if ent:IsPlayer() || ent:IsNPC() then return CEntity_GetVelocity( ent ) else

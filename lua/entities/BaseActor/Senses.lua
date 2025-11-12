@@ -120,6 +120,7 @@ function ENT:SetupBullseye( enemy, vec, ang )
 	beye:SetAngles( ang )
 	beye.GAME_BoundMins = ent:OBBMins()
 	beye.GAME_BoundMaxs = ent:OBBMaxs()
+	beye.__VELOCITY__ = GetVelocity( enemy )
 	if HasRangeAttack( ent ) then
 		beye.HAS_RANGE_ATTACK = true
 		beye.HAS_NOT_RANGE_ATTACK = nil

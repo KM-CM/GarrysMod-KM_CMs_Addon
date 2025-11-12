@@ -12,6 +12,44 @@ local math = math
 local math_max = math.max
 local math_ceil = math.ceil
 
+local ents_Create = ents.Create
+local CEntity_SetOwner = CEntity.SetOwner
+function ENT:CreateProjectile( sClass )
+	local pProjectile = ents_Create( sClass )
+	if !IsValid( pProjectile ) then return end
+	CEntity_GetTable( pProjectile ).iClass = CEntity_GetTable( self ).iClass
+	CEntity_SetOwner( pProjectile, self )
+	return pProjectile
+end
+
+function ENT:SelectAim( pEnemy, vShoot, flSpeed, flRadius, flBound )
+	local vPos = pEnemy:GetPos()
+	local v = ( vShoot - vPos ):GetNormalized()
+	v[ 3 ] = 0
+	local tr = util.TraceLine {
+		start = vPos,
+		endpos = vPos - Vector( 0, 0, flRadius ) + v * flBound,
+		mask = MASK_SOLID,
+		filter = pEnemy
+	}
+	if tr.Hit then
+		v = tr.HitPos
+		if self:VisibleVec( v ) then
+			self.vDesAim = ( v + GetVelocity( pEnemy ) * v:Distance( vShoot ) / flSpeed - vShoot ):GetNormalized()
+		else
+			local vTarget = pEnemy:GetPos() + pEnemy:OBBCenter()
+			local vOffset = GetVelocity( pEnemy ) * vTarget:Distance( vShoot ) / flSpeed
+			vTarget = vTarget + vOffset
+			self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+		end
+	else
+		local vTarget = pEnemy:GetPos() + pEnemy:OBBCenter()
+		local vOffset = GetVelocity( pEnemy ) * vTarget:Distance( vShoot ) / flSpeed
+		vTarget = vTarget + vOffset
+		self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+	end
+end
+
 function ENT:Stand() self.loco:Approach( self:GetPos(), 1 ) end
 
 function ENT:OnKilled( dmg )
