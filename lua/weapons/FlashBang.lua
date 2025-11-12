@@ -7,13 +7,6 @@ SWEP.ViewModel = Model "models/weapons/cstrike/c_eq_flashbang.mdl"
 SWEP.WorldModel = Model "models/weapons/w_eq_flashbang.mdl"
 SWEP.Spawnable = true
 
-SWEP.__FLASHBANG__ = true
-SWEP.FLASHBANG_flBlindTime = 5
-SWEP.FLASHBANG_flBlindFadeTime = 5
-
-SWEP.GRENADE_flMinimumTime = 2.2
-SWEP.GRENADE_flMaximumTime = 2.4
-
 if !SERVER then return end
 
 local util = util
@@ -26,13 +19,21 @@ local CEntity_Remove = CEntity.Remove
 local EffectData = EffectData
 local util_Effect = util.Effect
 
-SWEP.GRENADE_flRadius = 256
-SWEP.GRENADE_flDamage = 32
+SWEP.__PROJECTILE_EXPLOSION__ = true
+SWEP.EXPLOSION_flRadius = 256
+SWEP.EXPLOSION_flDamage = 32
+
+SWEP.__FLASHBANG__ = true
+SWEP.FLASHBANG_flBlindTime = 5
+SWEP.FLASHBANG_flBlindFadeTime = 5
+
+SWEP.GRENADE_flMinimumTime = 2.2
+SWEP.GRENADE_flMaximumTime = 2.4
 
 function SWEP:Detonate()
 	local MyTable = CEntity_GetTable( self )
 	local v = CEntity_GetPos( self ) + CEntity_OBBCenter( self )
-	util_BlastDamage( self, self, v, MyTable.GRENADE_flRadius, MyTable.GRENADE_flDamage )
+	util_BlastDamage( self, self, v, MyTable.EXPLOSION_flRadius, MyTable.EXPLOSION_flDamage )
 	local ed = EffectData()
 	ed:SetOrigin( v )
 	ed:SetFlags( 128 )
