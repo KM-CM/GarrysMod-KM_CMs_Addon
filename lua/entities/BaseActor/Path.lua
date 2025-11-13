@@ -353,22 +353,57 @@ function ENT:Jump( vTarget )
 	self.m_bJumping = true
 end
 
-ENT.vLastAcceleration = Vector()
-function ENT:HandleJumpingAlongPath( Path, tFilter )
+ENT.flNextAvoidDirection = 0
+function ENT:HandleJumpingAlongPath( Path, flSpeed, tFilter )
 	self.loco:SetStepHeight( 16 )
-	Path:Update( self )
+	if !self:IsOnGround() then
+		// Air acceleration, maybe? I'm too lazy to find out how sv_airaccelerate works
+		return
+	end
 	local goal, tNextGoal = Path:GetCurrentGoal(), Path:NextSegment()
 	if goal && tNextGoal then
-		if self:IsOnGround() then
-			self.vLastAcceleration = Vector()
-			self.loco:Approach( goal.pos, 1 )
-			if goal.type == 2 || goal.type == 3 then
-				self:Jump( tNextGoal.pos )
-			end
-		//	else
-		//		// Air acceleration, maybe? I'm too lazy to find out how sv_airaccelerate works
+		self.loco:Approach( goal.pos, 1 )
+		if goal.type == 2 || goal.type == 3 then
+			Path:Update( self )
+			self:Jump( tNextGoal.pos )
+			return
 		end
 	end
+	local vMins, vMaxs = self:OBBMins(), self:OBBMaxs()
+	vMins[ 3 ] = self.loco:GetStepHeight()
+	vMins[ 1 ] = vMins[ 1 ] * 1.25
+	vMaxs[ 1 ] = vMaxs[ 1 ] * 1.25
+	vMins[ 2 ] = vMins[ 2 ] * 1.25
+	vMaxs[ 2 ] = vMaxs[ 2 ] * 1.25
+	if CurTime() <= self.flNextAvoidDirection then
+		local dDirection = self.dAvoid
+		local vOffset = dDirection * ( vMaxs[ 2 ] - vMins[ 2 ] )
+		local tr = util.TraceLine {
+			start = self:GetPos() + self:OBBCenter(),
+			endpos = self:GetPos() + self:OBBCenter() + vOffset,
+			mask = MASK_SOLID,
+			filter = self
+		}
+		if tr.Hit then self.flNextAvoidDirection = -1 return end
+		self.loco:Approach( self:GetPos() + dDirection * 4096, 1 )
+		return
+	end
+	if !goal then return end
+	local v = Angle( goal.pos - self:GetPos() )
+	local tr = util.TraceHull {
+		start = self:GetPos(),
+		endpos = self:GetPos() + v:Forward() * vMaxs[ 1 ],
+		mins = vMins,
+		maxs = vMaxs,
+		filter = self
+	}
+	if tr.Hit then
+		if ( goal.pos - self:GetPos() ):Angle():Right():Dot( goal.forward:Angle():Right() ) <= 0 then
+			self.bAvoidRight = nil
+		else self.bAvoidRight = true end
+		self.dAvoid = self.bAvoidRight && self:GetRight() || -self:GetRight()
+		self.flNextAvoidDirection = CurTime() + vMaxs[ 2 ] / flSpeed * math.Rand( 3, 4 )
+	else Path:Update( self ) end
 end
 
 function ENT:HandleStuck() self.loco:ClearStuck() end
