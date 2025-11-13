@@ -204,28 +204,6 @@ end
 
 function ENT:HandleKeyValue( Key, Value ) end
 
-local DEFAULT_KEY_VALUES = {
-	weapon = function( self, _, sWeapons )
-		// if sWeaponClass != nil && sWeaponClass != '' then self:Give( sWeaponClass ) end
-		for t in string.gmatch( sWeapons, "[^,]+" ) do self:Give( t ) end
-	end,
-	class = function( self, _, sClass )
-		sClass = "CLASS_" .. sClass
-		local v = _G[ sClass ]
-		if v == nil then
-			Add_NPC_Class( sClass )
-			local v = _G[ sClass ]
-			if v then self:SetNPCClass( v ) end
-		else self:SetNPCClass( v ) end
-	end
-}
-DEFAULT_KEY_VALUES.additionalequipment = DEFAULT_KEY_VALUES.weapon
-function ENT:KeyValue( k, v )
-	local f = DEFAULT_KEY_VALUES[ string.lower( k ) ]
-	if f then f( self, k, v ) return end
-	self:HandleKeyValue( k, v )
-end
-
 ENT.GAME_flSuppression = 0
 ENT.flSuppressionMax = 2
 ENT.flSuppressionRec = 2
