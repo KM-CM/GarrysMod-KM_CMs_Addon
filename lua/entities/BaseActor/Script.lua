@@ -1,9 +1,3 @@
-/*
-In My Definition of Map Making, "Scripting" Things is Basically Using The Input Output System to Do Anything.
-Do Not Confuse It with Writing Code ( Also Scripting, Just Different Context ).
-This File is Made for The Ability to Script What Actors Do.
-*/
-
 function ENT:CustomInput( Input, Param, Activator, Caller ) end
 
 local __INPUTS__ = {
@@ -65,4 +59,26 @@ local __INPUTS__ = {
 function ENT:AcceptInput( Input, Activator, Caller, Param )
 	local v = __INPUTS__[ string.lower( Input ) ]
 	if v == nil then self:CustomInput( Input, Param, Activator, Caller ) else v( self, Param ) end
+end
+
+local __KEY_VALUES__ = {
+	cweapon = function( self, _, sWeapons )
+		// if sWeaponClass != nil && sWeaponClass != '' then self:Give( sWeaponClass ) end
+		for t in string.gmatch( sWeapons, "[^,]+" ) do self:Give( t ) end
+	end,
+	eclass = function( self, _, sClass )
+		sClass = "CLASS_" .. sClass
+		local v = _G[ sClass ]
+		if v == nil then
+			Add_NPC_Class( sClass )
+			local v = _G[ sClass ]
+			if v then self:SetNPCClass( v ) end
+		else self:SetNPCClass( v ) end
+	end
+}
+__KEY_VALUES__.additionalequipment = __KEY_VALUES__.weapon
+function ENT:KeyValue( k, v )
+	local f = __KEY_VALUES__[ string.lower( k ) ]
+	if f then f( self, k, v ) return end
+	self:HandleKeyValue( k, v )
 end
