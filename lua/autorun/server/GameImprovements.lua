@@ -345,7 +345,7 @@ hook.Add( "Think", "GameImprovements", function()
 				break
 			end
 		end
-		if PersistAll:GetBool() && ent:MapCreationID() != -1 && !ent:IsPlayer() && ( !ent:IsWeapon() || ent:IsWeapon() && ( !IsValid( ent:GetOwner() ) || IsValid( ent:GetOwner() ) && !ent:GetOwner():IsPlayer() ) ) then ent:SetPersistent( true ) end
+		if PersistAll:GetBool() && ent:MapCreationID() == -1 && !ent:IsPlayer() && ( !ent:IsWeapon() || ent:IsWeapon() && ( !IsValid( ent:GetOwner() ) || IsValid( ent:GetOwner() ) && !ent:GetOwner():IsPlayer() ) ) then ent:SetPersistent( true ) end
 		local tSuppressionAmount = {}
 		if ent.GAME_tSuppressionAmount then
 			for ent, am in pairs( ent.GAME_tSuppressionAmount ) do
