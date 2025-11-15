@@ -297,7 +297,7 @@ if CLIENT then
 					vTargetAngle.x = vTargetAngle.x + 45
 					vTarget.z = vTarget.z - 10 - MyTable.flViewModelZ
 					vTarget.y = vTarget.y - 10 - MyTable.flViewModelX
-					vTarget.x = vTarget.x - 3.5 - MyTable.flViewModelY
+					vTarget.x = vTarget.x + ( MyTable.flCoverLeftX || -3.5 ) - MyTable.flViewModelY
 				else
 					vTargetAngle.x = vTargetAngle.x + 45
 					vTarget.x = vTarget.x + ( MyTable.vViewModelAim && MyTable.vViewModelAim[ 1 ] || 2 )
@@ -322,8 +322,16 @@ if CLIENT then
 					vTarget.z = vTarget.z + MyTable.flViewModelZ
 					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelY )
 				elseif p == COVER_BLINDFIRE_LEFT then
-					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelX )
-				elseif p == COVER_BLINDFIRE_RIGHT then end
+					vTarget.x = vTarget.x + ( MyTable.flBlindFireLeftX || 0 ) + MyTable.flViewModelX
+					vTargetAngle.z = vTargetAngle.z + 90
+				elseif p == COVER_BLINDFIRE_RIGHT then
+					vTarget.x = vTarget.x + ( MyTable.flBlindFireRightX || 0 ) - MyTable.flViewModelX
+					vTargetAngle.z = vTargetAngle.z - 90
+				end
+			elseif p == COVER_BLINDFIRE_LEFT then
+				vTargetAngle.z = vTargetAngle.z - 45
+			elseif p == COVER_BLINDFIRE_RIGHT then
+				vTargetAngle.z = vTargetAngle.z + 45
 			end
 			local bOnGround = CEntity_IsOnGround( ply )
 			if CPlayer_InVehicle( ply ) then
