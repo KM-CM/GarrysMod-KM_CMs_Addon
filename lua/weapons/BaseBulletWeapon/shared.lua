@@ -10,8 +10,6 @@ SWEP.Primary_flDelay = 0
 SWEP.Primary_iNum = 1
 SWEP.Primary_iTracer = 1
 SWEP.Primary_sTracer = "Bullet"
-// SWEP.Primary_sSound = nil
-// SWEP.Primary_sSoundAuto = nil
 
 SWEP.Instructions = "Primary to shoot."
 
@@ -22,7 +20,6 @@ local CEntity_GetOwner = CEntity.GetOwner
 local CEntity_FireBullets = CEntity.FireBullets
 local CEntity_EmitSound = CEntity.EmitSound
 local CWeapon_SetHoldType = CWeapon.SetHoldType
-local CWeapon_TakePrimaryAmmo = CWeapon.TakePrimaryAmmo
 local CWeapon_SetNextPrimaryFire = CWeapon.SetNextPrimaryFire
 local Vector = Vector
 local PLAYER_ATTACK1 = PLAYER_ATTACK1
@@ -31,6 +28,14 @@ local util_Effect = util.Effect
 local CurTime = CurTime
 
 function SWEP:Initialize() CWeapon_SetHoldType( self, CEntity_GetTable( self ).sHoldType ) end
+
+function SWEP:DoMuzzleFlash()
+	local ed = EffectData()
+	ed:SetEntity( self )
+	ed:SetAttachment( 1 )
+	ed:SetFlags( 1 )
+	util_Effect( "MuzzleFlash", ed )
+end
 
 function SWEP:PrimaryAttack()
 	local MyTable = CEntity_GetTable( self )
@@ -48,16 +53,12 @@ function SWEP:PrimaryAttack()
 	} )
 	MyTable.ShootEffects( self, MyTable )
 	owner:SetAnimation( PLAYER_ATTACK1 ) // CPlayer?
-	local ed = EffectData()
-	ed:SetEntity( self )
-	ed:SetAttachment( 1 )
-	ed:SetFlags( 1 )
-	util_Effect( "MuzzleFlash", ed )
+	MyTable.DoMuzzleFlash( self, MyTable )
 	local s = MyTable.sSound
 	if s then CEntity_EmitSound( self, s ) end
 	s = MyTable.sSoundAuto
 	if s then CEntity_EmitSound( self, s ) end
-	CWeapon_TakePrimaryAmmo( self, 1 )
+	MyTable.TakePrimaryAmmo( self, 1 )
 	CWeapon_SetNextPrimaryFire( self, CurTime() + MyTable.Primary_flDelay )
 end
 

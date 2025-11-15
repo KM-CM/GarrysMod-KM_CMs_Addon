@@ -54,17 +54,20 @@ function SWEP:PrimaryAttack()
 	local ed = EffectData()
 	ed:SetEntity( self )
 	ed:SetAttachment( 1 )
-	ed:SetFlags( 5 )
+	ed:SetFlags( 0 )
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "OSIPR_Shot"
 	self:TakePrimaryAmmo( 1 )
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
+local EffectData = EffectData
+local util_Effect = util.Effect
 function SWEP:DoImpactEffect( tr, dt )
 	if tr.HitSky then return end
-	local ed = EffectData()
-	ed:SetOrigin( tr.HitPos + tr.HitNormal )
-	ed:SetNormal( tr.HitNormal )
-	util.Effect( "AR2Impact", ed ) 
+	local p = EffectData()
+	local d = tr.HitNormal
+	p:SetOrigin( tr.HitPos + d )
+	p:SetNormal( d )
+	util_Effect( "AR2Impact", p ) 
 end

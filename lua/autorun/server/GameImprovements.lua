@@ -226,7 +226,8 @@ end )
 
 TRACER_COLOR = {
 	Bullet = "255 48 0 1024",
-	AR2Tracer = "48 255 255 1024"
+	AR2Tracer = "48 255 255 1024",
+	HelicopterTracer = "48 255 255 2048"
 }
 local TRACER_COLOR = TRACER_COLOR
 

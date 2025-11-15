@@ -311,11 +311,13 @@ if CLIENT then
 				vTarget.z = vTarget.z - 10 - MyTable.flViewModelZ
 			end
 		else
-			if MyTable.__VIEWMODEL_FULLY_MODELED__ then
-				local p = CEntity_GetNW2Int( ply, "CTRL_Peek" )
-				if p == COVER_FIRE_LEFT then
-				elseif p == COVER_FIRE_RIGHT then
-				elseif p == COVER_BLINDFIRE_UP then
+			local p = CEntity_GetNW2Int( ply, "CTRL_Peek" )
+			if p == COVER_FIRE_LEFT then
+				vTargetAngle.z = vTargetAngle.z - 22.5
+			elseif p == COVER_FIRE_RIGHT then
+				vTargetAngle.z = vTargetAngle.z + 22.5
+			elseif MyTable.__VIEWMODEL_FULLY_MODELED__ then
+				if p == COVER_BLINDFIRE_UP then
 					vTargetAngle.z = vTargetAngle.z + 180
 					vTarget.z = vTarget.z + MyTable.flViewModelZ
 					vTarget.x = vTarget.x - ( 18 + MyTable.flViewModelY )
