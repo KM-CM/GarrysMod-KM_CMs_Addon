@@ -127,6 +127,8 @@ ACHIEVEMENT_MISCELLANEOUS "WeaponReloadFull"
 
 ACHIEVEMENT_MISCELLANEOUS "Slide"
 
+ACHIEVEMENT_MISCELLANEOUS "CoverGrate"
+
 ACHIEVEMENT_MISCELLANEOUS "CoverPeek"
 ACHIEVEMENT_MISCELLANEOUS "CoverBlindFire"
 
@@ -195,7 +197,7 @@ hook.Add( "OnEntityCreated", "GameImprovements", function( ent )
 end )
 
 local function GrantWeaponAchievement( ply, wep )
-	local sAchievement = "Achievement_Acquire_" .. wep:GetClass()
+	local sAchievement = "Acquire_" .. wep:GetClass()
 	if __ACHIEVEMENTS__[ sAchievement ] then
 		local s = ply:SteamID64()
 		local t = __ACHIEVEMENTS_ACQUIRED__[ s ]
@@ -756,6 +758,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		end
 		if bInCover then
+			if !Achievement_Has( ply, "Miscellaneous_CoverGrate" ) && bit.band( tr.Contents, CONTENTS_GRATE ) != 0 then Achievement_Miscellaneous_Grant( ply, "CoverGrate" ) end
 			// NOTE: Force variables will do nothing when `nil`. This is intended so that
 			// covers who allow being both crouched and uncrouched during peeks work!
 			local vMins, vMaxs = ply:OBBMins(), ply:OBBMaxs()

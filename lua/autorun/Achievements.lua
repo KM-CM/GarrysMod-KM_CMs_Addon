@@ -24,14 +24,14 @@ __ACHIEVEMENTS__ = __ACHIEVEMENTS__ || {}
 // SteamID64 -> { String = true }
 __ACHIEVEMENTS_ACQUIRED__ = __ACHIEVEMENTS_ACQUIRED__ || util.JSONToTable( file.Read( "Achievements/" .. engine.ActiveGamemode() .. ".json" ) || "[]", true, true )
 
-function ACHIEVEMENT_ACQUIRE( sClass ) __ACHIEVEMENTS__[ "Achievement_Acquire_" .. sClass ] = true end
+function ACHIEVEMENT_ACQUIRE( sClass ) __ACHIEVEMENTS__[ "Acquire_" .. sClass ] = true end
 
-function ACHIEVEMENT_MISCELLANEOUS( sName ) __ACHIEVEMENTS__[ "Achievement_Miscellaneous_" .. sName ] = true end
+function ACHIEVEMENT_MISCELLANEOUS( sName ) __ACHIEVEMENTS__[ "Miscellaneous_" .. sName ] = true end
 
 function Achievement_Miscellaneous( ply, sName )
 	local s = ply:SteamID64()
 	local t = __ACHIEVEMENTS_ACQUIRED__[ s ]
-	local sAchievement = "Miscellaneous" .. sName
+	local sAchievement = "Miscellaneous_" .. sName
 	if t then
 		if !t[ sAchievement ] then
 			ply:SendLua( "Achievement_Miscellaneous(\"" .. sName ..  "\")" )
@@ -46,8 +46,7 @@ end
 function Achievement_Has( ply, sName )
 	local s = ply:SteamID64()
 	local t = __ACHIEVEMENTS_ACQUIRED__[ s ]
-	if t then if t[ sName ] then return end end
-	return true
+	if t then if t[ sName ] then return true end end
 end
 
 function Achievement_Miscellaneous_Grant( ply, sName )
@@ -55,7 +54,7 @@ function Achievement_Miscellaneous_Grant( ply, sName )
 	local t = __ACHIEVEMENTS_ACQUIRED__[ s ]
 	if t then
 		ply:SendLua( "Achievement_Miscellaneous(\"" .. sName ..  "\")" )
-		t[ sName ] = true
+		t[ "Miscellaneous_" .. sName ] = true
 	else
 		ply:SendLua( "Achievement_Miscellaneous(\"" .. sName .. "\")" )
 		__ACHIEVEMENTS_ACQUIRED__[ s ] = { [ sName ] = true }
