@@ -456,10 +456,10 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	local bAllDirectionalSprint = Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) || ( ( Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || ply:Crouching() )
 	if bAllDirectionalSprint then
 		ply:SetNW2Bool( "CTRL_bSprinting", false )
-		if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+		if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) end
 	else
 		local bGroundCrouchingAndNotSliding = bGround && ply:Crouching() && !ply:GetNW2Bool "CTRL_bSliding"
-		if bGroundCrouchingAndNotSliding || Either( v && v.bCanFly, true, bGround ) && !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil end
+		if bGroundCrouchingAndNotSliding || cmd:KeyDown( IN_ZOOM ) || Either( v && v.bCanFly, true, bGround ) && !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil cmd:RemoveKey( IN_SPEED ) end
 		if !bGroundCrouchingAndNotSliding && cmd:KeyDown( IN_SPEED ) || ply.CTRL_bHeldSprint then
 			ply.CTRL_bHeldSprint = true
 			cmd:AddKey( IN_SPEED )
