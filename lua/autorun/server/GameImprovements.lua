@@ -119,6 +119,29 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 	end*/
 end
 
+include "autorun/Achievements.lua"
+
+ACHIEVEMENT_MISCELLANEOUS "Kill"
+
+ACHIEVEMENT_MISCELLANEOUS "WeaponReloadFull"
+
+ACHIEVEMENT_MISCELLANEOUS "Slide"
+
+ACHIEVEMENT_MISCELLANEOUS "CoverPeek"
+ACHIEVEMENT_MISCELLANEOUS "CoverBlindFire"
+
+ACHIEVEMENT_MISCELLANEOUS "CoverBlindFireKill"
+
+local function fOnKilled( pEntity, pAttacker )
+	if pAttacker:IsPlayer() then
+		Achievement_Miscellaneous( pAttacker, "Kill" )
+		local f = pAttacker:GetNW2Int "CTRL_Peek"
+		if f == COVER_BLINDFIRE_LEFT || f == COVER_BLINDFIRE_RIGHT || f == COVER_BLINDFIRE_UP then
+			Achievement_Miscellaneous( pAttacker, "CoverBlindFireKill" )
+		end
+	end
+end
+
 hook.Add( "PlayerDeath", "GameImprovements", function( ply, _, at )
 	if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end
 	if IsValid( at ) && at:IsPlayer() then
@@ -128,6 +151,7 @@ hook.Add( "PlayerDeath", "GameImprovements", function( ply, _, at )
 			if v then if v( at, ply ) then b = nil end end
 		end
 	end
+	fOnKilled( ply, at )
 end )
 hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
 
@@ -139,6 +163,7 @@ hook.Add( "OnNPCKilled", "GameImprovements", function( ent, at )
 			if v then if v( at, ent ) then b = nil end end
 		end
 	end
+	fOnKilled( ent, at )
 end )
 
 hook.Add( "PlayerSwitchFlashlight", "GameImprovements", function( ply )
@@ -169,8 +194,26 @@ hook.Add( "OnEntityCreated", "GameImprovements", function( ent )
 	end
 end )
 
+local function GrantWeaponAchievement( ply, wep )
+	local sAchievement = "Achievement_Acquire_" .. wep:GetClass()
+	if __ACHIEVEMENTS__[ sAchievement ] then
+		local s = ply:SteamID64()
+		local t = __ACHIEVEMENTS_ACQUIRED__[ s ]
+		if t then
+			if !t[ sAchievement ] then
+				ply:SendLua( "Achievement_Acquire(" .. "\"" .. wep:GetClass() .. "\"" .. ")" )
+				t[ sAchievement ] = true
+			end
+		else
+			ply:SendLua( "Achievement_Acquire(" .. "\"" .. wep:GetClass() .. "\"" .. ")" )
+			__ACHIEVEMENTS_ACQUIRED__[ s ] = { [ sAchievement ] = true }
+		end
+	end
+end
+
 hook.Add( "PlayerCanPickupWeapon", "GameImprovements", function( ply, wep )
 	if !wep.GAME_bWeaponPickedUpOnce then
+		GrantWeaponAchievement( ply, wep )
 		local w = ply:GetWeapon( wep:GetClass() )
 		if IsValid( w ) && !w.__GRENADE__ then ply:DropWeapon( w ) end
 		wep.GAME_bWeaponPickedUpOnce = true
@@ -192,6 +235,7 @@ hook.Add( "PlayerCanPickupWeapon", "GameImprovements", function( ply, wep )
 	// not just randomly got it from the floor and accidentally self stunlocked in the deploy animation
 	ply.GAME_sRestoreGun = c
 	if IsValid( w ) then ply:DropWeapon( w ) end
+	GrantWeaponAchievement( ply, wep )
 end )
 hook.Add( "PlayerCanPickupItem", "GameImprovements", function( ply, item )
 	if !ply:KeyDown( IN_USE ) then return false end
@@ -314,9 +358,12 @@ end )
 local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_Extinguish = CEntity.Extinguish
 
+file.CreateDir "Achievements"
+
 local ents = ents
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
+	file.Write( "Achievements/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __ACHIEVEMENTS_ACQUIRED__ ) )
 	for _, ent in ents_Iterator() do
 		if ent.GAME_Think then ent:GAME_Think() end
 		if !ent.GAME_bPhysCollideHook then ent:AddCallback( "PhysicsCollide", function( ... ) PhysicsCollide( ... ) end ) ent.GAME_bPhysCollideHook = true end
@@ -452,11 +499,13 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		cmd:RemoveKey( IN_SPEED )
 	end
 
+	if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
+
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	local bAllDirectionalSprint = Either( v, v && v.bAllDirectionalSprint, ply.CTRL_bAllDirectionalSprint ) || ( ( Either( ply.CTRL_bCantSlide == nil, __PLAYER_MODEL__[ ply:GetModel() ] && __PLAYER_MODEL__[ ply:GetModel() ].bCantSlide, ply.CTRL_bCantSlide ) && GetVelocity( ply ):Length() >= ply:GetRunSpeed() ) || ply:Crouching() )
 	if bAllDirectionalSprint then
 		ply:SetNW2Bool( "CTRL_bSprinting", false )
-		if cmd:KeyDown( IN_ZOOM ) then cmd:RemoveKey( IN_SPEED ) end
+		ply:SetCrouchedWalkSpeed( 1 )
 	else
 		local bGroundCrouchingAndNotSliding = bGround && ply:Crouching() && !ply:GetNW2Bool "CTRL_bSliding"
 		if bGroundCrouchingAndNotSliding || cmd:KeyDown( IN_ZOOM ) || Either( v && v.bCanFly, true, bGround ) && !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil cmd:RemoveKey( IN_SPEED ) end
@@ -468,7 +517,6 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				if bGround then ply.CTRL_bHeldSprint = nil end
 				cmd:RemoveKey( IN_SPEED )
 				ply:SetNW2Bool( "CTRL_bSprinting", false )
-				if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
 			else
 				cmd:SetForwardMove( CPlayer_GetRunSpeed( ply ) )
 				cmd:SetSideMove( math.Clamp( cmd:GetSideMove(), -cmd:GetForwardMove(), cmd:GetForwardMove() ) )
@@ -480,13 +528,11 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 						ply.CTRL_bHeldSprint = nil
 						cmd:RemoveKey( IN_SPEED )
 						ply:SetNW2Bool( "CTRL_bSprinting", false )
-						if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
 					end
 				end
 			end
 		else
 			ply:SetNW2Bool( "CTRL_bSprinting", false )
-			if cmd:KeyDown( IN_ZOOM ) then cmd:AddKey( IN_WALK ) end
 		end
 	end
 	//	if !ply:IsOnGround() then
@@ -803,9 +849,11 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 			if cmd:KeyDown( IN_ATTACK ) || cmd:KeyDown( IN_ATTACK2 ) || cmd:KeyDown( IN_ZOOM ) then
 				if VARIANTS == COVER_VARIANTS_BOTH && bUp then
+					Achievement_Miscellaneous( ply, cmd:KeyDown( IN_ZOOM ) && "CoverPeek" || "CoverBlindFire" )
 					ply.GAME_sCoverState = "DUCK"
 					return
 				elseif VARIANTS == COVER_VARIANTS_LEFT then
+					Achievement_Miscellaneous( ply, cmd:KeyDown( IN_ZOOM ) && "CoverPeek" || "CoverBlindFire" )
 					ply.GAME_sCoverState = "MOVE"
 					ply.GAME_bPeekForceCrouch = bLeftForceCrouch
 					ply.GAME_vPeekTarget = vLeft
@@ -816,6 +864,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 					ply.GAME_EPeekBlind = COVER_BLINDFIRE_LEFT
 					return
 				elseif VARIANTS == COVER_VARIANTS_RIGHT then
+					Achievement_Miscellaneous( ply, cmd:KeyDown( IN_ZOOM ) && "CoverPeek" || "CoverBlindFire" )
 					ply.GAME_sCoverState = "MOVE"
 					ply.GAME_bPeekForceCrouch = bRightForceCrouch
 					ply.GAME_vPeekTarget = vRight
@@ -879,6 +928,7 @@ function QuickSlide_Handle( ply )
 	end
 end
 function QuickSlide_Start( ply, t )
+	if ply:IsPlayer() then Achievement_Miscellaneous( ply, "Slide" ) end
 	CEntity_SetNW2Bool( ply, "CTRL_bSliding", true )
 	local t = t || CEntity_GetTable( ply )
 	local f = t.GAME_flSlideSpeed || ply:GetRunSpeed() * 1.5

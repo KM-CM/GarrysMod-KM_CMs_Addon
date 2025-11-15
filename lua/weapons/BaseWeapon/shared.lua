@@ -14,6 +14,8 @@ SWEP.UseHands = true
 SWEP.__WEAPON__ = true
 
 function SWEP:Reload()
+	local pOwner = self:GetOwner()
+	if self:Clip1() >= self:GetMaxClip1() && pOwner:IsPlayer() then Achievement_Miscellaneous( pOwner, "WeaponReloadFull" ) end
 	self:SetClip1( 0 )
 	self:DefaultReload( ACT_VM_RELOAD )
 end
