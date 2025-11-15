@@ -265,6 +265,7 @@ if CLIENT then
 		return t.x, t.y
 	end
 	SWEP.flAimTiltTime = 0
+	SWEP.flAimLastEyeYaw = 0
 	function SWEP:CalcViewModelView( _, pos, ang )
 		local MyTable = CEntity_GetTable( self )
 		local ply = LocalPlayer()
@@ -430,7 +431,9 @@ if CLIENT then
 		MyTable.flLastEyeYaw = Lerp( math_min( 1, 5 * FrameTime() ), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), -MyTable.flSwayScale, MyTable.flSwayScale ), 0 )
 		MyTable.flLastTrueEyeYaw = eye[ 2 ]
 		MyTable.aLastEyePosition[ 2 ] = -MyTable.flLastEyeYaw
-		vTargetAngle[ 3 ] = vTargetAngle[ 3 ] - MyTable.flLastEyeYaw / MyTable.flSwayScale * 45 * ( 1 - flMultiplier )
+		MyTable.flAimLastEyeYaw = Lerp( math_min( 1, 5 * FrameTime() ), math_Clamp( MyTable.flAimLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flAimLastTrueEyeYaw || eye[ 2 ] ) ), -MyTable.flSwayScale * .33, MyTable.flSwayScale * .33 ), 0 )
+		MyTable.flAimLastTrueEyeYaw = eye[ 2 ]
+		vTargetAngle[ 3 ] = vTargetAngle[ 3 ] - MyTable.flAimLastEyeYaw / MyTable.flSwayScale * 3 * 45 * ( 1 - flMultiplier )
 		vTarget, vTargetAngle = vTarget, vTargetAngle
 		vFinal = LerpVector( 5 * FrameTime(), vFinal, vTarget )
 		vFinalAngle = LerpVector( 5 * FrameTime(), vFinalAngle, vTargetAngle )

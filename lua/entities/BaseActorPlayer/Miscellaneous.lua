@@ -8,7 +8,7 @@ function ENT:MoveAlongPath( Path, flSpeed, flHeight, tFilter, bAllowSliding )
 	local f = flSpeed * ACCELERATION_NORMAL
 	self.loco:SetAcceleration( f )
 	self.loco:SetDeceleration( f )
-	self:HandleJumpingAlongPath( Path, tFilter )
+	self:HandleJumpingAlongPath( Path, flSpeed, tFilter )
 end
 
 DEFINE_BASECLASS "BaseActor"

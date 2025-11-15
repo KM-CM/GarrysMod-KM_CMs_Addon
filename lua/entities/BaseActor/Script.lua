@@ -1,3 +1,9 @@
+/*
+In My Definition of Map Making, "Scripting" Things is Basically Using The Input Output System to Do Anything.
+Do Not Confuse It with Writing Code ( Also Scripting, Just Different Context ).
+This File is Made for The Ability to Script What Actors Do.
+*/
+
 function ENT:CustomInput( Input, Param, Activator, Caller ) end
 
 local __INPUTS__ = {

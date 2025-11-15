@@ -21,6 +21,13 @@ function ENT:CreateProjectile( sClass )
 	CEntity_SetOwner( pProjectile, self )
 	return pProjectile
 end
+function ENT:CreateActor( sClass )
+	local pActor = ents_Create( sClass )
+	if !IsValid( pActor ) then return end
+	CEntity_GetTable( pActor ).iClass = CEntity_GetTable( self ).iClass
+	// TODO: Copy our enemies to them
+	return pActor
+end
 
 function ENT:SelectAim( pEnemy, vShoot, flSpeed, flRadius, flBound )
 	local vPos = pEnemy:GetPos()

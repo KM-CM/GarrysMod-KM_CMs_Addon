@@ -230,10 +230,14 @@ DIRECTOR_MELEE_DANGER = 2
 
 local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 
+local IsValid = IsValid
+
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function()
 	for _, ply in player_Iterator() do
 		local PlyTable = CEntity_GetTable( ply )
+		local pFlashlight = PlyTable.GAME_pFlashlight
+		if IsValid( pFlashlight ) then pFlashlight:SetPos( ply:GetShootPos() ) end
 		local v = __PLAYER_MODEL__[ ply:GetModel() ]
 		if v then
 			v = v.Think

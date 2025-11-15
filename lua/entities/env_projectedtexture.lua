@@ -7,14 +7,13 @@ ENT.PrintName = "#env_projectedtexture"
 function ENT:UpdateTransmitState() return TRANSMIT_ALWAYS end
 
 function ENT:SetupDataTables()
-	// Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT Stored as a 0-255 Integer! In `lightcolor`, This is Remapped from 0-255 to 0-1!
+	// Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT stored as a 0-255 integer!
+	//In `lightcolor`, this is remapped from [0,255] to [0,1]!
 	self:NetworkVar( "Float", 0, "Brightness", { KeyName = "raw.brightness" } )
-	// Sprite Size if `SpriteDisabled` isnt On
+	// Sprite size if `SpriteDisabled` isn't on
 	self:NetworkVar( "Float", 1, "SpriteSize", { KeyName = "raw.spritesize" } )
-	// `Shadows`, Mode 1: The Distance to The Trace"s `HitPos`
+	// Used by `Shadows`, mode 1: the Distance to The Trace"s `HitPos`
 	self:NetworkVar( "Float", 2, "TrueDistance", { KeyName = "raw.truedistance" } )
-	// `Shadows`, Mode 1: Compute Shadow Distance Anyway
-	self:NetworkVar( "Bool", 0, "ComputeTrueDistance", { KeyName = "raw.computetruedistance" } )
 	// Doesnt Spawn a Sprite
 	self:NetworkVar( "Bool", 1, "SpriteDisabled", { KeyName = "raw.spritedisabled" } )
 	/*
@@ -26,14 +25,14 @@ function ENT:SetupDataTables()
 	self:NetworkVar( "String", 0 ,"Texture", { KeyName = "raw.texture" } )
 	// The Light Color
 	self:NetworkVar( "Vector", 0 ,"LightColor", { KeyName = "raw.lightcolor" } )
-	// Minimum Distance. Clamped if Less Than 10.
-	self:NetworkVar( "Int", 0 , "MinDistance", { KeyName = "raw.mindistance" } )
-	// How Far Does The Light Go?
-	self:NetworkVar( "Int", 1 , "Distance", { KeyName = "raw.distance" } )
-	// The Amount of Degrees to Light Up Vertically
-	self:NetworkVar( "Int", 2 , "VerFOV", { KeyName = "raw.verfov" } )
-	// The Amount of Degrees to Light Up Horizontally
-	self:NetworkVar( "Int", 3 , "HorFOV", { KeyName = "raw.horfov" } )
+	// Minimum distance. Clamped if less than 10.
+	self:NetworkVar( "Float", 3, "MinDistance", { KeyName = "raw.mindistance" } )
+	// How far does the light go?
+	self:NetworkVar( "Float", 4, "Distance", { KeyName = "raw.distance" } )
+	// The amount of degrees to light up vertically
+	self:NetworkVar( "Float", 5, "VerFOV", { KeyName = "raw.verfov" } )
+	// The amount of degrees to light up horizontally
+	self:NetworkVar( "Float", 6, "HorFOV", { KeyName = "raw.horfov" } )
 end
 
 if CLIENT then
@@ -58,7 +57,7 @@ if CLIENT then
 		pt:SetFarZ( self:GetDistance() )
 		pt:SetColor( self:GetLightColor():ToColor() )
 		pt:SetBrightness( self:GetBrightness() )
-		pt:SetQuadraticAttenuation( 100 * ( self:GetDistance() / self:GetTrueDistance() ) )
+		pt:SetQuadraticAttenuation( self:GetDistance() )
 		pt:SetHorizontalFOV( self:GetHorFOV() )
 		pt:SetVerticalFOV( self:GetVerFOV() )
 		if self:GetShadows() then
@@ -87,7 +86,12 @@ else
 	local math_Clamp = math.Clamp
 	function ENT:Update()
 		if !self:GetShadows() || self:GetComputeTrueDistance() then
-			local t = { [ self ] = true, [ self:GetOwner() ] = true }
+			local t = { [ self ] = true }
+			local pOwner = self:GetOwner()
+			if IsValid( pOwner ) then
+				t[ pOwner ] = true
+				for _, e in ipairs( pOwner:GetChildren() ) do t[ e ] = true end
+			end
 			local tr = util_TraceLine {
 				start = self:GetPos(),
 				endpos = self:GetPos() + self:GetForward() * self:GetDistance(),
