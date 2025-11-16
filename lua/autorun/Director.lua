@@ -350,6 +350,7 @@ hook.Add( "Tick", "Director", function()
 		// TODO: Add support for crossfading the themes of other types and next theme selection
 		local ThreatAware = PlyTable.DR_ThreatAware
 		local bToCombat, bFromCombat, EFromWhich
+		if ThreatAware == DIRECTOR_THREAT_COMBAT then Achievement_Miscellaneous( ply, "Combat" ) end
 		if ThreatAware >= DIRECTOR_THREAT_COMBAT then
 			local bAnyway = true
 			for ELayer, pPlayer in pairs( PlyTable.DR_tMusic ) do

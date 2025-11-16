@@ -1,5 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
+if SERVER then ACHIEVEMENT_ACQUIRE "weapon_ar2" end
+
 SWEP.Category = "Assault Rifles"
 SWEP.PrintName = "#weapon_ar2"
 SWEP.Instructions = "Primary to shoot."

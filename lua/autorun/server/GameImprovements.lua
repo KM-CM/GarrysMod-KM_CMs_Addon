@@ -119,21 +119,6 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 	end*/
 end
 
-include "autorun/Achievements.lua"
-
-ACHIEVEMENT_MISCELLANEOUS "Kill"
-
-ACHIEVEMENT_MISCELLANEOUS "WeaponReloadFull"
-
-ACHIEVEMENT_MISCELLANEOUS "Slide"
-
-ACHIEVEMENT_MISCELLANEOUS "CoverGrate"
-
-ACHIEVEMENT_MISCELLANEOUS "CoverPeek"
-ACHIEVEMENT_MISCELLANEOUS "CoverBlindFire"
-
-ACHIEVEMENT_MISCELLANEOUS "CoverBlindFireKill"
-
 local function fOnKilled( pEntity, pAttacker )
 	if pAttacker:IsPlayer() then
 		Achievement_Miscellaneous( pAttacker, "Kill" )
@@ -267,6 +252,7 @@ end )
 hook.Add( "GetFallDamage", "GameImprovements", function( ply, flSpeed )
 	local flRatio = flSpeed / ( ply:GetJumpPower() * 1.5 )
 	if flRatio <= 1 then return 0 end
+	Achievement_Miscellaneous( ply, "Fall" )
 	return flRatio * 32
 end )
 
