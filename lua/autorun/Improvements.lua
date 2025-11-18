@@ -47,6 +47,32 @@ else
 	end
 end
 
+function CalculateAngularVelocity( dTarget, dForward, vAngleVelocity, flTurnRate, flTurnAcceleration )
+	local dt = FrameTime()
+	local axis = dForward:Cross( dTarget )
+	local dot = dForward:Dot( dTarget )
+	dot = math.Clamp( dot, -1, 1 )
+	local angle = math.deg( math.acos( dot ) )
+	if axis:IsZero() then axis = Vector( 0, 0, 1 ) end
+	axis:Normalize()
+	local vTarget = axis * math.min( angle, flTurnRate )
+	local dv = vTarget - vAngleVelocity
+	local maxStep = flTurnAcceleration * dt
+	local len = dv:Length()
+	if len > maxStep then dv = dv * ( maxStep / len ) end
+	return dv
+end
+
+function CalculateVelocity( vTarget, vPos, vCurrent, flSpeed, flAcceleration )
+	local vDelta = vTarget - vPos
+	local flDistance = vDelta:Length()
+	if flDistance == 0 then return Vector(0, 0, 0) end
+	local vDir = vDelta:GetNormalized()
+	local flMaxSpeedToStop = math.sqrt(2 * flAcceleration * flDistance)
+	flSpeed = math.min(vCurrent:Length() + flAcceleration * FrameTime(), flMaxSpeedToStop)
+	return vDir * flSpeed - vCurrent
+end
+
 local IsValid = IsValid
 
 local hook = hook
