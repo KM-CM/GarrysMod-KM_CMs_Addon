@@ -99,9 +99,12 @@ function ENT:ClearThreatToClass( MyTable )
 	MyTable.tThreatToClass = n
 end
 
-function ENT:MoveAlongPathToCover( pPath, tFilter )
-	self:MoveAlongPath( pPath, math.abs( pPath:GetLength() - pPath:GetCursorPosition() ) <= self.flWalkSpeed && self.flWalkSpeed || self.flTopSpeed, 1, tFilter )
-end
+ENT.flTopSpeed = 0
+ENT.flProwlSpeed = 0
+ENT.flWalkSpeed = 0
+
+function ENT:MoveAlongPath() end
+function ENT:MoveAlongPathToCover( pPath, tFilter ) self:MoveAlongPath( pPath, math.abs( pPath:GetLength() - pPath:GetCursorPosition() ) <= self.flWalkSpeed && self.flWalkSpeed || self.flTopSpeed, 1, tFilter ) end
 
 ENT.bHoldFire = true
 
@@ -264,6 +267,7 @@ function ENT:HandleTurning( MyTable )
 	end
 	MyTable.aAim = aAim
 	MyTable.vAim = aAim:Forward()
+	if MyTable.bCantTurnBody then return end
 	local loco = MyTable.loco
 	loco:SetMaxYawRate( flTurnRate * math_Clamp( math_abs( math_AngleDifference( aDesAim.y, Angles.y ) ), 0, 90 ) * .01111111111 )
 	local v = CEntity_GetPos( self ) + vDesAim
