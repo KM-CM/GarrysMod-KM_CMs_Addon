@@ -1,4 +1,7 @@
-// TODO: Find a way to make the weapon NOT stuck in the turret's ass!
+// TODO: Find a way to make the weapon NOT stuck in the turret's ass,
+// 'cause that looks very silly, and is supposed to be on top... I guess?
+// The original Half-Life 2 turrets had a gun built-in, which's what made 'em unoriginal,
+// these ones don't, so I think putting the weapons in the barrel place is a good idea
 
 AddCSLuaFile()
 DEFINE_BASECLASS "BaseActor"
@@ -8,7 +11,7 @@ scripted_ents.Alias( "npc_turret_floor", "CombineTurret" )
 
 ENT.CATEGORIZE = {
 	Combine = true,
-	Soldier = true
+	Turret = true
 }
 
 sound.Add {
@@ -63,20 +66,27 @@ function ENT:RangeAttack()
 end
 
 function ENT:Behaviour()
-	local pEnemy = self.Enemy
-	if IsValid( pEnemy ) then
-		local v = pEnemy:GetPos() + pEnemy:OBBCenter()
-		self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
-		local c = self:GetWeaponClipPrimary()
-		if c != -1 && c <= 0 then self:WeaponReload() return end
-		if !self:CanAttackHelper( v ) then return end
-		if util.TraceLine( {
-			start = self:GetShootPos(),
-			endpos = v,
-			filter = self,
-			mask = MASK_SHOT_HULL
-		} ).Fraction <= self.flSuppressionTraceFraction then return end
-		self:RangeAttack()
+	if IsValid( self.Enemy ) then
+		local tNearestEnemies = {}
+		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
+		table.SortByMember( tNearestEnemies, 2, true )
+		local tAllies, pEnemy = self:GetAlliesByClass()
+		for _, d in ipairs( tNearestEnemies ) do
+			local pEnemy = d[ 1 ]
+			local v = pEnemy:GetPos() + pEnemy:OBBCenter()
+			self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
+			local c = self:GetWeaponClipPrimary()
+			if c != -1 && c <= 0 then self:WeaponReload() return end
+			if !self:CanAttackHelper( v ) then return end
+			if util.TraceLine( {
+				start = self:GetShootPos(),
+				endpos = v,
+				filter = self,
+				mask = MASK_SHOT_HULL
+			} ).Fraction <= self.flSuppressionTraceFraction then return end
+			self:RangeAttack()
+			return
+		end
 	else
 		self.vDesAim = self:GetForward()
 		local c = self:GetWeaponClipPrimary()
