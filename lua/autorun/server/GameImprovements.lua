@@ -249,6 +249,16 @@ hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, 
 	end
 end )
 
+hook.Add( "PlayerCanHearPlayersVoice", "GameImprovements", function( pListener, pSpeaker )
+	if pListener:GetPos():DistToSqr( pSpeaker:GetPos() ) > ( pListener.GAME_flSpeakDistanceSqr || 13249600/*3640*/ ) then return false end
+	return true, true
+end )
+
+hook.Add( "PlayerCanSeePlayersChat", "GameImprovements", function( _/*sText*/, _/*bTeamOnly*/, pListener, pSpeaker )
+	if !IsValid( pSpeaker ) then return end
+	return pListener:GetPos():DistToSqr( pSpeaker:GetPos() ) > ( pListener.GAME_flSpeakDistanceSqr || 13249600/*3640*/ )
+end )
+
 hook.Add( "GetFallDamage", "GameImprovements", function( ply, flSpeed )
 	local flRatio = flSpeed / ( ply:GetJumpPower() * 1.5 )
 	if flRatio <= 1 then return 0 end

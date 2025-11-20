@@ -179,9 +179,9 @@ function ENT:Think()
 	MyTable.Tick( self, MyTable )
 end
 
-local FL = FL_OBJECT + FL_NPC + FL_CLIENT + FL_FAKECLIENT
+local FL_OBJECT = FL_OBJECT
 function ENT:Initialize()
-	self:AddFlags( FL )
+	self:AddFlags( FL_OBJECT )
 	__ACTOR_LIST__[ self ] = true
 	self:SetNPCClass( self:GetNPCClass() ) // Required for ally searches to work
 	self:AddCallback( "PhysicsCollide", function( self, Data )

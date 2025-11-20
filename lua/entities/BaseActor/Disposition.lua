@@ -28,20 +28,18 @@ hook.Add( "Think", "BaseActorDisposition", function()
 	__ACTOR_TABLE_BY_CLASS_LOCAL__ = t
 end )
 
-// Getters Exist for a Reason. Use Them.
-function ENT:GetNPCClass() return self.iClass || self.iDefaultClass end
-// Use This Instead of GetNPCClass - Everything with FL_OBJECT should have a :Classify, But Not Neccessarily a :GetNPCClass
-// ( This is Just My Standard and Actually has Zero Relevance to Anything )
-function ENT:Classify() return self:GetNPCClass() end
-// Setters Also Exist for a Reason. Use Them too.
+// Getters exist for a reason. Use them.
+function ENT:GetNPCClass() return self.m_iClass || self.iDefaultClass end
+function ENT:Classify() return self.m_iClass || self.iDefaultClass end
+// Setters also exist for a reason. Use them too.
 function ENT:SetNPCClass( iClass )
+	self.m_iClass = iClass
 	local iPreviousClass = self:GetNPCClass()
 	if iPreviousClass != CLASS_NONE then
 		local t = __ACTOR_TABLE_BY_CLASS__[ iPreviousClass ]
 		if t then t[ self ] = nil end
 	end
 	iClass = iClass || CLASS_NONE
-	self.iClass = iClass
 	if iClass != CLASS_NONE then
 		local t = __ACTOR_TABLE_BY_CLASS__[ iClass ]
 		if t then t[ self ] = true
@@ -62,7 +60,7 @@ function ENT:AddRelationship( sRelationship )
 		self.tSpecialRelationships[ ent ] = Relationship
 		bNotFound = nil
 	end
-	// ClassName-Based RelationShips are Only Semi-Supported Since We are Using a Completely New RelationShip System to VALVe's
+	// Classname-based relationships are only semi-supported since we're using a completely new relationship system to VALVe's
 	if bNotFound then for _, ent in ipairs( ents.FindByClass( sClass ) ) do self.tSpecialRelationships[ ent ] = Relationship end end
 end
 
