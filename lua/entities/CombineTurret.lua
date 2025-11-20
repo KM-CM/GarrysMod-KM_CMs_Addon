@@ -68,7 +68,7 @@ end
 function ENT:Behaviour()
 	if IsValid( self.Enemy ) then
 		local tNearestEnemies = {}
-		for ent in pairs( tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
+		for ent in pairs( self.tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
 		table.SortByMember( tNearestEnemies, 2, true )
 		local tAllies, pEnemy = self:GetAlliesByClass()
 		for _, d in ipairs( tNearestEnemies ) do
