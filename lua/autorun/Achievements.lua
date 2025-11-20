@@ -68,9 +68,10 @@ if CLIENT then
 		AchievementsMenu:MakePopup()
 		net.Start "AchievementsQuery" net.SendToServer()
 		function AchievementsMenu:OnClose()
+			AchievementsMenuPage = 1
 			table.Empty( AchievementsMenuList )
 			table.Empty( AchievementsMenuPages )
-			table.Empty( AchievementsMenuPageDraws )
+			table.Empty( AchievementsMenuPageDrew )
 		end
 		function AchievementsMenu:Paint( w, h ) draw.RoundedBox( 0, 0, 0, w, h, Color( 75, 75, 75 ) ) end
 		local pButtonPrev = vgui.Create( "DColorButton", AchievementsMenu )
@@ -169,18 +170,12 @@ function Achievement_Miscellaneous_Grant( ply, sName )
 end
 
 ACHIEVEMENT_MISCELLANEOUS "Kill"
-
 ACHIEVEMENT_MISCELLANEOUS "Fall"
-
 ACHIEVEMENT_MISCELLANEOUS "Combat"
-
 ACHIEVEMENT_MISCELLANEOUS "WeaponReloadFull"
-
 ACHIEVEMENT_MISCELLANEOUS "Slide"
 
 ACHIEVEMENT_MISCELLANEOUS "CoverGrate"
-
 ACHIEVEMENT_MISCELLANEOUS "CoverPeek"
 ACHIEVEMENT_MISCELLANEOUS "CoverBlindFire"
-
 ACHIEVEMENT_MISCELLANEOUS "CoverBlindFireKill"
