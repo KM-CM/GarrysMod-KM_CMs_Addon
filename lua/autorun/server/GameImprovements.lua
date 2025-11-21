@@ -356,6 +356,7 @@ end )
 local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_Extinguish = CEntity.Extinguish
 
+file.CreateDir "Covers"
 file.CreateDir "Achievements"
 
 local ents = ents
