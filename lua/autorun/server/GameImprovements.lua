@@ -361,6 +361,7 @@ file.CreateDir "Achievements"
 local ents = ents
 local ents_Iterator = ents.Iterator
 hook.Add( "Think", "GameImprovements", function()
+	file.Write( "Covers/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __COVERS_STATIC__ ) )
 	file.Write( "Achievements/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __ACHIEVEMENTS_ACQUIRED__ ) )
 	for _, ent in ents_Iterator() do
 		if ent.GAME_Think then ent:GAME_Think() end
