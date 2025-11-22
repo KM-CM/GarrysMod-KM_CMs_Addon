@@ -27,7 +27,7 @@ function ENT:SetupDataTables()
 	end
 end
 
-ENT.PrintName = "#SimpleSiren"
+if !SERVER then return end
 
 ENT.CATEGORIZE = { Siren = true }
 
