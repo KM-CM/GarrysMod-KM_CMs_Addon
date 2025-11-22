@@ -11,6 +11,9 @@ ENT.CATEGORIZE = {
 	Soldier = true
 }
 
+ENT.flTopSpeed = 350
+ENT.flProwlSpeed = 233
+
 sound.Add {
 	name = "Combine_Soldier_FiringAtAnExposedTarget",
 	channel = CHAN_VOICE,

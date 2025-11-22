@@ -21,13 +21,12 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 	Shotgun = function( MyTable, self )
 		local flSpread = MyTable.GatherCrosshairSpread( self, MyTable, true )
 		local flHeight, flWidth = ScrH(), ScrW()
-		// I have ABSOLUTELY NO IDEA Why in The World This Works, But It Does
 		local flRadius = flSpread * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
 		local co = MyTable.CrosshairColorOutLine
 		local f = MyTable.flCrosshairOutLine * flHeight
 		local flStart, flEnd = flRadius, flRadius + f
-		for I = flStart, flEnd, 1 do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, 255 ) end
+		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, 255 ) end
 		local c = MyTable.CrosshairColorBase
 		local flStart = flEnd
 		local flEnd = flEnd + MyTable.flCrosshairBase * flHeight
@@ -164,45 +163,56 @@ function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	local ply = LocalPlayer()
-	// TODO: Machine gun ammo cubes
-	if false then//self:GetMaxClip1() > 60 then
-		
-	else
-		local flW, flH = ScrW() * .9, ScrH() * .9
-		surface.SetDrawColor( 32, 32, 32, 255 )
-		local flWidth, flHeight, sFont
-		if self:GetMaxClip1() <= 15 then
-			flWidth, flHeight, sFont = AMMO_BAR_LARGE_WIDTH, AMMO_BAR_LARGE_HEIGHT, "BaseWeapon_AmmoBarLargeText"
+	if !MyTable.bDontDrawAmmo then
+		// TODO: Machine gun ammo cubes
+		if false then//self:GetMaxClip1() > 60 then
+			
 		else
-			flWidth, flHeight, sFont = AMMO_BAR_WIDTH, AMMO_BAR_HEIGHT, "BaseWeapon_AmmoBarText"
-		end
-		local flX, flY = flW - flWidth, flH - flHeight
-		local a = self.Primary.Ammo
-		if a && a != "" && string.lower( a ) != "none" then
-			a = ply:GetAmmoCount( a )
-			if a > 0 then
-				draw.SimpleTextOutlined( a, sFont, flX, flY, nil, nil, nil, 1, Color( 0, 0, 0 ) )
+			local flW, flH = ScrW() * .9, ScrH() * .9
+			surface.SetDrawColor( 32, 32, 32, 255 )
+			local flWidth, flHeight, sFont
+			if self:GetMaxClip1() <= 15 then
+				flWidth, flHeight, sFont = AMMO_BAR_LARGE_WIDTH, AMMO_BAR_LARGE_HEIGHT, "BaseWeapon_AmmoBarLargeText"
+			else
+				flWidth, flHeight, sFont = AMMO_BAR_WIDTH, AMMO_BAR_HEIGHT, "BaseWeapon_AmmoBarText"
 			end
-		end
-		for _ = 1, self:GetMaxClip1() do
-			flX = flX - flWidth - 1
-			surface.DrawRect( flX, flY, flWidth, flHeight )
-		end
-		surface.SetDrawColor( 255, 255, 255, 255 )
-		local flX, flY = flW - flWidth, flH - flHeight
-		for _ = 1, self:Clip1() do
-			flX = flX - flWidth - 1
-			surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
-		end
-		surface.SetDrawColor( 64, 64, 64, 255 )
-		for _ = self:Clip1() + 1, self:GetMaxClip1() do
-			flX = flX - flWidth - 1
-			surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
+			local flX, flY = flW - flWidth, flH - flHeight
+			local a = self.Primary.Ammo
+			if a && a != "" && string.lower( a ) != "none" then
+				a = ply:GetAmmoCount( a )
+				if a > 0 then
+					draw.SimpleTextOutlined( a, sFont, flX, flY, nil, nil, nil, 1, Color( 0, 0, 0 ) )
+				end
+			end
+			for _ = 1, self:GetMaxClip1() do
+				flX = flX - flWidth - 1
+				surface.DrawRect( flX, flY, flWidth, flHeight )
+			end
+			surface.SetDrawColor( 255, 255, 255, 255 )
+			local flX, flY = flW - flWidth, flH - flHeight
+			for _ = 1, self:Clip1() do
+				flX = flX - flWidth - 1
+				surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
+			end
+			surface.SetDrawColor( 64, 64, 64, 255 )
+			for _ = self:Clip1() + 1, self:GetMaxClip1() do
+				flX = flX - flWidth - 1
+				surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
+			end
 		end
 	end
 	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) || ( !cThirdPerson:GetBool() && MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
 	if v != nil then return v( MyTable, self ) end
+	local flHeight, flWidth = ScrH(), ScrW()
+		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
+	local c = MyTable.CrosshairColorBase
+	local flEnd = .002 * flHeight
+	for I = 0, flEnd do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, 255 ) end
+	c = MyTable.CrosshairColorOutLine
+	local flTarget = flEnd + .0001 * flHeight
+	for I = flEnd, flTarget do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, 255 ) end
+	return true
 end
 
 function SWEP:CustomAmmoDisplay() return {} end

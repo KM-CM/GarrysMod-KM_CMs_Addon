@@ -14,42 +14,44 @@ Actor_RegisterSchedule( "Idle", function( self, sched )
 	if CurTime() > ( sched.flStandTime || 0 ) then
 		if !sched.vGoal then
 			local tAllies = self:GetAlliesByClass()
-			local flAlarm, vPos, pAlarm = math.huge, self:GetShootPos(), NULL // NULL because ent.pAlarm ( if nil ) == pAlarm ( which is nil )
-			local t = __ALARMS__[ self:Classify() ]
-			if t then
-				for ent in pairs( t ) do
-					if !IsValid( ent ) || !ent.bIsOn then continue end
-					local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
-					if d >= flAlarm then continue end
-					local b
-					if tAllies then for ent in pairs( tAllies ) do if ent != self && ent.pAlarm == pAlarm then b = true break end end end
-					if b then continue end
-					pAlarm, flAlarm = ent, d
+			if !self.bCantUse then
+				local flAlarm, vPos, pAlarm = math.huge, self:GetShootPos(), NULL // NULL because ent.pAlarm ( if nil ) == pAlarm ( which is nil )
+				local t = __ALARMS__[ self:Classify() ]
+				if t then
+					for ent in pairs( t ) do
+						if !IsValid( ent ) || !ent.bIsOn then continue end
+						local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
+						if d >= flAlarm then continue end
+						local b
+						if tAllies then for ent in pairs( tAllies ) do if ent != self && ent.pAlarm == pAlarm then b = true break end end end
+						if b then continue end
+						pAlarm, flAlarm = ent, d
+					end
 				end
-			end
-			if IsValid( pAlarm ) then
-				local s = self:SetSchedule "PullAlarm"
-				s.bOff = true
-				s.pAlarm = pAlarm
-				return
-			end
-			t = __ALARMS__[ CLASS_NONE ]
-			if t then
-				for ent in pairs( t ) do
-					if !IsValid( ent ) || !ent.bIsOn then continue end
-					local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
-					if d >= flAlarm || Either( ent.flAudibleDistSqr == 0, self:Visible( ent ), d >= ent.flAudibleDistSqr ) then continue end
-					local b
-					if tAllies then for ent in pairs( tAllies ) do if ent != self && ent.pAlarm == pAlarm then b = true break end end end
-					if b then continue end
-					pAlarm, flAlarm = ent, d
+				if IsValid( pAlarm ) then
+					local s = self:SetSchedule "PullAlarm"
+					s.bOff = true
+					s.pAlarm = pAlarm
+					return
 				end
-			end
-			if IsValid( pAlarm ) then
-				local s = self:SetSchedule "PullAlarm"
-				s.bOff = true
-				s.pAlarm = pAlarm
-				return
+				t = __ALARMS__[ CLASS_NONE ]
+				if t then
+					for ent in pairs( t ) do
+						if !IsValid( ent ) || !ent.bIsOn then continue end
+						local d = ent:NearestPoint( vPos ):DistToSqr( vPos )
+						if d >= flAlarm || Either( ent.flAudibleDistSqr == 0, self:Visible( ent ), d >= ent.flAudibleDistSqr ) then continue end
+						local b
+						if tAllies then for ent in pairs( tAllies ) do if ent != self && ent.pAlarm == pAlarm then b = true break end end end
+						if b then continue end
+						pAlarm, flAlarm = ent, d
+					end
+				end
+				if IsValid( pAlarm ) then
+					local s = self:SetSchedule "PullAlarm"
+					s.bOff = true
+					s.pAlarm = pAlarm
+					return
+				end
 			end
 			local area, vec = self:GetLastKnownArea() || navmesh.GetNearestNavArea( self:GetPos() )
 			if !area then

@@ -72,6 +72,23 @@ sound.Add {
 	}
 }
 
+sound.Add {
+	name = "CombineCivilProtectionMeleeTaunt",
+	channel = CHAN_VOICE,
+	level = 150,
+	pitch = { VOICE_PITCH_MIN, VOICE_PITCH_MAX },
+	sound = {
+		"npc/metropolice/vo/chuckle.wav",
+		"npc/metropolice/vo/expired.wav",
+		"npc/metropolice/vo/externaljurisdiction.wav",
+		"npc/metropolice/vo/getoutofhere.wav",
+		"npc/metropolice/vo/goingtotakealook.wav",
+		"npc/metropolice/vo/holdit.wav",
+		"npc/metropolice/vo/holditrightthere.wav",
+		"npc/metropolice/vo/dontmove.wav"
+	}
+}
+
 list.Set( "NPC", "npc_metropolice", {
 	Name = "#CombineCivilProtection",
 	Class = "CombineCivilProtection",
@@ -90,6 +107,8 @@ function ENT:DLG_CombatFormationGeneral() CEntity_EmitSound( self, "Combine_Civi
 function ENT:DLG_CombatFormationReady() CEntity_EmitSound( self, "Combine_CivilProtection_CombatFormationReady" ) end
 function ENT:DLG_CombatFormationMove() CEntity_EmitSound( self, "Combine_CivilProtection_CombatFormationMove" ) end
 function ENT:DLG_TakeCoverGeneral() CEntity_EmitSound( self, "Combine_CivilProtection_TakeCoverGeneral" ) end
+
+function ENT:DLG_MeleeTaunt() CEntity_EmitSound( self, "CombineCivilProtectionMeleeTaunt" ) end
 
 ENT.iDefaultClass = CLASS_COMBINE
 

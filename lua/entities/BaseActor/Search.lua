@@ -6,7 +6,7 @@ local table_IsEmpty = table.IsEmpty
 
 local unpack = unpack
 
-function ENT:SearchAreas()
+function ENT:SearchAreas( fWeighter )
 	local vPos = self:GetPos()
 	local area = navmesh.GetNearestNavArea( vPos )
 	if !area then return {} end
@@ -19,6 +19,7 @@ function ENT:SearchAreas()
 	local vOffStanding, vOffDucking = Vector( 0, 0, self.vHullMaxs.z )
 	if self.vHullDuckMaxs && self.vHullDuckMaxs.z != self.vHullMaxs.z then vOffDucking = Vector( 0, 0, self.vHullDuckMaxs.z ) end
 	local bDisAllowWater = !self.bCanSwim
+	fWeighter = fWeighter || function( _/*pFrom*/, _/*pTo*/, flCurrentDistance, flAdditionalDistance ) return flCurrentDistance + flAdditionalDistance end
 	return function()
 		if !table_IsEmpty( tQueue ) then
 			table_SortByMember( tQueue, 2 )
@@ -31,7 +32,7 @@ function ENT:SearchAreas()
 				if bDisAllowWater && area:IsUnderwater() then continue end
 				local d = area:ComputeAdjacentConnectionHeightChange( new )
 				if bCantClimb && d > flJumpHeight || d <= flNegDeathDrop then continue end
-				table_insert( tQueue, { new, t.dist + dist } )
+				table_insert( tQueue, { new, fWeighter( area, new, dist, t.dist ) } )
 			end
 			return area, dist
 		end

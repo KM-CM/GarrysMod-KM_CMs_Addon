@@ -1,4 +1,4 @@
-// TODO: Break Down The File into Files with The Name of The Schedule Like TakeCoverAdvance.lua
+// TODO: Break down the file into files with the name of the schedules, like Cover.lua
 
 ENT.tPreScheduleResetVariables.bSuppressing = false
 ENT.tPreScheduleResetVariables.bWantsCover = false

@@ -1,9 +1,34 @@
+include "Aim.lua"
+include "Disposition.lua"
+include "Vehicles.lua"
+include "Weapons.lua"
+include "Senses.lua"
+include "Schedule.lua"
+include "Path.lua"
+include "Suppressed.lua"
+include "CombatState.lua"
+include "Script.lua"
+include "Search.lua"
+include "Behaviour.lua"
+include "Animation.lua"
+include "Mind.lua"
+
 ENT.vHullMins = HULL_HUMAN_MINS
 ENT.vHullMaxs = HULL_HUMAN_MAXS
 ENT.vHullDuckMins = HULL_HUMAN_MINS // HULL_HUMAN_DUCK_MINS
 ENT.vHullDuckMaxs = HULL_HUMAN_MAXS // HULL_HUMAN_DUCK_MAXS
 
 ENT.GAME_flReach = 64
+
+ENT.flHungerDepletion = -1
+ENT.flHunger = -1
+ENT.flHungerLimit = -1
+
+ENT.flThirstDepletion = -1
+ENT.flThirst = -1
+ENT.flThirstLimit = -1
+
+ENT.flBoldness = -1
 
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
@@ -57,7 +82,7 @@ function ENT:SelectAim( pEnemy, vShoot, flSpeed, flRadius, flBound )
 	end
 end
 
-function ENT:Stand() self.loco:Approach( self:GetPos(), 1 ) end
+function ENT:Stand() self.loco:SetDesiredSpeed( 0 ) self.loco:Approach( self:GetPos(), 1 ) end
 
 function ENT:OnKilled( dmg )
 	if self.bDead then return true end
@@ -98,10 +123,6 @@ function ENT:ClearThreatToClass( MyTable )
 	end
 	MyTable.tThreatToClass = n
 end
-
-ENT.flTopSpeed = 0
-ENT.flProwlSpeed = 0
-ENT.flWalkSpeed = 0
 
 function ENT:MoveAlongPath() end
 function ENT:MoveAlongPathToCover( pPath, tFilter ) self:MoveAlongPath( pPath, math.abs( pPath:GetLength() - pPath:GetCursorPosition() ) <= self.flWalkSpeed && self.flWalkSpeed || self.flTopSpeed, 1, tFilter ) end
@@ -225,8 +246,6 @@ function ENT:GAME_OnRangeAttacked( _, _, _, flDamage )
 	MyTable.flCombatStateSuppressionShort = MyTable.flCombatStateSuppressionShort + flDamage
 	MyTable.flCombatStateSuppressionLong = MyTable.flCombatStateSuppressionLong + flDamage
 end
-
-function ENT:Behaviour() end
 
 local ProtectedCall = ProtectedCall
 local ai_disabled, developer = GetConVar "ai_disabled", GetConVar "developer"

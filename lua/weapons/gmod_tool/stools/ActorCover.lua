@@ -26,6 +26,7 @@ function TOOL:LeftClick()
 			for flCurrent = 0, vStart:Distance( vEnd ), 12 do
 				local vCurrent = vStart + vDirection * flCurrent
 				local pArea = navmesh.GetNearestNavArea( vCurrent )
+				if !pArea then continue end
 				tParticipatingAreas[ pArea:GetID() ] = true
 			end
 			local tCover = { vStart, vEnd, ( vPos - vStart ):GetNormalized():Dot( vRight ) > 0 }
@@ -68,6 +69,7 @@ function TOOL:RightClick()
 			for flCurrent = 0, vStart:Distance( vEnd ), 12 do
 				local vCurrent = vStart + vDirection * flCurrent
 				local pArea = navmesh.GetNearestNavArea( vCurrent )
+				if !pArea then continue end
 				tParticipatingAreas[ pArea:GetID() ] = true
 			end
 			for ID in pairs( tParticipatingAreas ) do

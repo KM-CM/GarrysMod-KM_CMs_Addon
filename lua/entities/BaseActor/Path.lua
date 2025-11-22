@@ -9,14 +9,15 @@ local math = math
 local math_Remap = math.Remap
 local math_Clamp = math.Clamp
 local math_max = math.max
+local math_min = math.min
 
-function ENT:TryRePathing( pPath, vPos, vGoal, MyTable )
+function ENT:DontRePath( pPath, vPos, vGoal, MyTable )
 	pPath:MoveCursorToClosestPosition( vPos )
 	local f = MyTable.flRePathTolerance
 	local flCursor = pPath:GetCursorPosition()
 	if pPath:GetPositionOnPath( flCursor ):DistToSqr( vPos ) <= f * f then
 		pPath:MoveCursorToClosestPosition( vGoal )
-		f = math_max( MyTable.flRePathTolerance, vPos:Distance( vGoal ) * 8 )
+		f = math_max( MyTable.flRePathTolerance, vPos:Distance( vGoal ) )
 		if pPath:GetPositionOnPath( pPath:GetCursorPosition() ):DistToSqr( vGoal ) <= f * f then return true end
 	end
 end
@@ -24,7 +25,7 @@ end
 function ENT:ComputePath( Path, vGoal, Weighter )
 	local MyTable = CEntity_GetTable( self )
 	local vPos = CEntity_GetPos( self )
-	if MyTable.TryRePathing( self, Path, vPos, vGoal, MyTable ) then return true end
+	if MyTable.DontRePath( self, Path, vPos, vGoal, MyTable ) then return true end
 	if Weighter then return Path, Path:Compute( self, vGoal, Weighter ) end
 	local loco = MyTable.loco
 	local bCantClimb = !( MyTable.bCanClimb || MyTable.bCanFly )
@@ -250,7 +251,7 @@ function ENT:ComputeFlankPath( Path, pEnemy )
 	local MyTable = CEntity_GetTable( self )
 	local vPos = CEntity_GetPos( self )
 	local vGoal = CEntity_GetPos( pEnemy )
-	if MyTable.TryRePathing( self, Path, vPos, vGoal, MyTable ) then return true end
+	if MyTable.DontRePath( self, Path, vPos, vGoal, MyTable ) then return true end
 	local tPath, tAlready = {}, {}
 	local iClass = self:Classify()
 	local iX = math_Round( vGoal[ 1 ] / ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE ) * ACTOR_FLANK_PATHS_SPATIAL_PARTITION_CELL_SIZE

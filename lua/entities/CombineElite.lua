@@ -9,6 +9,9 @@ ENT.CATEGORIZE = {
 	Elite = true
 }
 
+ENT.flTopSpeed = 400
+ENT.flProwlSpeed = 266
+
 list.Set( "NPC", "CombineElite", {
 	Name = "#CombineElite",
 	Class = "CombineElite",

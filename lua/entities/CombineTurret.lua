@@ -38,6 +38,10 @@ list.Set( "NPC", "npc_turret_floor", {
 
 if !SERVER then return end
 
+ENT.flTopSpeed = 0
+ENT.flProwlSpeed = 0
+ENT.flWalkSpeed = 0
+
 ENT.bPhysics = true
 
 ENT.bCantTurnBody = true
@@ -66,32 +70,35 @@ function ENT:RangeAttack()
 end
 
 function ENT:Behaviour()
+	local c = self:GetWeaponClipPrimary()
+	if c != -1 && c <= 0 then self:WeaponReload() return end
 	if IsValid( self.Enemy ) then
 		local tNearestEnemies = {}
 		for ent in pairs( self.tEnemies ) do if IsValid( ent ) then table.insert( tNearestEnemies, { ent, ent:GetPos():DistToSqr( self:GetPos() ) } ) end end
 		table.SortByMember( tNearestEnemies, 2, true )
-		local tAllies, pEnemy = self:GetAlliesByClass()
+		local aForward = self:GetAngles()
+		local flAimYawDistance = math.abs( self:GetPoseParameterRange( self:LookupPoseParameter "aim_yaw" ) )
+		local flAimPitchDistance = math.abs( self:GetPoseParameterRange( self:LookupPoseParameter "aim_pitch" ) )
+		local tAllies = self:GetAlliesByClass()
 		for _, d in ipairs( tNearestEnemies ) do
 			local pEnemy = d[ 1 ]
 			local v = pEnemy:GetPos() + pEnemy:OBBCenter()
-			self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
-			local c = self:GetWeaponClipPrimary()
-			if c != -1 && c <= 0 then self:WeaponReload() return end
-			if !self:CanAttackHelper( v ) then return end
+			local d = ( v - self:GetShootPos() ):GetNormalized()
+			local a = d:Angle()
+			if math.abs( math.AngleDifference( a[ 2 ], aForward[ 2 ] ) ) > flAimYawDistance || math.abs( math.AngleDifference( a[ 1 ], aForward[ 1 ] ) ) > flAimPitchDistance then continue end
 			if util.TraceLine( {
 				start = self:GetShootPos(),
 				endpos = v,
-				filter = self,
+				filter = self, pEnemy,
 				mask = MASK_SHOT_HULL
-			} ).Fraction <= self.flSuppressionTraceFraction then return end
+			} ).Fraction <= self.flSuppressionTraceFraction then continue end
+			self.vDesAim = d
+			if !self:CanAttackHelper( v ) then return end
 			self:RangeAttack()
 			return
 		end
-	else
 		self.vDesAim = self:GetForward()
-		local c = self:GetWeaponClipPrimary()
-		if c != -1 && c <= 0 then self:WeaponReload() return end
-	end
+	else self.vDesAim = self:GetForward() end
 end
 
 function ENT:Initialize()

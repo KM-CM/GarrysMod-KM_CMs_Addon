@@ -158,7 +158,8 @@ local cDamageMultiplier = CreateConVar(
 function ENT:WeaponPrimaryAttack( MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	local wep = MyTable.Weapon
-	if !IsValid( wep ) && CurTime() <= wep:GetNextPrimaryFire() then return end
+	if !IsValid( wep ) then return end
+	if CurTime() <= wep:GetNextPrimaryFire() then return end
 	local WeaponTable = CEntity_GetTable( wep )
 	local flDamage = WeaponTable.Primary_flDamage
 	if flDamage then WeaponTable.Primary_flDamage = flDamage * cDamageMultiplier:GetFloat() end

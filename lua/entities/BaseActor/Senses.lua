@@ -218,6 +218,7 @@ function ENT:Look( MyTable )
 	local bCombatForgetLastHostile = MyTable.bCombatForgetLastHostile
 	local fReportPositionAsClear = MyTable.ReportPositionAsClear
 	local bClear = !IsValid( MyTable.Enemy )
+	local bMelee, bRange
 	for _, ent in ipairs(
 		// This is the piece of shit that is necessary but absolutely CONSUMES the CPU!
 		// I am 100% sure, and I have tested it.
@@ -235,6 +236,8 @@ function ENT:Look( MyTable )
 		if !TheirTable.__FLARE_ACTIVE__ && !TheirTable.__ACTOR_BULLSEYE__ && !MyTable.IsHateDisposition( self, ent ) || !MyTable.CanSee( self, ent ) then continue end
 		if tOldVisionStrength[ ent ] then
 			if ent.__ACTOR_BULLSEYE__ then
+				if !bMelee && HasMeleeAttack( ent ) then bMelee = true end
+				if !bRange && HasRangeAttack( ent ) then bRange = true end
 				if tAllies && TheirTable.Owner == self then
 					local f = tOldVisionStrength[ ent ]
 					if f && f >= 1 then
@@ -282,6 +285,8 @@ function ENT:Look( MyTable )
 					end
 				end
 			else
+				if !bMelee && HasMeleeAttack( ent ) then bMelee = true end
+				if !bRange && HasRangeAttack( ent ) then bRange = true end
 				tVisionStrength[ ent ] = math_Clamp( tOldVisionStrength[ ent ] + MyTable.GetVisionStrengthIncreaseSpeed( self, ent, vEyePos ) * flFrameTime, 0, 1 )
 				if tVisionStrength[ ent ] >= 1 then
 					self.bHoldFire = nil
@@ -302,7 +307,6 @@ function ENT:Look( MyTable )
 		tVisionStrength[ ent ] = flt - f * FrameTime()
 	end
 	local tBullseyes = {}
-	local bMelee, bRange
 	for id, data in pairs( MyTable.tBullseyes ) do
 		local ent = data[ 1 ]
 		if !IsValid( ent ) then continue end
@@ -329,10 +333,39 @@ function ENT:Look( MyTable )
 	if bClear && IsValid( ne ) then MyTable.OnAcquireEnemy( self, MyTable ) end
 end
 
+function ENT:GetStartleSoundLevel( sName )
+	local t = self.tSoundHarmless[ sName ]
+	return 95 * math.Remap( 1 + ( t && t[ 1 ] || 1 ) * self.flBoldness, 0, 128, 1, 2 )
+end
+
+ENT.tSoundHarmless = {}
+ENT.tSoundHarmful = {}
+
+function ENT:NoiseReflex( MyTable, Disposition, Other, Data )
+	if !self.tSoundHarmful[ Data.SoundName ] then
+		local t = self.tSoundHarmless[ Data.SoundName ]
+		if Data.Volume <= .33 ||
+		Data.SoundLevel <= self:GetStartleSoundLevel( Data.SoundName ) ||
+		self:GetStartleSoundTime( Data.SoundName, Data.SoundLevel ) <= .5 then return end
+	end
+	local pSchedule = MyTable.Schedule
+	if pSchedule then
+		if pSchedule.m_sName == "StartleNoise" then
+			pSchedule.tData = Data
+			pSchedule.flConsecutiveSounds = pSchedule.flConsecutiveSounds + 1
+			return
+		end
+	end
+	pSchedule = MyTable.SetSchedule( self, "StartleNoise", MyTable )
+	pSchedule.tData = Data
+	pSchedule.flConsecutiveSounds = 1
+end
+
 local math_max = math.max
 function ENT:OnHeardSomething( Other, Data )
 	local MyTable = CEntity_GetTable( self )
 	local d = MyTable.Disposition( self, Other, MyTable )
+	if MyTable.bCanStartle then MyTable.NoiseReflex( self, MyTable, d, Other, Data ) end
 	if d == D_LI then
 		local OtherTable = CEntity_GetTable( Other )
 		if !OtherTable.__ACTOR__ then return end

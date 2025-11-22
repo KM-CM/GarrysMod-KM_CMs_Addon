@@ -107,16 +107,16 @@ function DispatchRangeAttack( Owner, vStart, vEnd, flDamage )
 		if ent.__ACTOR__ then
 			if ent == Owner || Owner.Disposition && Owner:Disposition( ent ) == D_LI || ent.Disposition && ent:Disposition( Owner ) == D_LI then continue end
 			local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
-			if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
+			if ent:CanSee( v ) && ent:WillAttackFirst( Owner ) then ent:SetupBullseye( Owner, vStart, ang ) end
 		end
 	end
-	/*Too cheaty - makes silencers almost completely useless
-	local ang = ( vEnd - vStart ):Angle()
-	for ent in pairs( __ACTOR_LIST__ ) do
-		if ent == Owner || Owner.Disposition && tIgnoreRangeAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRangeAttackDisp[ ent:Disposition( Owner ) ] then continue end
-		local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
-		if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
-	end*/
+	// Too cheaty - makes silencers almost completely useless
+	//	local ang = ( vEnd - vStart ):Angle()
+	//	for ent in pairs( __ACTOR_LIST__ ) do
+	//		if ent == Owner || Owner.Disposition && tIgnoreRangeAttackDisp[ Owner:Disposition( ent ) ] || ent.Disposition && tIgnoreRangeAttackDisp[ ent:Disposition( Owner ) ] then continue end
+	//		local _, v = util_DistanceToLine( vStart, vEnd, ent:EyePos() )
+	//		if ent:CanSee( v ) then ent:SetupBullseye( Owner, vStart, ang ) end
+	//	end
 end
 
 local function fOnKilled( pEntity, pAttacker )
@@ -284,7 +284,9 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	if Data.AmmoType != "" then Data.Damage = game.GetAmmoPlayerDamage( game.GetAmmoID( Data.AmmoType ) ) Data.AmmoType = "" end
 	local OldCallBack = Data.Callback || function() return { damage = true, effects = true } end
 	local flDamage = Data.Damage
-	local col = TRACER_COLOR[ Data.TracerName || "Bullet" ] || TRACER_COLOR.Bullet
+	local col
+	local bTracer = Data.Tracer > 0
+	if bTracer then col = TRACER_COLOR[ Data.TracerName || "Bullet" ] || TRACER_COLOR.Bullet end
 	if Data.HullSize == 0 then Data.HullSize = TRACER_SIZE[ Data.TracerName || "Bullet" ] || TRACER_SIZE.Bullet end
 	local pOwner = GetOwner( ent )
 	Data.Callback = function( atk, tr, dmg )
@@ -303,6 +305,7 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 		end
 		local t = OldCallBack( atk, tr, dDamage ) || { damage = true, effects = true }
 		if t.damage && bTarget then pTarget:TakeDamageInfo( dDamage ) end
+		if !bTracer then return end
 		local b = t.effects
 		if b then
 			local pt = ents.Create "env_projectedtexture"
@@ -408,7 +411,7 @@ hook.Add( "Think", "GameImprovements", function()
 	end
 end )
 
-COVER_BOUND_SIZER = 3
+COVER_BOUND_SIZE = 3
 
 local CEntity_IsOnGround = CEntity.IsOnGround
 local math_max = math.max
@@ -571,14 +574,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			local vView = ply:GetPos() + ply:GetViewOffset()
 			local trStand = util_TraceLine {
 				start = vView,
-				endpos = vView + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = vView + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}
 			local vViewDucked = ply:GetPos() + ply:GetViewOffsetDucked()
 			local trDuck = util_TraceLine {
 				start = vViewDucked,
-				endpos = vViewDucked + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = vViewDucked + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}
@@ -621,7 +624,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 					filter = ply
 				} ).Hit || util_TraceLine( {
 					start = ply:GetPos() + ply:GetViewOffset(),
-					endpos = ply:GetPos() + ply:GetViewOffset() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = ply:GetPos() + ply:GetViewOffset() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				} ).Hit
@@ -629,14 +632,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				cmd:AddKey( IN_DUCK )
 				bMove = util_TraceLine( {
 					start = ply:GetPos() + ply:GetViewOffsetDucked(),
-					endpos = ply:GetPos() + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = ply:GetPos() + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				} ).Hit
 			elseif ply.GAME_bPeekUnCrouchIfCan then
 				bMove = util_TraceLine( {
 					start = ply:GetPos() + ply:GetViewOffsetDucked(),
-					endpos = ply:GetPos() + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = ply:GetPos() + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				} ).Hit
@@ -645,7 +648,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				local v = ply:GetPos() + ( cmd:KeyDown( IN_DUCK ) && ply:GetViewOffsetDucked() || ply:GetViewOffset() )
 				bMove = util_TraceLine( {
 					start = v,
-					endpos = v + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = v + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				} ).Hit
@@ -665,12 +668,12 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			local v = ply.GAME_vPeekSource
 			local trOriginalStand, trOriginalDuck = util_TraceLine {
 				start = v + ply:GetViewOffset(),
-				endpos = v + ply:GetViewOffset() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = v + ply:GetViewOffset() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}, util_TraceLine {
 				start = v + ply:GetViewOffsetDucked(),
-				endpos = v + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = v + ply:GetViewOffsetDucked() + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}
@@ -679,14 +682,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			local vView = ply:GetPos() + ply:GetViewOffset()
 			local trStand = util_TraceLine {
 				start = vView,
-				endpos = vView + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = vView + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}
 			local vViewDucked = ply:GetPos() + ply:GetViewOffsetDucked()
 			local trDuck = util_TraceLine {
 				start = vViewDucked,
-				endpos = vViewDucked + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+				endpos = vViewDucked + dEyeFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 				mask = MASK_SOLID,
 				filter = ply
 			}
@@ -720,6 +723,19 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 		end
 	else
+		local wep = ply:GetActiveWeapon()
+		if IsValid( wep ) && !cmd:KeyDown( IN_ZOOM ) then
+			local cap = wep.GetCapabilities
+			if cap then
+				cap = cap( wep )
+				if bit.band( cap, CAP_INNATE_MELEE_ATTACK1 ) != 0 || bit.band( cap, CAP_WEAPON_MELEE_ATTACK1 ) != 0 then
+					ply:SetNW2Bool "CTRL_bInCover"
+					ply.CTRL_bInCover = nil
+					ply:SetNW2Int( "CTRL_Peek", COVER_PEEK_NONE )
+					return
+				end
+			end
+		end
 		local aEye = ply:EyeAngles()
 		local bInCover
 		local EyeVector = aEye:Forward()
@@ -729,14 +745,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		local vView = ply:GetPos() + ply:GetViewOffset()
 		local trStand = util_TraceLine {
 			start = vView,
-			endpos = vView + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+			endpos = vView + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 			mask = MASK_SOLID,
 			filter = ply
 		}
 		local vViewDucked = ply:GetPos() + ply:GetViewOffsetDucked()
 		local trDuck = util_TraceLine {
 			start = vViewDucked,
-			endpos = vViewDucked + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+			endpos = vViewDucked + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 			mask = MASK_SOLID,
 			filter = ply
 		}
@@ -784,13 +800,13 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			} ).Hit then
 				local trDuck = util_TraceLine {
 					start = vLeft + ply:GetViewOffsetDucked(),
-					endpos = vLeft + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = vLeft + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				}
 				local trStand = util_TraceLine {
 					start = vLeft + ply:GetViewOffset(),
-					endpos = vLeft + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = vLeft + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				}
@@ -811,13 +827,13 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			} ).Hit then
 				local trDuck = util_TraceLine {
 					start = vRight + ply:GetViewOffsetDucked(),
-					endpos = vRight + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = vRight + ply:GetViewOffsetDucked() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				}
 				local trStand = util_TraceLine {
 					start = vRight + ply:GetViewOffset(),
-					endpos = vRight + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZER,
+					endpos = vRight + ply:GetViewOffset() + EyeVectorFlat * ply:OBBMaxs().x * COVER_BOUND_SIZE,
 					mask = MASK_SOLID,
 					filter = ply
 				}
@@ -960,6 +976,7 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	local ent = Data.Entity
 	local dent = GetOwner( ent )
 	if ent.GAME_bNextSoundMute then ent.GAME_bNextSoundMute = nil return true end
+	if Data.Volume <= .05 then return true end
 	local dt = math.Clamp( Data.SoundLevel ^ ( Data.SoundLevel >= 100 && 2 || 1.5 ), 5, 18000 )
 	local vPos = Data.Pos || ent:GetPos()
 	for act in pairs( __ACTOR_LIST__ ) do
