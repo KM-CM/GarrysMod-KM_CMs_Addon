@@ -359,6 +359,7 @@ function ENT:NoiseReflex( MyTable, Disposition, Other, Data )
 	pSchedule = MyTable.SetSchedule( self, "StartleNoise", MyTable )
 	pSchedule.tData = Data
 	pSchedule.flConsecutiveSounds = 1
+	pSchedule.bSoundWasNotHarmless = self.tSoundHarmful[ Data.SoundName ]
 end
 
 local math_max = math.max

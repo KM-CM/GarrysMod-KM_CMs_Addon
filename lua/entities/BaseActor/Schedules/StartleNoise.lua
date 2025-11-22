@@ -16,15 +16,19 @@ Actor_RegisterSchedule( "StartleNoise", function( self, sched )
 		local f = self:GetStartleSoundTime( sched.tData.SoundName, sched.tData.SoundLevel )
 		sched.flTime = CurTime() + math.Rand( f * .9, f * 1.1 )
 	end
-	local t = self.tSoundHarmless[ sched.tData.SoundName ]
-	if sched.tData.Volume <= .33 || sched.tData.SoundLevel <= self:GetStartleSoundLevel( sched.tData.SoundName, sched.tData.SoundLevel ) then
+	if !sched.bSoundWasNotHarmless then
 		local t = self.tSoundHarmless[ sched.tData.SoundName ]
-		self.tSoundHarmless[ sched.tData.SoundName ] = { ( t && t[ 1 ] || 0 ) + 1 * sched.flConsecutiveSounds, {} /* TODO: Safe emitters */ }
-		return true
+		if sched.tData.Volume <= .33 || sched.tData.SoundLevel <= self:GetStartleSoundLevel( sched.tData.SoundName, sched.tData.SoundLevel ) then
+			local t = self.tSoundHarmless[ sched.tData.SoundName ]
+			self.tSoundHarmless[ sched.tData.SoundName ] = { ( t && t[ 1 ] || 0 ) + 1 * sched.flConsecutiveSounds, {} /* TODO: Safe emitters */ }
+			return true
+		end
 	end
 	if CurTime() > sched.flTime then
-		local t = self.tSoundHarmless[ sched.tData.SoundName ]
-		self.tSoundHarmless[ sched.tData.SoundName ] = { ( t && t[ 1 ] || 0 ) + 1 * sched.flConsecutiveSounds, {} /* TODO: Safe emitters */ }
+		if !sched.bSoundWasNotHarmless then
+			local t = self.tSoundHarmless[ sched.tData.SoundName ]
+			self.tSoundHarmless[ sched.tData.SoundName ] = { ( t && t[ 1 ] || 0 ) + 1 * sched.flConsecutiveSounds, {} /* TODO: Safe emitters */ }
+		end
 		return true
 	end
 	if !sched.vGoal then

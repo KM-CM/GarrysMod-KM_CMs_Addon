@@ -93,6 +93,16 @@ function ENT:OnKilled( dmg )
 		local fAddFrags = pAttacker.AddFrags
 		if fAddFrags then fAddFrags( pAttacker, math_max( 1, math_ceil( self:GetMaxHealth() / 100 ) ) ) end
 	end
+	timer.Simple( .1, function()
+		for pActor in pairs( __ACTOR_LIST__ ) do
+			if !pActor:CanSee( self ) then continue end
+			local pSchedule = pActor.Schedule
+			if pSchedule.m_sName != "StartleNoise" then continue end
+			local sSound = pSchedule.tData.SoundName
+			pActor.tSoundHarmless[ sSound ] = nil
+			pActor.tSoundHarmful[ sSound ] = ( pActor.tSoundHarmful[ sSound ] || 0 ) + 1
+		end
+	end )
 	hook.Run( "OnNPCKilled", self, dmg:GetAttacker(), dmg:GetInflictor() )
 end
 
