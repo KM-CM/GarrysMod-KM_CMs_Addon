@@ -1,5 +1,4 @@
 ENT.flPathTolerance = 32
-ENT.flRePathTolerance = 64
 
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetTable = CEntity.GetTable
@@ -13,11 +12,11 @@ local math_min = math.min
 
 function ENT:DontRePath( pPath, vPos, vGoal, MyTable )
 	pPath:MoveCursorToClosestPosition( vPos )
-	local f = MyTable.flRePathTolerance
+	local f = MyTable.flPathTolerance
 	local flCursor = pPath:GetCursorPosition()
 	if pPath:GetPositionOnPath( flCursor ):DistToSqr( vPos ) <= f * f then
 		pPath:MoveCursorToClosestPosition( vGoal )
-		f = math_max( MyTable.flRePathTolerance, vPos:Distance( vGoal ) )
+		f = math_max( MyTable.flPathTolerance, vPos:Distance( vGoal ) * .5 )
 		if pPath:GetPositionOnPath( pPath:GetCursorPosition() ):DistToSqr( vGoal ) <= f * f then return true end
 	end
 end
