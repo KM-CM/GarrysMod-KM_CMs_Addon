@@ -12,8 +12,6 @@ local CurTime = CurTime
 function ENT:DLG_MeleeReachable( pEnemy ) end
 function ENT:DLG_MeleeUnReachable( pEnemy ) end
 
-local developer = GetConVar "developer"
-
 local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
 
 // ENT.bMeleeChargeAgainstRange - Far Cry 3 Pirate Beheader

@@ -23,10 +23,15 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
-SWEP.vViewModelAim = Vector( -6.61, -12, 3.4 )
 SWEP.Crosshair = "Rifle"
 
-// Have to Do This for Technical Reasons
+SWEP.flViewModelX = -10
+SWEP.flViewModelY = -3
+SWEP.flViewModelZ = 1.5
+
+SWEP.vViewModelAim = Vector( -6.61 - SWEP.flViewModelY, -12 - SWEP.flViewModelX, 3.4 - SWEP.flViewModelZ )
+
+// We have to do this for technical reasons
 sound.Add {
 	name = "AK47_Shot",
 	channel = CHAN_WEAPON,

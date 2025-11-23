@@ -1,3 +1,11 @@
+// Lots of code is taken from Buu342's Weapon Base 2
+// You can find it here: https://github.com/buu342/GMod-BuuBaseRedone
+// I would've just took the code because it's the best way to do it,
+// and because he took the general idea and some assets from Far Cry 3,
+// but his base really helped me, and I should've wrote this credit sooner.
+//
+// Thank you, Buu.
+
 function SWEP:PrimaryAttack() end
 function SWEP:SecondaryAttack() end
 
