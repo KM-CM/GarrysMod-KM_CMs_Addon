@@ -31,8 +31,7 @@ end
 function SWEP:AllowsAutoSwitchFrom() return false end
 function SWEP:AllowsAutoSwitchTo() return false end
 
-SWEP.Primary_DryFireSound = "Weapon_Pistol.Empty"
-SWEP.Secondary_DryFireSound = "Weapon_Pistol.Empty"
+SWEP.sDryFire = "Weapon_Pistol.Empty"
 
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetOwner = CEntity.GetOwner
@@ -46,24 +45,9 @@ function SWEP:CanPrimaryAttack()
 		if IsValid( owner ) && owner.CTRL_bInCover then return end
 	end
 	if self:Clip1() <= 0 then
-		self:EmitSound( self.Primary_DryFireSound )
+		local sDryFire = self.sDryFire
+		if sDryFire != "" then self:EmitSound( sDryFire ) end
 		self:SetNextPrimaryFire( CurTime() + .2 )
-		return
-	end
-	return true
-end
-
-SWEP.bDisAllowSecondaryInCover = false
-function SWEP:CanSecondaryAttack()
-	if CurTime() <= self:GetNextSecondaryFire() then return end
-	local owner = CEntity_GetOwner( self )
-	if CurTime() <= ( owner.CTRL_flCoverDontShootTime || 0 ) then return end
-	if self.bDisAllowSecondaryInCover then
-		if IsValid( owner ) && owner.CTRL_bInCover then return end
-	end
-	if self:Clip2() <= 0 then
-		self:EmitSound( self.Secondary_DryFireSound )
-		self:SetNextSecondaryFire( CurTime() + .2 )
 		return
 	end
 	return true
@@ -165,7 +149,9 @@ if CLIENT then
 	SWEP.flLastEyeYaw = 0
 	SWEP.flBobScale = 1
 	SWEP.flAimRoll = 45
-	local MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
+	SNIPER_AIMING_MULTIPLIER = .5
+	SNIPER_AIMING_SWAY_MULTIPLIER = .5
+	MOVE_LEFT_ROLL, MOVE_RIGHT_ROLL = -5.625, 5.625
 	local math_cos = math.cos
 	local math_sin = math.sin
 	local math_Clamp = math.Clamp
@@ -231,6 +217,7 @@ if CLIENT then
 		aViewAim = LerpAngle( math_min( 1, 5 * FrameTime() ), aViewAim, ply:EyeAngles() )
 		MyTable.aLastViewEyePosition = aViewAim - ply:EyeAngles()
 		local flMultiplier = MyTable.flAimMultiplier || 0
+		if MyTable.bSniper && flMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) then flMultiplier = ( MyTable.flSniperAimingSwayMultiplier || SNIPER_AIMING_SWAY_MULTIPLIER ) end
 		local flSwayAngle = MyTable.flSwayAngle * flMultiplier
 		local flSwayAngleNeg = -flSwayAngle
 		local eye = ply:EyeAngles()
@@ -245,9 +232,15 @@ if CLIENT then
 		pos = pos - math_Clamp( ( flSwayVectorNeg * MyTable.aLastViewEyePosition.y / MyTable.flSwayScale ), flSwayVectorNeg, flSwayVector ) * ang:Right()
 		local v = MyTable.flCustomZoomFoV
 		if v then
-			local f = math_Remap( MyTable.flAimMultiplier, 1, 0, UNIVERSAL_FOV, v )
-			MyTable.flFoV = f
-			return pos, ang, f
+			if MyTable.bSniper then
+				local f = MyTable.flAimMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) && v || UNIVERSAL_FOV
+				MyTable.flFoV = f
+				return pos, ang, f
+			else
+				local f = math_Remap( MyTable.flAimMultiplier, 1, 0, UNIVERSAL_FOV, v )
+				MyTable.flFoV = f
+				return pos, ang, f
+			end
 		else MyTable.flFoV = UNIVERSAL_FOV end
 		return pos, ang, UNIVERSAL_FOV
 	end
@@ -431,12 +424,13 @@ if CLIENT then
 		MyTable.aLastEyePosition[ 3 ] = math_AngleDifference( aAim[ 3 ], eye[ 3 ] )
 		aAim = LerpAngle( math_min( 1, 5 * FrameTime() ), aAim, eye )
 		local flMultiplier
-		if bZoom then
-			flMultiplier = vAim && vFinal:Distance( vTarget ) / vTarget:Length() || math_Clamp( MyTable.flAimMultiplier - FrameTime(), 0, 1 )
-		else
-			flMultiplier = math_Clamp( MyTable.flAimMultiplier + FrameTime(), 0, 1 )
-		end
+		if bZoom then flMultiplier = Lerp( math_min( 1, 5 * FrameTime() ), MyTable.flAimMultiplier, 0 )
+		else flMultiplier = Lerp( math_min( 1, 5 * FrameTime() ), MyTable.flAimMultiplier, 1 ) end
 		MyTable.flAimMultiplier = flMultiplier
+		if MyTable.bSniper && flMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) then
+			vInstantTarget = Vector( 0, 0, 999999 )
+			flMultiplier = ( MyTable.flSniperAimingSwayMultiplier || SNIPER_AIMING_SWAY_MULTIPLIER )
+		end
 		MyTable.flLastEyeYaw = Lerp( math_min( 1, 5 * FrameTime() ), math_Clamp( MyTable.flLastEyeYaw + math_AngleDifference( eye[ 2 ], ( MyTable.flLastTrueEyeYaw || eye[ 2 ] ) ), -MyTable.flSwayScale, MyTable.flSwayScale ), 0 )
 		MyTable.flLastTrueEyeYaw = eye[ 2 ]
 		MyTable.aLastEyePosition[ 2 ] = -MyTable.flLastEyeYaw

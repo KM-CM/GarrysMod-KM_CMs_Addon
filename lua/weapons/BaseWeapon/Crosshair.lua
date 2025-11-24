@@ -1,3 +1,4 @@
+local math = math
 local math_max = math.max
 function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	local flSpreadX, flSpreadY
@@ -168,6 +169,9 @@ local CPlayer = FindMetaTable "Player"
 local CPlayer_IsSprinting = CPlayer.IsSprinting
 local CPlayer_KeyDown = CPlayer.KeyDown
 SWEP.bDontDrawCrosshairDuringZoom = true
+local surface_DrawTexturedRect = surface.DrawTexturedRect
+local surface_DrawRect = surface.DrawRect
+local math_min = math.min
 local cThirdPerson = GetConVar "bThirdPerson"
 function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
@@ -210,6 +214,21 @@ function SWEP:DoDrawCrosshair()
 				surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
 			end
 		end
+	end
+	if MyTable.bSniper && MyTable.flAimMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) then
+		surface_SetDrawColor( 0, 0, 0, 255 )
+		surface_SetTexture( surface_GetTextureID( MyTable.sSniperTexture || "CrosshairScope1" ) )
+		local flHeight, flWidth = ScrH(), ScrW()
+		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
+		local flSize = flWidth * .5
+		surface_SetDrawColor( 255, 255, 255, 255 )
+		surface_DrawTexturedRect( flX - flSize * .5, flY - flSize * .5, flSize, flSize )
+		surface_SetDrawColor( 0, 0, 0, 255 )
+		surface_DrawRect( 0, 0, flX - flSize * .5, flHeight )
+		surface_DrawRect( flX + flSize * .5, 0, flWidth - flX, flHeight )
+		surface_DrawRect( flX - flSize * .5, 0, flSize, flY - flSize * .5 )
+		surface_DrawRect( flX - flSize * .5, flY + flSize * .5, flSize, flHeight - flY )
+		return true
 	end
 	if CurTime() <= self:GetNextPrimaryFire() + .05 || CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) || ( !cThirdPerson:GetBool() && MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]

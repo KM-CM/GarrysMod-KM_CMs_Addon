@@ -1,35 +1,33 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-SWEP.Category = "Sniper Rifles"
-SWEP.PrintName = "#AWM"
+SWEP.Category = "Crossbows"
+SWEP.PrintName = "#weapon_crossbow"
 SWEP.Instructions = "Primary to shoot, secondary + mouse forward/backward to zoom in/out."
-SWEP.Purpose = "Accuracy International Arctic Warfare Magnum."
-SWEP.ViewModel = Model "models/weapons/cstrike/c_snip_awp.mdl"
+SWEP.Purpose = "A Resistance crossbow."
+SWEP.ViewModel = Model "models/weapons/c_crossbow.mdl"
 SWEP.UseHands = true
-SWEP.WorldModel = Model "models/weapons/w_snip_awp.mdl"
-SWEP.Primary.ClipSize = 5
-SWEP.Primary.DefaultClip = 5
+SWEP.WorldModel = Model "models/weapons/w_crossbow.mdl"
+SWEP.Primary.ClipSize = 1
+SWEP.Primary.DefaultClip = 1
 SWEP.Primary.Automatic = false
-SWEP.Primary.Ammo = "357"
-SWEP.Primary_flSpreadX = .00009259259
-SWEP.Primary_flSpreadY = .00009259259
-SWEP.Primary_flDamage = 128
-SWEP.Primary_flDelay = 1.4
+SWEP.Primary.Ammo = "XBowBolt"
+SWEP.Primary_flSpreadX = 0
+SWEP.Primary_flSpreadY = 0
+SWEP.Primary_flDamage = 140
+SWEP.Primary_flDelay = .1
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
-SWEP.AdminOnly = false
-SWEP.Weight = 1
 SWEP.Slot = 3
-SWEP.DrawAmmo = true
-SWEP.bDontDrawCrosshairDuringZoom = false
+SWEP.vViewModelAim = Vector( -7.97, -13.74, 2.05 )
+SWEP.Crosshair = "Sniper"
+SWEP.vSprintArm = Vector( 1.358, -6.228, -.94 )
+SWEP.sDryFire = ""
+SWEP.bSniper = true
 SWEP.flZoomFoVMin = 8.25
 SWEP.flZoomFoVMax = 1.98
 SWEP.flCustomZoomFoV = SWEP.flZoomFoVMin
-SWEP.vViewModelAim = Vector( -7.45, -13.5, 2.3 )
-SWEP.vSprintArm = Vector( 1.358, -3.228, -0.94 )
-SWEP.bSniper = true
 
 function SWEP:FreezeMovement()
 	local owner = self:GetOwner()
@@ -48,37 +46,42 @@ function SWEP:Tick()
 end
 
 sound.Add {
-	name = "AWM_Shot",
+	name = "CrossbowShot",
 	channel = CHAN_WEAPON,
-	level = 150,
+	level = 90,
 	pitch = { 90, 110 },
-	sound = "^AWMShot.wav"
+	sound = "weapons/crossbow/fire1.wav"
 }
 
-function SWEP:Initialize() self:SetHoldType "AR2" end
+sound.Add {
+	name = "CrossbowLoad",
+	channel = CHAN_WEAPON,
+	level = 90,
+	pitch = { 90, 110 },
+	sound = {
+		"weapons/crossbow/bolt_load1.wav",
+		"weapons/crossbow/bolt_load2.wav"
+	}
+}
+
+function SWEP:Initialize() self:SetHoldType "Crossbow" end
 
 function SWEP:PrimaryAttack()
 	if !self:CanPrimaryAttack() then return end
 	local owner = self:GetOwner()
-	self:FireBullets {
-		Attacker = owner,
-		Src = owner:GetShootPos(),
-		Dir = self:GetAimVector(),
-		Tracer = 1,
-		Spread = Vector( self.Primary_flSpreadX, self.Primary_flSpreadY ),
-		Damage = self.Primary_flDamage
-	}
 	self:ShootEffects()
 	owner:SetAnimation( PLAYER_ATTACK1 )
-	local ed = EffectData()
-	ed:SetEntity( self )
-	ed:SetAttachment( 1 )
-	ed:SetFlags( 1 )
-	util.Effect( "MuzzleFlash", ed )
-	self:EmitSound "AWM_Shot"
+	self:EmitSound "CrossbowShot"
 	self:TakePrimaryAmmo( 1 )
-	// self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() ) // Bolt-Action
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 
-list.Add( "NPCUsableWeapons", { class = "AWM", title = "#AWM", category = SWEP.Category } )
+function SWEP:Reload()
+	if self:Clip1() > 0 then return end
+	if self:DefaultReload( ACT_VM_RELOAD ) then
+		timer.Simple( .9, function()
+			if !IsValid( self ) then return end
+			self:EmitSound "CrossbowLoad"
+		end )
+	end
+end
