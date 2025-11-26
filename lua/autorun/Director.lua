@@ -258,7 +258,7 @@ hook.Add( "Tick", "Director", function()
 		end
 		ply:SetNW2Float( "GAME_flOxygenLimit", ply.GAME_flOxygenLimit || 30 )
 		if ply:Alive() then
-			local o = ply:GetNW2Float( "GAME_flOxygen", -1 )
+			local o = ply:GetNW2Float( "GAME_flOxygen", ply:GetNW2Float( "GAME_flOxygenLimit", -1 ) )
 			if o == 0 then
 				ply:SetHealth( 0 )
 				local d = DamageInfo()
@@ -269,12 +269,31 @@ hook.Add( "Tick", "Director", function()
 				ply:TakeDamageInfo( d )
 				continue
 			end
-			if ply:WaterLevel() >= 3 then
-				ply:SetNW2Float( "GAME_flOxygen", math.Clamp( ply:GetNW2Float( "GAME_flOxygen", 0 ) - FrameTime(), 0, ply:GetNW2Float( "GAME_flOxygenLimit", -1 ) ) )
-			else
-				ply:SetNW2Float( "GAME_flOxygen", math.Clamp( ply:GetNW2Float( "GAME_flOxygen", 0 ) + FrameTime() * ( ply.GAME_flOxygenRegen || ( ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) * .5 ) ), 0, ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) ) )
+			local f = ply:GetNW2Float( "GAME_flBleeding", 0 )
+			if f > 0 && CurTime() > ( ply.GAME_flNextBleed || 0 ) then
+				ply:EmitSound "Bleed"
+				local v = ply:GetPos() + ply:OBBCenter()
+				local d = VectorRand()
+				local f = ply:BoundingRadius()
+				v = ply:GetPos() - Vector( 0, 0, ply:OBBMins()[ 3 ] )
+				util.Decal( "Blood", v, v - Vector( 0, 0, f ), ply )
+				ply.GAME_flNextBleed = CurTime() + 60 / f
 			end
-		else ply:SetNW2Float( "GAME_flOxygen", ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) ) end
+			local flBlood = math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( .016 - f ) * FrameTime(), 0, 1 )
+			ply:SetNW2Float( "GAME_flBlood", flBlood )
+			o = o - FrameTime()
+			ply:SetNW2Float( "GAME_flOxygen", math.Clamp(
+
+			o + ( ply:WaterLevel() >= 3 && 0 || (
+			1 / ( 1 + math.exp( -18 * ( flBlood - .55 ) ) ) * // Blood efficiency formula
+			( 1 + ( ply.GAME_flOxygenRegen || ( ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) * .5 ) ) ) ) )
+
+			* FrameTime(), 0, ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) ) )
+		else
+			ply:SetNW2Float( "GAME_flOxygen", ply:GetNW2Float( "GAME_flOxygenLimit", 0 ) )
+			ply:SetNW2Float( "GAME_flBlood", 1 )
+			ply:SetNW2Float( "GAME_flBleeding", 0 )
+		end
 		ply:SetViewOffset( ply:GetViewOffset() )
 		ply:SetViewOffsetDucked( ply:GetViewOffsetDucked() )
 		ply:SetCanZoom( false )
@@ -285,7 +304,7 @@ hook.Add( "Tick", "Director", function()
 		if !PlyTable.DR_tMusic then PlyTable.DR_tMusic = {} end
 		if !PlyTable.DR_tMusicNext then PlyTable.DR_tMusicNext = {} end
 		local tMusicEntities = {}
-		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * .3, ( PlyTable.GAME_flSuppression || 0 ) * .3 ) * FrameTime() )
+		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * 2, ( PlyTable.GAME_flSuppression || 0 ) * .33 ) * FrameTime() )
 		if CurTime() > ( PlyTable.DR_flNextUpdate || 0 ) then
 			local ThreatAwareLast = PlyTable.DR_ThreatAwareLast || -1
 			local THREAT, flIntensity = DIRECTOR_THREAT_NULL, 0

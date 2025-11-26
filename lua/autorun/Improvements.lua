@@ -21,6 +21,9 @@ TRAVERSES_AIR = 4
 
 UNIVERSAL_FOV = 80
 
+function FairlyTranslateBleedingToHealth( flBleeding, flMaxHealth ) return flBleeding * flMaxHealth * 2 end
+function FairlyTranslateHealthToBleeding( flHealth, flMaxHealth ) return flHealth / ( flMaxHealth * 2 ) end
+
 if SERVER then
 	__VEHICLE_TABLE__ = __VEHICLE_TABLE__ || {
 		[ TRAVERSES_WATER ] = {},

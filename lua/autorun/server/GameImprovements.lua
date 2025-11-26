@@ -234,7 +234,11 @@ hook.Add( "PlayerCanPickupItem", "GameImprovements", function( ply, item )
 	return tr.Entity == item
 end )
 
+local math_max = math.max
+
 hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, flDamage )
+	ply:SetNW2Float( "GAME_flBleeding", ply:GetNW2Float( "GAME_flBleeding", 0 ) +
+	flDamage / ( math_max( ply:Health(), ply:GetMaxHealth() ) * 24 ) )
 	local b = true
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if v then
@@ -341,7 +345,16 @@ function PhysicsCollide( ent, Data )
 	end
 end
 
+// local math_max = math.max
+
 hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
+	// Bloodloss works only on players for now!
+	//	if ent.GAME_bPreCalculatedBleeding then
+	//		ent.GAME_bPreCalculatedBleeding = nil
+	//	else
+	//		ent:SetNW2Float( "GAME_flBleeding", ent:GetNW2Float( "GAME_flBleeding", 0 ) +
+	//		dmg:GetDamage() / ( math_max( ent:Health(), ent:GetMaxHealth() ) * 24 ) )
+	//	end
 	local at = dmg:GetAttacker()
 	if IsValid( at ) then
 		if at:IsPlayer() then
@@ -399,22 +412,25 @@ hook.Add( "Think", "GameImprovements", function()
 		if PersistAll:GetBool() && ent:MapCreationID() == -1 && !ent:IsPlayer() && ( !ent:IsWeapon() || ent:IsWeapon() && ( !IsValid( ent:GetOwner() ) || IsValid( ent:GetOwner() ) && !ent:GetOwner():IsPlayer() ) ) then ent:SetPersistent( true ) end
 		local tSuppressionAmount = {}
 		if ent.GAME_tSuppressionAmount then
-			for ent, am in pairs( ent.GAME_tSuppressionAmount ) do
-				if IsValid( ent ) then
-					am = math.Approach( am, 0, math.max( 1, am * .33 ) * FrameTime() )
+			for pSuppressor, am in pairs( ent.GAME_tSuppressionAmount ) do
+				if IsValid( pSuppressor ) then
+					am = math.Approach( am, 0, math.max( ent:Health() * 2, am * .33 ) * FrameTime() )
 					if am <= 0 then continue end
-					tSuppressionAmount[ ent ] = am
+					tSuppressionAmount[ pSuppressor ] = am
 				end
 			end
 		end
 		ent.GAME_tSuppressionAmount = tSuppressionAmount
+		if ent:IsPlayer() then
+			local f = ent.GAME_flSuppression || 0
+			ent:SetNW2Float( "GAME_flSuppressionEffects", math.Clamp( f / ( ent:Health() * 6 ), 0, 1 ) )
+		end
 	end
 end )
 
 COVER_BOUND_SIZE = 3
 
 local CEntity_IsOnGround = CEntity.IsOnGround
-local math_max = math.max
 local CEntity_WaterLevel = CEntity.WaterLevel
 local CEntity_Remove = CEntity.Remove
 local CPlayer = FindMetaTable "Player"

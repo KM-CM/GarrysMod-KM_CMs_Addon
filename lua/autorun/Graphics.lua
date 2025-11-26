@@ -1,10 +1,10 @@
-// This is Shared for a Reason, and Includes More Than Just Client Graphics
+// This is shared for a reason, and includes more than just client graphics
 
-// Gets The Human Percieved Brightness of a Color
+// Gets the human percieved brightness of a color
 function GetBrightness( c ) return c[ 1 ] * .00083372549 + c[ 2 ] * .00280470588 + c[ 3 ] * .00028313725 end
-// Same as Above Except Uses Vector Colors
+// Same as above except uses vector colors
 function GetBrightnessVC( v ) return v[ 1 ]  * .2126 + v[ 2 ] * .7152  + v[ 3 ] * .0722 end
-// Also Same as Above Except Uses Red/Green/Blue Floats
+// Also same as above except uses red/green/blue floats
 function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 + b * .00028313725 end
 
 if SERVER then
@@ -42,9 +42,6 @@ local BLEED_LOWER_THRESHOLD = .25
 
 local util_TraceLine = util.TraceLine
 
-local function VectorSum( v ) return abs( v[ 1 ] ) + abs( v[ 2 ] ) + abs( v[ 3 ] ) end
-setfenv( VectorSum, { abs = math.abs } )
-
 function DrawBlur( flIntensity ) DrawBokehDOF( flIntensity, 0, 0 ) end
 
 local MAX_WATER_BLUR = 3
@@ -53,6 +50,30 @@ local WATER_BLUR_CHANGE_SPEED_TO = .8
 local WATER_BLUR_CHANGE_SPEED_FROM = .2
 
 local VECTOR_HUGE_Z = Vector( 0, 0, 999999 )
+
+include "postprocess/bloom.lua"
+local DrawBloom = DrawBloom
+include "postprocess/color_modify.lua"
+local DrawColorModify = DrawColorModify
+
+local IsValid = IsValid
+
+local math = math
+local math_Clamp = math.Clamp
+local math_Remap = math.Remap
+local math_Approach = math.Approach
+local math_max = math.max
+local math_abs = math.abs
+
+local function VectorSum( v ) return math_abs( v[ 1 ] ) + math_abs( v[ 2 ] ) + math_abs( v[ 3 ] ) end
+
+local render = render
+local render_ComputeLighting = render.ComputeLighting
+local render_ComputeDynamicLighting = render.ComputeDynamicLighting
+
+local CEntity_GetTable = FindMetaTable( "Entity" ).GetTable
+
+local FrameTime = FrameTime
 
 hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	local self = LocalPlayer()
@@ -68,17 +89,17 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 		[ "$pp_colour_mulg" ] = 0,
 		[ "$pp_colour_mulb" ] = 0
 	}
-	local flDeath = math.Clamp( self:Health() / self:GetMaxHealth(), 0, 1 )
-	tDrawColorModify[ "$pp_colour_colour" ] = math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 1, 0 )
+	local flDeath = math_Clamp( self:Health() / self:GetMaxHealth(), 0, 1 )
+	tDrawColorModify[ "$pp_colour_colour" ] = math_Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 1, 0 )
 	if flDeath != 0 then
-		DrawBlur( math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 8 ), 0, 8 ) )
-		DrawMotionBlur( math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, .1, .02 ), .1, .02 ), math.Clamp( math.Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 1 ), 0, 1 ), 0 )
+		DrawBlur( math_Clamp( math_Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 8 ), 0, 8 ) )
+		DrawMotionBlur( math_Clamp( math_Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, .1, .05 ), .1, .05 ), math_Clamp( math_Remap( flDeath, 1, BLEED_LOWER_THRESHOLD, 0, 1 ), 0, 1 ), 0 )
 	end
 	local flOxygen, flOxygenLimit = self:GetNW2Float( "GAME_flOxygen", -1 ), self:GetNW2Float( "GAME_flOxygenLimit", -1 )
 	if flOxygen != -1 && flOxygenLimit != -1 then
 		local f = flOxygenLimit * .33
 		if flOxygen <= f then
-			tDrawColorModify[ "$pp_colour_contrast" ] = tDrawColorModify[ "$pp_colour_contrast" ] * math.Remap( flOxygen, f, 0, 1, 0 )
+			tDrawColorModify[ "$pp_colour_contrast" ] = tDrawColorModify[ "$pp_colour_contrast" ] * math_Remap( flOxygen, f, 0, 1, 0 )
 		end
 	end
 	local tr = util_TraceLine {
@@ -87,24 +108,35 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 		mask = MASK_VISIBLE_AND_NPCS,
 		filter = self
 	}
-	local vColor = ( render.ComputeLighting( tr.HitPos, tr.HitNormal ) + render.ComputeDynamicLighting( tr.HitPos, tr.HitNormal ) ) * 33
-	local flColor = math.Clamp( VectorSum( vColor ), 0, 1 )
-	local flBloom = math.Approach( self.GP_flBloom || 0, 1 - flColor, FrameTime() )
-	self.GP_flBloom = flBloom
+	local vColor = ( render_ComputeLighting( tr.HitPos, tr.HitNormal ) + render_ComputeDynamicLighting( tr.HitPos, tr.HitNormal ) ) * 33
+	local flColor = math_Clamp( VectorSum( vColor ), 0, 1 )
+	local flBloom = math_Approach( self.GP_flBloom || 0, 1 - flColor, FrameTime() )
+	local MyTable = CEntity_GetTable( self )
+	MyTable.GP_flBloom = flBloom
 	if self:WaterLevel() >= 3 then
-		self.GP_flWaterBlur = math.Approach( self.GP_flWaterBlur || 0, 1, WATER_BLUR_CHANGE_SPEED_TO * FrameTime() )
-	else self.GP_flWaterBlur = math.Approach( self.GP_flWaterBlur || 0, 0, WATER_BLUR_CHANGE_SPEED_FROM * FrameTime() ) end
-	if self.GP_flWaterBlur > 0 then
-		DrawBlur( self.GP_flWaterBlur * MAX_WATER_BLUR )
-		DrawMaterialOverlay( "effects/water_warp01", self.GP_flWaterBlur * .01 )
-		flBloom = math.Clamp( flBloom + self.GP_flWaterBlur * .2, 0, 1 )
+		MyTable.GP_flWaterBlur = math_Approach( MyTable.GP_flWaterBlur || 0, 1, WATER_BLUR_CHANGE_SPEED_TO * FrameTime() )
+	else MyTable.GP_flWaterBlur = math_Approach( MyTable.GP_flWaterBlur || 0, 0, WATER_BLUR_CHANGE_SPEED_FROM * FrameTime() ) end
+	if MyTable.GP_flWaterBlur > 0 then
+		DrawBlur( MyTable.GP_flWaterBlur * MAX_WATER_BLUR )
+		DrawMaterialOverlay( "effects/water_warp01", MyTable.GP_flWaterBlur * .01 )
+		flBloom = math_Clamp( flBloom + MyTable.GP_flWaterBlur * .2, 0, 1 )
+	end
+	local f = self:GetNW2Float( "GAME_flSuppressionEffects", 0 )
+	if f > 0 then
+		DrawBlur( math_Clamp( math_Remap( f, 0, 1, 0, 2 ), 0, 2 ) )
+		DrawMotionBlur( math_Clamp( math_Remap( f, 0, 1, .5, .1 ), .1, .5 ), math_Clamp( f, 0, 1 ), 0 )
+	end
+	local f = math_Clamp( math_Remap( self:GetNW2Float( "GAME_flBlood", 0 ), .2, 1, 0, 1 ) - self:GetNW2Float( "GAME_flBleeding", 0 ) * 2, 0, 1 )
+	if f < 1 then
+		DrawBlur( math_Clamp( math_Remap( f, 1, 0, 0, 4 ), 0, 4 ) )
+		DrawMotionBlur( math_Clamp( math_Remap( f, 1, 0, .5, .05 ), .05, .5 ), math_Clamp( 1 - f, 0, 1 ), 0 )
 	end
 	local vColorNorm = vColor:GetNormalized()
-	self.GP_FogDensityMul = math.Approach( self.GP_FogDensityMul || .1, math.Remap( flColor, 0, 1, .1, .2 ), 1 * FrameTime() )
-	self.GP_FogR = math.Approach( self.GP_FogR || 255, vColorNorm[ 1 ] * 255, 32 * FrameTime() )
-	self.GP_FogG = math.Approach( self.GP_FogG || 255, vColorNorm[ 2 ] * 255, 32 * FrameTime() )
-	self.GP_FogB = math.Approach( self.GP_FogB || 255, vColorNorm[ 3 ] * 255, 32 * FrameTime() )
-	local flFogR, flFogG, flFogB = self.GP_FogR, self.GP_FogG, self.GP_FogB
+	MyTable.GP_FogDensityMul = math_Approach( MyTable.GP_FogDensityMul || .1, math.Remap( flColor, 0, 1, .1, .2 ), 1 * FrameTime() )
+	MyTable.GP_FogR = math_Approach( MyTable.GP_FogR || 255, vColorNorm[ 1 ] * 255, 32 * FrameTime() )
+	MyTable.GP_FogG = math_Approach( MyTable.GP_FogG || 255, vColorNorm[ 2 ] * 255, 32 * FrameTime() )
+	MyTable.GP_FogB = math_Approach( MyTable.GP_FogB || 255, vColorNorm[ 3 ] * 255, 32 * FrameTime() )
+	local flFogR, flFogG, flFogB = MyTable.GP_FogR, MyTable.GP_FogG, MyTable.GP_FogB
 	local flBrightness = GetBrightnessRGB( flFogR, flFogG, flFogB )
 	local flMultiplier = math.Remap( flBrightness, 0, 1, 1, 0 )
 	flFogR, flFogG, flFogB = flFogR * .00392156862, flFogG * .00392156862, flFogB * .00392156862
@@ -115,20 +147,29 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	tDrawColorModify[ "$pp_colour_mulg" ] = tDrawColorModify[ "$pp_colour_mulg" ] + flFogG * flMultiplier
 	tDrawColorModify[ "$pp_colour_mulb" ] = tDrawColorModify[ "$pp_colour_mulb" ] + flFogB * flMultiplier
 	local flTarget = UTIL_IsUnderSkybox() && math.Remap( flColor, 0, 1, 512, 6084 ) || math.Remap( flColor, 0, 1, 512, 3072 )
-	self.GP_FogDistance = math.Approach( self.GP_FogDistance || 0, flTarget, math.max( 64, math.abs( flTarget - ( self.GP_FogDistance || 0 ) ) * .2 ) * FrameTime() )
-	DrawBloom( 0, math.Remap( flBloom, 0, 1, .8, 1.5 ), 10, 10, 5, math.Remap( flBloom, 0, 1, 2, 4 ), 1, 1, 1 )
+	MyTable.GP_FogDistance = math_Approach( MyTable.GP_FogDistance || 0, flTarget, math_max( 64, math_abs( flTarget - ( MyTable.GP_FogDistance || 0 ) ) * .2 ) * FrameTime() )
+	DrawBloom( 0, math_Remap( flBloom, 0, 1, .8, 1.5 ), 10, 10, 5, math_Remap( flBloom, 0, 1, 2, 4 ), 1, 1, 1 )
 	DrawColorModify( tDrawColorModify )
 end )
+
+local render = render
+local render_FogMode = render.FogMode
+local render_FogColor = render.FogColor
+local render_FogStart = render.FogStart
+local render_FogEnd = render.FogEnd
+local render_FogMaxDensity = render.FogMaxDensity
+local MATERIAL_FOG_LINEAR = MATERIAL_FOG_LINEAR
 
 hook.Add( "SetupWorldFog", "Graphics", function()
 	local self = LocalPlayer()
 	if !IsValid( self ) then return end
-	render.FogMode( MATERIAL_FOG_LINEAR )
-	render.FogColor( self.GP_FogR || 255, self.GP_FogG || 255, self.GP_FogB || 255 )
-	render.FogStart( 0 )
-	render.FogEnd( self.GP_FogDistance || 0 )
-	local flBrightness = GetBrightnessRGB( self.GP_FogR || 255, self.GP_FogG || 255, self.GP_FogB || 255 )
-	render.FogMaxDensity( ( flBrightness < .5 && math.Remap( flBrightness, 0, .5, 0, 1 ) || math.Remap( flBrightness, .5, 1, 1, 0 ) ) * ( self.GP_FogDensityMul || 0 ) )
+	render_FogMode( MATERIAL_FOG_LINEAR )
+	local MyTable = CEntity_GetTable( self )
+	render_FogColor( MyTable.GP_FogR || 255, MyTable.GP_FogG || 255, MyTable.GP_FogB || 255 )
+	render_FogStart( 0 )
+	render_FogEnd( MyTable.GP_FogDistance || 0 )
+	local flBrightness = GetBrightnessRGB( MyTable.GP_FogR || 255, MyTable.GP_FogG || 255, MyTable.GP_FogB || 255 )
+	render_FogMaxDensity( ( flBrightness < .5 && math_Remap( flBrightness, 0, .5, 0, 1 ) || math_Remap( flBrightness, .5, 1, 1, 0 ) ) * ( MyTable.GP_FogDensityMul || 0 ) )
 	return true
 end )
 
@@ -137,6 +178,10 @@ local Vector, Angle = Vector, Angle
 local vThirdPersonCameraOffset = Vector()
 
 local bAllowThirdPerson = GetConVar "bAllowThirdPerson"
+
+local function fMoreEffects( ply, tView )
+	tView.fov = tView.fov * ( 1 - math.abs( math.sin( RealTime() * .5 ) ) * ( 1 - math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( .0016 - ply:GetNW2Float( "GAME_flBleeding", 0 ) ) * FrameTime(), 0, 1 ) ) * .1 )
+end
 
 hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfar )
 	local view = {
@@ -147,7 +192,10 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 		zfar = zfar,
 		drawviewer = false,
 	}
-	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then return view end
+	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then
+		fMoreEffects( ply, view )
+		return view
+	end
 	if !bAllowThirdPerson:GetBool() then cThirdPerson:SetBool()
 	elseif cThirdPerson:GetBool() then
 		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
@@ -174,6 +222,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 			filter = ply
 		} )
 		view.origin = tr.HitPos - tr.Normal * f
+		fMoreEffects( ply, view )
 		return view
 	end
 	player_manager.RunClass( ply, "CalcView", view )
@@ -185,6 +234,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 			view.origin, view.angles, view.fov = origin or view.origin, angles or view.angles, fov or view.fov
 		end
 	end
+	fMoreEffects( ply, view )
 	return view
 end )
 
