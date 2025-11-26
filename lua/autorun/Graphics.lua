@@ -240,5 +240,10 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 	return view
 end )
 
-__HUD_SHOULD_NOT_DRAW__ = { CHudHistoryResource = true, CHudGeiger = true, CHudDamageIndicator = true }
+__HUD_SHOULD_NOT_DRAW__ = {
+	CHudHistoryResource = true,
+	CHudGeiger = true,
+	CHudDamageIndicator = true,
+	CHudHealth = true
+}
 hook.Add( "HUDShouldDraw", "Graphics", function( sName ) return __HUD_SHOULD_NOT_DRAW__[ sName ] == nil end )
