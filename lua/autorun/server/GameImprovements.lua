@@ -238,7 +238,7 @@ local math_max = math.max
 
 hook.Add( "PlayerHurt", "GameImprovements", function( ply, pAttacker, flHealth, flDamage )
 	ply:SetNW2Float( "GAME_flBleeding", ply:GetNW2Float( "GAME_flBleeding", 0 ) +
-	flDamage / ( math_max( ply:Health(), ply:GetMaxHealth() ) * 24 ) )
+	flDamage / ( math_max( ply:Health(), ply:GetMaxHealth() ) * 112 ) )
 	local b = true
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if v then
@@ -348,13 +348,7 @@ end
 // local math_max = math.max
 
 hook.Add( "EntityTakeDamage", "GameImprovements", function( ent, dmg )
-	// Bloodloss works only on players for now!
-	//	if ent.GAME_bPreCalculatedBleeding then
-	//		ent.GAME_bPreCalculatedBleeding = nil
-	//	else
-	//		ent:SetNW2Float( "GAME_flBleeding", ent:GetNW2Float( "GAME_flBleeding", 0 ) +
-	//		dmg:GetDamage() / ( math_max( ent:Health(), ent:GetMaxHealth() ) * 24 ) )
-	//	end
+	// Bloodloss works only on players for now, so see PlayerHurt for bloodloss code
 	local at = dmg:GetAttacker()
 	if IsValid( at ) then
 		if at:IsPlayer() then
@@ -438,12 +432,19 @@ local CPlayer_GetRunSpeed = CPlayer.GetRunSpeed
 local CPlayer_Give = CPlayer.Give
 local ents_Create = ents.Create
 local util_TraceHull = util.TraceHull
+local function BloodlossStuff( ply, cmd )
+	local flBlood = ply:GetNW2Float( "GAME_flBlood", 1 )
+	if flBlood <= .8 then
+		cmd:RemoveKey( IN_SPEED )
+		ply.CTRL_bSprintBlockUnTilUnPressed = true
+		ply.CTRL_bHeldSprint = nil
+	end
+	if flBlood <= .6 then cmd:AddKey( IN_DUCK ) cmd:AddKey( IN_WALK ) end // Crawling (no proper animation, but that's what I'm trying to simulate)
+end
 hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 	if !ply:Alive() then return end
 
 	ply:ConCommand( "fov_desired " .. tostring( UNIVERSAL_FOV ) )
-
-	ply:SetLadderClimbSpeed( ply:IsSprinting() && ply:GetRunSpeed() || ply:IsWalking() && ply:GetSlowWalkSpeed() || ply:GetWalkSpeed() )
 
 	local veh = ply.GAME_pVehicle
 	if IsValid( veh ) then
@@ -474,6 +475,10 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		v = v.StartCommand
 		if v && v( ply, cmd ) then return end
 	end
+
+	BloodlossStuff( ply, cmd )
+
+	ply:SetLadderClimbSpeed( ply:IsSprinting() && ply:GetRunSpeed() || ply:IsWalking() && ply:GetSlowWalkSpeed() || ply:GetWalkSpeed() )
 
 	local bGround = CEntity_IsOnGround( ply )
 	if !bGround && CEntity_WaterLevel( ply ) > 0 then
@@ -919,6 +924,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			ply:SetNW2Int( "CTRL_Peek", COVER_PEEK_NONE )
 		end
 	end
+	BloodlossStuff( ply, cmd ) // Run it twice so that we neutralize RemoveKey( IN_DUCK )
 end )
 
 local CEntity_GetVelocity = CEntity.GetVelocity

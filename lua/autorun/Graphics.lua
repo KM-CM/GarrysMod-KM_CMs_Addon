@@ -192,7 +192,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 		fov = fov,
 		znear = znear,
 		zfar = zfar,
-		drawviewer = false,
+		drawviewer = false
 	}
 	if drive.CalcView( ply, view ) || IsValid( ply:GetNW2Entity "GAME_pVehicle" ) then
 		fMoreEffects( ply, view )
