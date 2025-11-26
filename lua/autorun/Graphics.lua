@@ -180,7 +180,7 @@ local vThirdPersonCameraOffset = Vector()
 local bAllowThirdPerson = GetConVar "bAllowThirdPerson"
 
 local function fMoreEffects( ply, tView )
-	tView.fov = tView.fov * ( 1 - math.abs( math.sin( RealTime() * .5 ) ) * ( 1 - math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( .0016 - ply:GetNW2Float( "GAME_flBleeding", 0 ) ) * FrameTime(), 0, 1 ) ) * .1 )
+	tView.fov = tView.fov * ( 1 - math.abs( math.sin( RealTime() * .5 ) ) * ( 1 - math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( .0016 - ply:GetNW2Float( "GAME_flBleeding", 0 ) ) * FrameTime(), 0, 1 ) ) * .25 )
 end
 
 hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfar )
