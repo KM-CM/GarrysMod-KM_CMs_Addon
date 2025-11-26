@@ -2,7 +2,7 @@ DEFINE_BASECLASS "BaseThrowable"
 
 SWEP.Category = "Throwables"
 SWEP.PrintName = "#weapon_frag"
-SWEP.Purpose = "An explosive grenade made by the Universal Union. Used by Combine Soldiers to “extract” enemies out of cover."
+SWEP.Purpose = "An explosive grenade made by the Combine. Used by their soldiers to “extract” enemies out of cover."
 SWEP.ViewModel = Model "models/weapons/c_grenade.mdl"
 SWEP.WorldModel = Model "models/weapons/w_grenade.mdl"
 SWEP.Spawnable = true

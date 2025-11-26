@@ -1,7 +1,15 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-SWEP.PrintName = "#weapon_medkit"
+SWEP.PrintName = "#weapon_medkit"
 SWEP.Instructions = "Primary to heal, secondary to heal other."
+// This hint is WAY too good to actually be in the game!
+//	SWEP.Instructions = [[
+//	Primary to heal, secondary to heal other.
+//	
+//	TIP: Medical kits heal both, your direct wounds and your blood loss.
+//	But they do NOT give you blood. Heal while you can, because
+//	the organism may not be able to make enough blood for you to live
+//	after there's not enough to carry oxygen.]]
 SWEP.Slot = 5
 SWEP.SlotPos = 3
 SWEP.Spawnable = true
@@ -82,21 +90,33 @@ end
 
 local math = math
 local math_min = math.min
+local math_floor = math.floor
+local math_ceil = math.ceil
+local math_max = math.max
 
 function SWEP:DoHeal( ent, MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	if !MyTable.CanHeal( self, ent ) then MyTable.HealFail( self, ent, MyTable ) return false end
-	local flHealth, flMaxHealth = ent:Health(), ent:GetMaxHealth()
-	if flHealth >= flMaxHealth then MyTable.HealFail( self, ent, MyTable ) return false end
+	local flHealth, flMaxHealth, flBleeding = ent:Health(), ent:GetMaxHealth(), ent:GetNW2Float( "GAME_flBleeding", 0 )
+	if flHealth >= flMaxHealth && flBleeding <= 0 then MyTable.HealFail( self, ent, MyTable ) return false end
 	MyTable.Regen( self, true, MyTable )
 	local flHeal = MyTable.flHeal
 	if flHeal > 0 then
-		flHeal = math_min( flMaxHealth - flHealth, flHeal )
 		local flAmmo = self:Clip1()
 		if flAmmo <= 0 then MyTable.HealFail( self, ent, MyTable ) return false end
-		flHeal = math_min( flAmmo, flHeal )
+		local flBleedingAsHealth = FairlyTranslateBleedingToHealth( flBleeding, flMaxHealth )
+		local flDelta = flMaxHealth - flHealth
+		flHeal = math_min( flHeal, flAmmo, flDelta + flBleedingAsHealth )
 		self:SetClip1( flAmmo - flHeal )
-		ent:SetHealth( flHealth + flHeal )
+		local flBleedHeal = math_min( flBleedingAsHealth, flHeal )
+		local f = flHeal * .5
+		if flBleedHeal > f then flBleedHeal = f end
+		// NOTE: SetHealth only accepts integers, so heal the bleeding
+		// with the part of the blunt we can't include
+		local flBlunt = flHeal - flBleedHeal
+		local flBluntWhole = math_min( flDelta, math_floor( flBlunt ) )
+		ent:SetHealth( flHealth + flBluntWhole )
+		ent:SetNW2Float( "GAME_flBleeding", math_max( 0, flBleeding - FairlyTranslateHealthToBleeding( flBlunt - flBluntWhole, flMaxHealth ) - FairlyTranslateHealthToBleeding( flBleedHeal, flMaxHealth ) ) )
 	else flHeal = 0 end
 	MyTable.HealSuccess( self, ent, MyTable )
 	return true
@@ -132,7 +152,6 @@ function SWEP:Think()
 	self:SetNextIdle( flTime + self:SequenceDuration() )
 end
 
-local math_floor = math.floor
 function SWEP:Regen( bKeepAligned, MyTable )
 	local flTime = CurTime()
 	local flPassed = flTime - self:GetLastAmmoRegen()
