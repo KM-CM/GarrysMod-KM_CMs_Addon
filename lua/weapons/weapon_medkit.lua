@@ -1,6 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
-scripted_ents.Alias( "item_healthkit", "weapon_medkit" )
+SWEP.Spawnable = false
+weapons.Register( SWEP, "item_healthkit" )
 
 SWEP.PrintName = "#weapon_medkit"
 SWEP.Instructions = "Primary to heal, secondary to heal other."
