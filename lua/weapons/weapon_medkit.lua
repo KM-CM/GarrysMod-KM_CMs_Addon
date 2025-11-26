@@ -1,5 +1,7 @@
 DEFINE_BASECLASS "BaseWeapon"
 
+scripted_ents.Alias( "item_healthkit", "weapon_medkit" )
+
 SWEP.PrintName = "#weapon_medkit"
 SWEP.Instructions = "Primary to heal, secondary to heal other."
 // This hint is WAY too good to actually be in the game!
