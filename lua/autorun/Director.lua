@@ -274,10 +274,8 @@ hook.Add( "Tick", "Director", function()
 				ply:EmitSound "Bleed"
 				local v = ply:GetPos() + ply:OBBCenter()
 				local d = VectorRand()
-				local f = ply:BoundingRadius()
-				v = ply:GetPos() - Vector( 0, 0, ply:OBBMins()[ 3 ] )
-				util.Decal( "Blood", v, v - Vector( 0, 0, f ), ply )
-				ply.GAME_flNextBleed = CurTime() + 60 / f
+				util.Decal( "Blood", ply:GetPos(), v + Vector( 0, 0, ply:OBBMins()[ 3 ] - ply:BoundingRadius() * 12 ), ply )
+				ply.GAME_flNextBleed = CurTime() + math.Clamp( .02 / f, .5, 12 ) * math.Rand( .9, 1.1 )
 			end
 			local flBlood = math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( f > 0 && ( .0016 - f ) || .016 ) * FrameTime(), 0, 1 )
 			ply:SetNW2Float( "GAME_flBlood", flBlood )

@@ -1,12 +1,3 @@
-sound.Add {
-	name = "SilencedShot",
-	channel = CHAN_WEAPON,
-	level = 70,
-	pitch = { 90, 110 },
-	volume = .2,
-	sound = "SilencedShot.wav"
-}
-
 local CEntity = FindMetaTable "Entity"
 
 CEntity_OBBMinsInternal = CEntity_OBBMinsInternal || CEntity.OBBMins

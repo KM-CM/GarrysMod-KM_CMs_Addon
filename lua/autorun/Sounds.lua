@@ -24,6 +24,15 @@ sound_Add {
 	}
 }
 
+sound.Add {
+	name = "SilencedShot",
+	channel = CHAN_WEAPON,
+	level = 70,
+	pitch = { 90, 110 },
+	volume = .2,
+	sound = "SilencedShot.wav"
+}
+
 sound_Add {
 	name = "Bleed",
 	channel = CHAN_STATIC,
@@ -36,4 +45,20 @@ sound_Add {
 		"ambient/water/distant_drip3.wav",
 		"ambient/water/distant_drip4.wav"
 	}
+}
+
+sound_Add {
+	name = "FlashlightOn",
+	sound = "buttons/lightswitch2.wav",
+	level = 40,
+	volume = 1,
+	channel = CHAN_AUTO
+}
+
+sound_Add {
+	name = "FlashlightOff",
+	sound = "buttons/lightswitch2.wav",
+	level = 40,
+	volume = 1,
+	channel = CHAN_AUTO
 }
