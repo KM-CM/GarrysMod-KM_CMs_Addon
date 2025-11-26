@@ -279,7 +279,7 @@ hook.Add( "Tick", "Director", function()
 				util.Decal( "Blood", v, v - Vector( 0, 0, f ), ply )
 				ply.GAME_flNextBleed = CurTime() + 60 / f
 			end
-			local flBlood = math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( .016 - f ) * FrameTime(), 0, 1 )
+			local flBlood = math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( f > 0 && ( .0016 - f ) || .016 ) * FrameTime(), 0, 1 )
 			ply:SetNW2Float( "GAME_flBlood", flBlood )
 			o = o - FrameTime()
 			ply:SetNW2Float( "GAME_flOxygen", math.Clamp(
