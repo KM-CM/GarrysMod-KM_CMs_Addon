@@ -33,7 +33,7 @@ hook.Add( "Tick", "Director", function()
 				continue
 			end
 			local f = ply:GetNW2Float( "GAME_flBleeding", 0 )
-			if f > 0 && CurTime() > ( PlyTable.GAME_flNextBleed || 0 ) then
+			if f > 0 && f > .0016 && CurTime() > ( PlyTable.GAME_flNextBleed || 0 ) then
 				ply:EmitSound "Bleed"
 				local v = ply:GetPos()
 				local f = ply:BoundingRadius()
@@ -52,7 +52,7 @@ hook.Add( "Tick", "Director", function()
 				local d = -d
 				v = ply:NearestPoint( v + d * 999999 )
 				util.Decal( "Blood", v, v + d * f, ply )
-				PlyTable.GAME_flNextBleed = CurTime() + math.Clamp( .02 / f, .5, 12 ) * math.Rand( .9, 1.1 )
+				PlyTable.GAME_flNextBleed = CurTime() + math.Clamp( .033 / f, .5, 12 ) * math.Rand( .9, 1.1 )
 			end
 			local flBlood = math.Clamp( ply:GetNW2Float( "GAME_flBlood", 1 ) + ( f > 0 && ( .0016 - f ) || .016 ) * FrameTime(), 0, 1 )
 			ply:SetNW2Float( "GAME_flBlood", flBlood )
