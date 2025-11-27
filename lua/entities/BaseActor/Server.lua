@@ -97,7 +97,7 @@ function ENT:OnKilled( dmg )
 		for pActor in pairs( __ACTOR_LIST__ ) do
 			if !pActor:CanSee( self ) then continue end
 			local pSchedule = pActor.Schedule
-			if pSchedule.m_sName != "StartleNoise" then continue end
+			if pSchedule && pSchedule.m_sName != "StartleNoise" then continue end
 			local sSound = pSchedule.tData.SoundName
 			pActor.tSoundHarmless[ sSound ] = nil
 			pActor.tSoundHarmful[ sSound ] = ( pActor.tSoundHarmful[ sSound ] || 0 ) + 1
