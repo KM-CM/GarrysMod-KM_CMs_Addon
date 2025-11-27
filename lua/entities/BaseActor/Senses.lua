@@ -49,6 +49,7 @@ function ENT:CanSee( vec, MyTable )
 	MyTable = MyTable || CEntity_GetTable( self )
 	local veh, ent
 	if isentity( vec ) then
+		if !IsValid( vec ) then return end
 		local TheirTable = CEntity_GetTable( vec )
 		veh = TheirTable.GAME_pVehicle
 		if MyTable.bCantSeeUnderWater && CEntity_WaterLevel( vec ) == 3 then return end
