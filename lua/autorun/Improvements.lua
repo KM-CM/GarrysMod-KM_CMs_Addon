@@ -142,12 +142,23 @@ __PLAYER_MODEL__ = {}
 local __PLAYER_MODEL__ = __PLAYER_MODEL__
 
 local hook_Run = hook.Run
+local CEntity = FindMetaTable "Entity"
+local CEntity_LookupSequence = CEntity.LookupSequence
+local CEntity_GetTable = CEntity.GetTable
+local CEntity_GetNW2Bool = CEntity.GetNW2Bool
 hook_Add( "CalcMainActivity", "Improvements", function( ply, vel )
 	local veh = ply.GAME_pVehicle || ply:GetNW2Entity "GAME_pVehicle"
 	if IsValid( veh ) then
 		local t = ply:GetTable()
 		hook_Run( "HandlePlayerDrivingNew", ply, t, veh )
 		return t.CalcIdeal, t.CalcSeqOverride
+	end
+	if CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) then
+		local a = ACT_MP_WALK
+		ply.CalcIdeal = a
+		local s = CEntity_LookupSequence( ply, CEntity_GetTable( ply ).CTRL_sSlidingSequence || "zombie_slump_idle_02" )
+		ply.CalcSeqOverride = s
+		return a, s
 	end
 	local v = __PLAYER_MODEL__[ ply:GetModel() ]
 	if v then

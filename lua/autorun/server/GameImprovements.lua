@@ -1018,7 +1018,6 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	local dts = dt * dt
 	for _, ply in player_Iterator() do
 		if ply:EyePos():DistToSqr( vPos ) <= dts then
-			Director_UpdateAwareness( ply, ent )
 			ply:SendLua( "CaptionSound(" .. sColor .. "," .. sCaption .. ")" )
 		end
 	end
