@@ -329,7 +329,7 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 	return true
 end )
 
-local PersistAll = CreateConVar( "PersistAll", 1, FCVAR_SERVER_CAN_EXECUTE + FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY + FCVAR_ARCHIVE, "Everything Persists", 0, 1 )
+local PersistAll = CreateConVar( "PersistAll", 1, FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY + FCVAR_ARCHIVE, "Everything persists", 0, 1 )
 
 hook.Add( "PhysgunPickup", "GameImprovements", function() return true end )
 
@@ -371,9 +371,33 @@ file.CreateDir "Achievements"
 
 local ents = ents
 local ents_Iterator = ents.Iterator
+local cEvents = CreateConVar(
+	"bEvents",
+	0, // 1 // Forcing this to 0 so that people who
+	// simply play the game to build and have fun
+	// don't have their stuff destroyed by destructive events
+	FCVAR_NEVER_AS_STRING + FCVAR_NOTIFY + FCVAR_CHEAT,
+	"Allow random events?",
+	0, 1
+)
+__EVENTS__ = __EVENTS__ || {}
+__EVENTS_LENGTH__ = __EVENTS_LENGTH__ || 0 // Don't forget to do this every time you add a new event!
+//	if !__EVENTS__.MyEvent then __EVENTS_LENGTH__ = __EVENTS_LENGTH__ + 1 end
+//	__EVENTS__.MyEvent = function()
+//	end
 hook.Add( "Think", "GameImprovements", function()
 	file.Write( "Covers/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __COVERS_STATIC__ ) )
 	file.Write( "Achievements/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __ACHIEVEMENTS_ACQUIRED__ ) )
+	if __EVENTS_LENGTH__ > 0 && math.Rand( 0, 200000 * FrameTime() ) <= 1 then
+		local iRemaining, tEncountered = __EVENTS_LENGTH__, {}
+		while iRemaining > 0 do
+			local fEvent = table.Random( __EVENTS__ )
+			if tEncountered[ fEvent ] then continue end
+			tEncountered[ fEvent ] = true
+			if ProtectedCall( fEvent ) then break end
+			iRemaining = iRemaining - 1
+		end
+	end
 	for _, ent in ents_Iterator() do
 		if ent.GAME_Think then ent:GAME_Think() end
 		if !ent.GAME_bPhysCollideHook then ent:AddCallback( "PhysicsCollide", function( ... ) PhysicsCollide( ... ) end ) ent.GAME_bPhysCollideHook = true end

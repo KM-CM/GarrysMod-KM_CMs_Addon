@@ -1,3 +1,6 @@
 // Director API, shared endpoints
 
-// ( Nothing for now )
+DIRECTOR_THREAT_NULL = -1
+DIRECTOR_THREAT_HEAT = 0
+DIRECTOR_THREAT_ALERT = 1
+DIRECTOR_THREAT_COMBAT = 2
