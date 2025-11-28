@@ -388,7 +388,7 @@ __EVENTS_LENGTH__ = __EVENTS_LENGTH__ || 0 // Don't forget to do this every time
 hook.Add( "Think", "GameImprovements", function()
 	file.Write( "Covers/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __COVERS_STATIC__ ) )
 	file.Write( "Achievements/" .. engine.ActiveGamemode() .. ".json", util.TableToJSON( __ACHIEVEMENTS_ACQUIRED__ ) )
-	if __EVENTS_LENGTH__ > 0 && math.Rand( 0, 200000 * FrameTime() ) <= 1 then
+	if cEvents:GetBool() && __EVENTS_LENGTH__ > 0 && math.Rand( 0, 200000 * FrameTime() ) <= 1 then
 		local iRemaining, tEncountered = __EVENTS_LENGTH__, {}
 		while iRemaining > 0 do
 			local fEvent = table.Random( __EVENTS__ )
