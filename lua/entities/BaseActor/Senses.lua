@@ -234,7 +234,7 @@ function ENT:Look( MyTable )
 	) do
 		if vEyePos:DistToSqr( CEntity_GetPos( ent ) + CEntity_OBBCenter( ent ) ) > flVisionDistSqr then continue end
 		local TheirTable = CEntity_GetTable( ent )
-		if !TheirTable.__PROJECTILE__ || !TheirTable.__FLARE_ACTIVE__ && !TheirTable.__ACTOR_BULLSEYE__ && !MyTable.IsHateDisposition( self, ent ) || !MyTable.CanSee( self, ent ) then continue end
+		if TheirTable.__PROJECTILE__ || !TheirTable.__FLARE_ACTIVE__ && !TheirTable.__ACTOR_BULLSEYE__ && !MyTable.IsHateDisposition( self, ent ) || !MyTable.CanSee( self, ent ) then continue end
 		if tOldVisionStrength[ ent ] then
 			if ent.__ACTOR_BULLSEYE__ then
 				if !bMelee && HasMeleeAttack( ent ) then bMelee = true end
