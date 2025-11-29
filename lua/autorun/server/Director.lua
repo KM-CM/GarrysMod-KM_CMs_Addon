@@ -103,17 +103,39 @@ hook.Add( "Tick", "Director", function()
 		local h = ply:Health() / ply:GetMaxHealth()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
 		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * 2, ( PlyTable.GAME_flSuppression || 0 ) * .33 ) * FrameTime() )
-		local EThreat, flIntensity = DIRECTOR_THREAT_NULL, ply:GetNW2Float( "GAME_flSuppressionEffects", 0 ), 0
-		local tMusicEntities = {}
-		for pEntity in ipairs( PlyTable.DR_tMusicEntities || {} ) do
+		local EThreat, flIntensity = DIRECTOR_THREAT_NULL, ( PlyTable.GAME_flSuppression || 0 ) / ( ply:Health() * 6 )
+		local tMusicEntities = PlyTable.DR_tMusicEntities
+		if RealTime() > ( PlyTable.DR_flNextUpdate || 0 ) then
+			local aEye, vEye, flFoVHalf = ply:EyeAngles(), ply:EyePos(), ply:GetInfoNum( "fov_desired", UNIVERSAL_FOV ) * .5
+			for _, pEntity in ipairs( ents.FindInPVS( ply ) ) do
+				if !ply:Visible( pEntity ) then continue end
+				local ETheirThreat = Director_GetThreat( ply, pEntity )
+				if ETheirThreat <= DIRECTOR_THREAT_NULL then continue end
+				local a = ( pEntity:GetPos() + pEntity:OBBCenter() - vEye ):Angle()
+				if math.abs( math.AngleDifference( aEye[ 1 ], a[ 1 ] ) ) > flFoVHalf then continue end
+				if math.abs( math.AngleDifference( aEye[ 2 ], a[ 2 ] ) ) > flFoVHalf then continue end
+				tMusicEntities[ pEntity ] = true
+			end
+			PlyTable.DR_flNextUpdate = RealTime() + math.Rand( .1, .2 )
+		end
+		local tNewMusicEntities = {}
+		for pEntity in pairs( tMusicEntities || {} ) do
 			if !IsValid( pEntity ) then continue end
 			local ETheirThreat = Director_GetThreat( ply, pEntity )
-			if ETheirThreat > EThreat then EThreat = ETheirThreat end
+			if ETheirThreat > EThreat then
+				// We're doin' shit to them, so add it!
+				flIntensity = flIntensity + ( pEntity.GAME_flSuppression || 0 ) / ( pEntity:Health() * 6 )
+				EThreat = ETheirThreat
+				tNewMusicEntities[ pEntity ] = true
+			end
 		end
-		PlyTable.DR_tMusicEntities = tMusicEntities
+		PlyTable.DR_tMusicEntities = tNewMusicEntities
 		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
 		ply:SendLua( "DIRECTOR_MUSIC_INTENSITY=" .. tostring( flIntensity ) )
-		local flTension = Lerp( .1 * FrameTime(), PlyTable.DR_flMusicTension || 0, flIntensity )
+		local flTension = PlyTable.DR_flMusicTension || 0
+		if flTension > flIntensity then flTension = Lerp( .1 * FrameTime(), flTension || 0, flIntensity )
+		else flTension = Lerp( .25 * FrameTime(), flTension || 0, flIntensity ) end
+		if flTension != flTension then flTension = 0 end // NaN
 		PlyTable.DR_flMusicTension = flTension
 		ply:SendLua( "DIRECTOR_MUSIC_TENSION=" .. tostring( flTension ) )
 	end

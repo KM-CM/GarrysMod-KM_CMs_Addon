@@ -46,22 +46,24 @@ DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = function( self )
 			self.sIndex = "Idle"
 			self.bPartStarted = nil
 			self.bA = nil
-			return true, 0, 1
+			return true
 		end
 		self.bPartStarted = true
 		Director_Music_Play( self, "Main", "MUS_TransitionTo_Instant" )
 	end
 	return false, 0, 1
 end
-DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = function( self, flVolumeA, flVolumeB )
+DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = function( self, flVolumeA, flVolumeB, bCorrect )
+	if !bCorrect then return true end
 	if flVolumeA > 0 then
 		flVolumeA = flVolumeA < .1 && math.Approach( flVolumeA, 0, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeA, 0 )
 		return false, flVolumeA, flVolumeB
 	end
+	if self.m_ELayerTo == DIRECTOR_THREAT_NULL then return true end
+	if flVolumeB == 1 then return true end
 	flVolumeB = flVolumeB > .9 && math.Approach( flVolumeB, 1, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeB, 1 )
-	return flVolumeB == 1, 0, flVolumeB
+	return false, 0, flVolumeB
 end
-
 function Director_Music_UpdateInternal( self, ... )
 	local tNewHandles = {}
 	local flVolume = self.m_flVolume
@@ -70,7 +72,7 @@ function Director_Music_UpdateInternal( self, ... )
 		tNewHandles[ Index ] = tData
 		local pSound = tData[ 1 ]
 		// pSound:SetDSP( 0 ) // TODO: Doesn't work! Find a way to make it work!
-		pSound:ChangeVolume( flVolume * tData[ 3 ] )
+		pSound:ChangeVolume( math.max( .05, flVolume * tData[ 3 ] ) )
 		pSound:ChangePitch( tData[ 4 ] )
 	end
 	self.tHandles = tNewHandles
@@ -88,7 +90,6 @@ DIRECTOR_MUSIC = DIRECTOR_MUSIC || {}
 local LocalPlayer = LocalPlayer
 hook.Add( "RenderScreenspaceEffects", "Director", function()
 	local ply = LocalPlayer()
-	local EThreat = DIRECTOR_THREAT
 	for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
 		if !DIRECTOR_MUSIC[ ELayer ] then
 			local f = table.Random( DIRECTOR_MUSIC_TABLE[ ELayer ] )
@@ -105,7 +106,7 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 		DIRECTOR_MUSIC[ DIRECTOR_THREAT_NULL ] = p
 	end
 	if DIRECTOR_TRANSITION then
-		local b = DIRECTOR_THREAT >= DIRECTOR_THREAT_COMBAT
+		local b
 		if DIRECTOR_TRANSITION.m_bToCombat then
 			b = DIRECTOR_THREAT >= DIRECTOR_THREAT_COMBAT
 		else b = DIRECTOR_THREAT < DIRECTOR_THREAT_COMBAT end
@@ -142,20 +143,20 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 		end
 		return
 	end
-	if DIRECTOR_MUSIC_LAST_THREAT < DIRECTOR_THREAT_COMBAT && EThreat >= DIRECTOR_THREAT_COMBAT then
+	if DIRECTOR_MUSIC_LAST_THREAT < DIRECTOR_THREAT_COMBAT && DIRECTOR_THREAT >= DIRECTOR_THREAT_COMBAT then
 		DIRECTOR_TRANSITION = Director_Music_Container()
 		DIRECTOR_TRANSITION.m_fExecute = table.Random( DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT )
 		DIRECTOR_TRANSITION.m_flVolume = 1
 		DIRECTOR_TRANSITION.m_bToCombat = true
 		DIRECTOR_TRANSITION.m_ELayerFrom = DIRECTOR_MUSIC_LAST_THREAT
-		DIRECTOR_TRANSITION.m_ELayerTo = EThreat
+		DIRECTOR_TRANSITION.m_ELayerTo = DIRECTOR_THREAT
 		return
-	elseif DIRECTOR_MUSIC_LAST_THREAT >= DIRECTOR_THREAT_COMBAT && EThreat < DIRECTOR_THREAT_COMBAT then
+	elseif DIRECTOR_MUSIC_LAST_THREAT >= DIRECTOR_THREAT_COMBAT && DIRECTOR_THREAT < DIRECTOR_THREAT_COMBAT then
 		DIRECTOR_TRANSITION = Director_Music_Container()
 		DIRECTOR_TRANSITION.m_fExecute = table.Random( DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT )
 		DIRECTOR_TRANSITION.m_flVolume = 1
 		DIRECTOR_TRANSITION.m_ELayerFrom = DIRECTOR_MUSIC_LAST_THREAT
-		DIRECTOR_TRANSITION.m_ELayerTo = EThreat
+		DIRECTOR_TRANSITION.m_ELayerTo = DIRECTOR_THREAT
 		return
 	end
 	// Do NOT mistake this for the fade transition!
@@ -165,7 +166,7 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 		local pContainer = DIRECTOR_MUSIC[ ELayer ]
 		if pContainer then
 			Director_Music_UpdateInternal( pContainer )
-			if ELayer == EThreat then
+			if ELayer == DIRECTOR_THREAT then
 				pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 1, .1 * FrameTime() )
 			else pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, .1 * FrameTime() ) end
 		end

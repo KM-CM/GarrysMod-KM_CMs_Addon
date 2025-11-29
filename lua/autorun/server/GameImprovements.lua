@@ -449,8 +449,7 @@ hook.Add( "Think", "GameImprovements", function()
 		end
 		ent.GAME_tSuppressionAmount = tSuppressionAmount
 		if ent:IsPlayer() then
-			local f = ent.GAME_flSuppression || 0
-			ent:SetNW2Float( "GAME_flSuppressionEffects", math.Clamp( f / ( ent:Health() * 6 ), 0, 1 ) )
+			ent:SetNW2Float( "GAME_flSuppressionEffects", math.Clamp( ( ent.GAME_flSuppression || 0 ) / ( ent:Health() * 6 ), 0, 1 ) )
 		end
 	end
 end )
