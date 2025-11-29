@@ -8,7 +8,7 @@ local Vector = Vector
 
 include "autorun/Director.lua"
 
-local function Director_GetThreat( pPlayer, pEntity )
+function Director_GetThreat( pPlayer, pEntity )
 	if IsValid( pEntity.Enemy ) then return DIRECTOR_THREAT_COMBAT end
 	local f = pEntity.GetEnemy
 	if f && IsValid( f( pEntity ) ) then return DIRECTOR_THREAT_COMBAT end
@@ -140,3 +140,4 @@ hook.Add( "Tick", "Director", function()
 		ply:SendLua( "DIRECTOR_MUSIC_TENSION=" .. tostring( flTension ) )
 	end
 end )
+
