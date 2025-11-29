@@ -8,6 +8,34 @@ local Vector = Vector
 
 include "autorun/Director.lua"
 
+local function Director_GetThreat( pPlayer, pEntity )
+	if IsValid( pEntity.Enemy ) then return DIRECTOR_THREAT_COMBAT end
+	local f = pEntity.GetEnemy
+	if f && IsValid( f( pEntity ) ) then return DIRECTOR_THREAT_COMBAT end
+	local f = pEntity.GetNPCState
+	if f then
+		f = f( pEntity )
+		if f == NPC_STATE_COMBAT then
+			return DIRECTOR_THREAT_COMBAT
+		elseif f == NPC_STATE_ALERT then
+			return DIRECTOR_THREAT_ALERT
+		else
+			local f = pEntity.Disposition
+			if f then
+				f = f( pEntity, pPlayer )
+				if f == D_FR || f == D_HT then return DIRECTOR_THREAT_HEAT end
+			end
+		end
+	else
+		local f = pEntity.Disposition
+		if f then
+			f = f( pEntity, pPlayer )
+			if f == D_FR || f == D_HT then return DIRECTOR_THREAT_HEAT end
+		end
+	end
+	return DIRECTOR_THREAT_NULL
+end
+
 local VectorZ28 = Vector( 0, 0, 28 )
 hook.Add( "Tick", "Director", function()
 	for _, ply in player_Iterator() do
@@ -75,7 +103,18 @@ hook.Add( "Tick", "Director", function()
 		local h = ply:Health() / ply:GetMaxHealth()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
 		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * 2, ( PlyTable.GAME_flSuppression || 0 ) * .33 ) * FrameTime() )
-		local EThreat = DIRECTOR_THREAT_NULL
-		ply:SetNW2Int( "DR_EThreat", EThreat )
+		local EThreat, flIntensity = DIRECTOR_THREAT_NULL, ply:GetNW2Float( "GAME_flSuppressionEffects", 0 ), 0
+		local tMusicEntities = {}
+		for pEntity in ipairs( PlyTable.DR_tMusicEntities || {} ) do
+			if !IsValid( pEntity ) then continue end
+			local ETheirThreat = Director_GetThreat( ply, pEntity )
+			if ETheirThreat > EThreat then EThreat = ETheirThreat end
+		end
+		PlyTable.DR_tMusicEntities = tMusicEntities
+		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
+		ply:SendLua( "DIRECTOR_MUSIC_INTENSITY=" .. tostring( flIntensity ) )
+		local flTension = Lerp( .1 * FrameTime(), PlyTable.DR_flMusicTension || 0, flIntensity )
+		PlyTable.DR_flMusicTension = flTension
+		ply:SendLua( "DIRECTOR_MUSIC_TENSION=" .. tostring( flTension ) )
 	end
 end )

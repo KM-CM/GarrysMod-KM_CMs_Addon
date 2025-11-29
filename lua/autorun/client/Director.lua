@@ -17,25 +17,52 @@ DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE || {
 	[ DIRECTOR_THREAT_COMBAT ] = {},
 }
 
-function Director_Music_Container( sClass )
+function Director_Music_Container()
 	return {
 		tHandles = {},
-		sClass = sClass,
 		m_flVolume = 0
 	}
 end
 
-local game_GetWorld = game.GetWorld
+local LocalPlayer = LocalPlayer
+// local game_GetWorld = game.GetWorld
 local table_insert = table.insert
 function Director_Music_Play( self, Index, sName, flVolume, flPitch )
-	local pSound = CreateSound( game_GetWorld(), sName )
+	// local pSound = CreateSound( game_GetWorld(), sName )
+	local pSound = CreateSound( LocalPlayer(), sName )
 	flVolume = flVolume || 1
 	flPitch = flPitch || 100
 	pSound:PlayEx( flVolume * self.m_flVolume, flPitch )
-	self.tHandles[ Index ] = { pSound, RealTime() + SoundDuration( sound.GetProperties( sName ).sound ), flVolume, flPitch }
+	self.tHandles[ Index ] = { pSound, RealTime() + SoundDuration( sound.GetProperties( sName ).sound ) - engine.TickInterval(), flVolume, flPitch }
 end
 
-function Director_Music_UpdateInternal( self )
+Director_Music( "MUS_TransitionTo_Instant", "Music/Default/Transition_Instant.wav" )
+
+DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT || {}
+DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT || {}
+DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = function( self )
+	if !self.tHandles.Main then
+		if self.bPartStarted then
+			self.sIndex = "Idle"
+			self.bPartStarted = nil
+			self.bA = nil
+			return true, 0, 1
+		end
+		self.bPartStarted = true
+		Director_Music_Play( self, "Main", "MUS_TransitionTo_Instant" )
+	end
+	return false, 0, 1
+end
+DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = function( self, flVolumeA, flVolumeB )
+	if flVolumeA > 0 then
+		flVolumeA = flVolumeA < .1 && math.Approach( flVolumeA, 0, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeA, 0 )
+		return false, flVolumeA, flVolumeB
+	end
+	flVolumeB = flVolumeB > .9 && math.Approach( flVolumeB, 1, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeB, 1 )
+	return flVolumeB == 1, 0, flVolumeB
+end
+
+function Director_Music_UpdateInternal( self, ... )
 	local tNewHandles = {}
 	local flVolume = self.m_flVolume
 	for Index, tData in pairs( self.tHandles ) do
@@ -47,14 +74,106 @@ function Director_Music_UpdateInternal( self )
 		pSound:ChangePitch( tData[ 4 ] )
 	end
 	self.tHandles = tNewHandles
+	return self:m_fExecute( ... )
 end
 
 DIRECTOR_MUSIC_INTENSITY = 0 // Intensity right now
 DIRECTOR_MUSIC_TENSION = 0 // General battle intensity
 
+DIRECTOR_THREAT = DIRECTOR_THREAT || DIRECTOR_THREAT_NULL
 DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_MUSIC_LAST_THREAT || DIRECTOR_THREAT_NULL
+
+DIRECTOR_MUSIC = DIRECTOR_MUSIC || {}
 
 local LocalPlayer = LocalPlayer
 hook.Add( "RenderScreenspaceEffects", "Director", function()
 	local ply = LocalPlayer()
+	local EThreat = DIRECTOR_THREAT
+	for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+		if !DIRECTOR_MUSIC[ ELayer ] then
+			local f = table.Random( DIRECTOR_MUSIC_TABLE[ ELayer ] )
+			if f then
+				local p = Director_Music_Container()
+				p.m_fExecute = f
+				DIRECTOR_MUSIC[ ELayer ] = p
+			end
+		end
+	end
+	if !DIRECTOR_MUSIC[ DIRECTOR_THREAT_NULL ] then
+		local p = Director_Music_Container()
+		p.m_fExecute = function() end
+		DIRECTOR_MUSIC[ DIRECTOR_THREAT_NULL ] = p
+	end
+	if DIRECTOR_TRANSITION then
+		local b = DIRECTOR_THREAT >= DIRECTOR_THREAT_COMBAT
+		if DIRECTOR_TRANSITION.m_bToCombat then
+			b = DIRECTOR_THREAT >= DIRECTOR_THREAT_COMBAT
+		else b = DIRECTOR_THREAT < DIRECTOR_THREAT_COMBAT end
+		local ELayerFrom, ELayerTo, flInitialVolumeA, flInitialVolumeB = DIRECTOR_TRANSITION.m_ELayerFrom, DIRECTOR_TRANSITION.m_ELayerTo
+		for ELayer, pContainer in pairs( DIRECTOR_MUSIC ) do
+			if ELayer == ELayerFrom then
+				flInitialVolumeA = pContainer.m_flVolume
+			elseif ELayer == ELayerTo then
+				flInitialVolumeB = pContainer.m_flVolume
+			end
+			if flInitialVolumeA && flInitialVolumeB then break end
+		end
+		local bDone, flVolumeA, flVolumeB = Director_Music_UpdateInternal( DIRECTOR_TRANSITION, flInitialVolumeA || 0, flInitialVolumeB || 0, b )
+		DIRECTOR_MUSIC_LAST_THREAT = ELayerTo
+		if bDone then
+			DIRECTOR_TRANSITION = nil
+			flVolumeA = flVolumeA || 0
+			flVolumeB = flVolumeB || 1
+		else
+			flVolumeA = flVolumeA || 0
+			flVolumeB = flVolumeB || 0
+		end
+		for ELayer, pContainer in pairs( DIRECTOR_MUSIC ) do
+			if pContainer then
+				Director_Music_UpdateInternal( pContainer )
+				if ELayer == ELayerFrom then
+					pContainer.m_flVolume = flVolumeA
+				elseif ELayer == ELayerTo then
+					pContainer.m_flVolume = flVolumeB
+				else
+					pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() )
+				end
+			end
+		end
+		return
+	end
+	if DIRECTOR_MUSIC_LAST_THREAT < DIRECTOR_THREAT_COMBAT && EThreat >= DIRECTOR_THREAT_COMBAT then
+		DIRECTOR_TRANSITION = Director_Music_Container()
+		DIRECTOR_TRANSITION.m_fExecute = table.Random( DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT )
+		DIRECTOR_TRANSITION.m_flVolume = 1
+		DIRECTOR_TRANSITION.m_bToCombat = true
+		DIRECTOR_TRANSITION.m_ELayerFrom = DIRECTOR_MUSIC_LAST_THREAT
+		DIRECTOR_TRANSITION.m_ELayerTo = EThreat
+		return
+	elseif DIRECTOR_MUSIC_LAST_THREAT >= DIRECTOR_THREAT_COMBAT && EThreat < DIRECTOR_THREAT_COMBAT then
+		DIRECTOR_TRANSITION = Director_Music_Container()
+		DIRECTOR_TRANSITION.m_fExecute = table.Random( DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT )
+		DIRECTOR_TRANSITION.m_flVolume = 1
+		DIRECTOR_TRANSITION.m_ELayerFrom = DIRECTOR_MUSIC_LAST_THREAT
+		DIRECTOR_TRANSITION.m_ELayerTo = EThreat
+		return
+	end
+	// Do NOT mistake this for the fade transition!
+	// This is completely different, and used to fade between
+	// idle/heat/alert tracks!
+	for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+		local pContainer = DIRECTOR_MUSIC[ ELayer ]
+		if pContainer then
+			Director_Music_UpdateInternal( pContainer )
+			if ELayer == EThreat then
+				pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 1, .1 * FrameTime() )
+			else pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, .1 * FrameTime() ) end
+		end
+	end
+end )
+
+hook.Add( "PostCleanupMap", "Director", function()
+	table.Empty( DIRECTOR_MUSIC )
+	DIRECTOR_TRANSITION = nil
+	DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_THREAT_NULL
 end )
