@@ -105,8 +105,9 @@ hook.Add( "Tick", "Director", function()
 		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * 2, ( PlyTable.GAME_flSuppression || 0 ) * .33 ) * FrameTime() )
 		local EThreat, flIntensity = DIRECTOR_THREAT_NULL, ( PlyTable.GAME_flSuppression || 0 ) / ( ply:Health() * 6 )
 		local tMusicEntities = PlyTable.DR_tMusicEntities
+		local vEye = ply:EyePos()
 		if RealTime() > ( PlyTable.DR_flNextUpdate || 0 ) then
-			local aEye, vEye, flFoVHalf = ply:EyeAngles(), ply:EyePos(), ply:GetInfoNum( "fov_desired", UNIVERSAL_FOV ) * .5
+			local aEye, flFoVHalf = ply:EyeAngles(), ply:GetInfoNum( "fov_desired", UNIVERSAL_FOV ) * .5
 			for _, pEntity in ipairs( ents.FindInPVS( ply ) ) do
 				if !ply:Visible( pEntity ) then continue end
 				local ETheirThreat = Director_GetThreat( ply, pEntity )
@@ -119,16 +120,32 @@ hook.Add( "Tick", "Director", function()
 			PlyTable.DR_flNextUpdate = RealTime() + math.Rand( .1, .2 )
 		end
 		local tNewMusicEntities = {}
+		// We're doin' shit to them, so add it!
+		local flAllSuppression, flAllHealth = 0, 0
 		for pEntity in pairs( tMusicEntities || {} ) do
 			if !IsValid( pEntity ) then continue end
 			local ETheirThreat = Director_GetThreat( ply, pEntity )
+			if ETheirThreat <= DIRECTOR_THREAT_NULL then continue end
+			local vTarget = pEntity:GetPos() + pEntity:OBBCenter()
+			local vDelta = vTarget - vEye
+			local tr = util.TraceLine {
+				start = vEye + vDelta:GetNormalized() * math.min( vDelta:Length(), ply:BoundingRadius() ),
+				endpos = vTarget,
+				filter = { ply, pEntity },
+				mask = MASK_SHOT_HULL
+			}
+			if tr.Hit && tr.Fraction <= .66 then continue end
+			flAllSuppression = flAllSuppression + ( pEntity.GAME_flSuppression || 0 )
+			local f = pEntity:Health() * 6
+			if f > 0 then flAllHealth = flAllHealth + f end
 			if ETheirThreat > EThreat then
-				// We're doin' shit to them, so add it!
-				flIntensity = flIntensity + ( pEntity.GAME_flSuppression || 0 ) / ( pEntity:Health() * 6 )
 				EThreat = ETheirThreat
 				tNewMusicEntities[ pEntity ] = true
 			end
 		end
+		local f = flAllSuppression / flAllHealth
+		if f != f then f = 0 end // NaN
+		flIntensity = flIntensity + f
 		PlyTable.DR_tMusicEntities = tNewMusicEntities
 		ply.DR_EThreat = EThreat
 		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
