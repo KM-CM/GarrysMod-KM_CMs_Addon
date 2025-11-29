@@ -130,8 +130,11 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 			end
 		else
 			if DIRECTOR_TRANSITION then
-				if DIRECTOR_TRANSITION.m_flVolume <= 0 then DIRECTOR_TRANSITION = nil end
-				DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
+				if DIRECTOR_TRANSITION.m_flVolume <= 0 then
+					DIRECTOR_TRANSITION = nil
+				else
+					DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
+				end
 			end
 			for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
 				local pContainer = DIRECTOR_MUSIC[ ELayer ]
