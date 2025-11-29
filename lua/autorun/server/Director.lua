@@ -130,6 +130,7 @@ hook.Add( "Tick", "Director", function()
 			end
 		end
 		PlyTable.DR_tMusicEntities = tNewMusicEntities
+		ply.DR_EThreat = EThreat
 		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
 		ply:SendLua( "DIRECTOR_MUSIC_INTENSITY=" .. tostring( flIntensity ) )
 		local flTension = PlyTable.DR_flMusicTension || 0
@@ -140,4 +141,3 @@ hook.Add( "Tick", "Director", function()
 		ply:SendLua( "DIRECTOR_MUSIC_TENSION=" .. tostring( flTension ) )
 	end
 end )
-

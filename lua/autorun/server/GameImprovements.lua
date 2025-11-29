@@ -1051,6 +1051,10 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	for _, ply in player_Iterator() do
 		if ply:EyePos():DistToSqr( vPos ) <= dts then
 			ply:SendLua( "CaptionSound(" .. sColor .. "," .. sCaption .. ")" )
+			// Not `dent`, as we only want it to work for voice lines
+			if ply.DR_EThreat < DIRECTOR_THREAT_COMBAT && Director_GetThreat( ply, ent ) >= DIRECTOR_THREAT_COMBAT then
+				ply:SendLua( "Director_VoiceLineHook(\"" .. Data.SoundName .. "\")" )
+			end
 		end
 	end
 	return true
