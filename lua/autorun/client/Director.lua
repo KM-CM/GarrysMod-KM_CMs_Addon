@@ -71,7 +71,6 @@ function Director_Music_UpdateInternal( self, ... )
 		if RealTime() > tData[ 4 ] then tData[ 1 ]:Stop() continue end
 		tNewHandles[ Index ] = tData
 		local pSound = tData[ 1 ]
-		// pSound:SetDSP( 0 ) // TODO: Doesn't work! Find a way to make it work!
 		pSound:ChangeVolume( math.max( .05, flVolume * tData[ 2 ] ) )
 		pSound:ChangePitch( tData[ 3 ] )
 	end
@@ -221,3 +220,4 @@ hook.Add( "PostCleanupMap", "Director", function()
 	DIRECTOR_TRANSITION = nil
 	DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_THREAT_NULL
 end )
+
