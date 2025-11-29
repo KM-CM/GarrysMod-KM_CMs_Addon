@@ -36,11 +36,11 @@ function Director_Music_Play( self, Index, sName, flVolume, flPitch )
 	self.tHandles[ Index ] = { pSound, flVolume, flPitch, RealTime() + SoundDuration( sound.GetProperties( sName ).sound ) - engine.TickInterval() }
 end
 
-Director_Music( "MUS_TransitionTo_Instant", "Music/Default/Transition_Instant.wav" )
+Director_Music( "MUS_Transition_Instant", "Music/Default/Transition_Instant.wav" )
 
 DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT || {}
 DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT || {}
-DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = function( self )
+DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = { Execute = function( self )
 	if !self.tHandles.Main then
 		if self.bPartStarted then
 			self.sIndex = "Idle"
@@ -49,11 +49,11 @@ DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = function( self )
 			return true
 		end
 		self.bPartStarted = true
-		Director_Music_Play( self, "Main", "MUS_TransitionTo_Instant" )
+		Director_Music_Play( self, "Main", "MUS_Transition_Instant" )
 	end
 	return false, 0, 1
-end
-DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = function( self, flVolumeA, flVolumeB, bCorrect )
+end }
+DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = { Execute = function( self, flVolumeA, flVolumeB, bCorrect )
 	if !bCorrect then return true end
 	if flVolumeA > 0 then
 		flVolumeA = flVolumeA < .1 && math.Approach( flVolumeA, 0, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeA, 0 )
@@ -63,7 +63,7 @@ DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT.Default_Fade = function( self, flVolumeA,
 	if flVolumeB == 1 then return true end
 	flVolumeB = flVolumeB > .9 && math.Approach( flVolumeB, 1, FrameTime() ) || Lerp( .1 * FrameTime(), flVolumeB, 1 )
 	return false, 0, flVolumeB
-end
+end }
 function Director_Music_UpdateInternal( self, ... )
 	local tNewHandles = {}
 	local flVolume = self.m_flVolume
@@ -99,11 +99,11 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 	local ply = LocalPlayer()
 	for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
 		if !DIRECTOR_MUSIC[ ELayer ] then
-			local f = table.Random( DIRECTOR_MUSIC_TABLE[ ELayer ] )
-			if f then
+			local t = table.Random( DIRECTOR_MUSIC_TABLE[ ELayer ] )
+			if t then
 				local p = Director_Music_Container()
-				p.m_fExecute = f.Execute
-				p.m_pSource = f
+				p.m_fExecute = t.Execute
+				p.m_pSource = t
 				DIRECTOR_MUSIC[ ELayer ] = p
 			end
 		end
@@ -220,4 +220,3 @@ hook.Add( "PostCleanupMap", "Director", function()
 	DIRECTOR_TRANSITION = nil
 	DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_THREAT_NULL
 end )
-
