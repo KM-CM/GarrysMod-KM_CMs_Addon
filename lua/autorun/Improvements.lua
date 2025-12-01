@@ -21,6 +21,11 @@ TRAVERSES_AIR = 4
 
 UNIVERSAL_FOV = 80
 
+physenv.SetPerformanceSettings {
+	MaxVelocity = 999999,
+	MaxAngularVelocity = 999999
+}
+
 function FairlyTranslateBleedingToHealth( flBleeding, flMaxHealth ) return flBleeding * flMaxHealth * 2 end
 function FairlyTranslateHealthToBleeding( flHealth, flMaxHealth ) return flHealth / ( flMaxHealth * 2 ) end
 

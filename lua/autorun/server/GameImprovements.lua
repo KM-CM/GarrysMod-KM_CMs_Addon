@@ -260,7 +260,7 @@ end )
 
 hook.Add( "PlayerCanSeePlayersChat", "GameImprovements", function( _/*sText*/, _/*bTeamOnly*/, pListener, pSpeaker )
 	if !IsValid( pSpeaker ) then return end
-	return pListener:GetPos():DistToSqr( pSpeaker:GetPos() ) <= ( pListener.GAME_flSpeakDistanceSqr || 13249600/*3640*/ )
+	return pListener:GetPos():DistToSqr( pSpeaker:GetPos() ) > ( pListener.GAME_flSpeakDistanceSqr || 13249600/*3640*/ )
 end )
 
 hook.Add( "GetFallDamage", "GameImprovements", function( ply, flSpeed )
