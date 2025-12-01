@@ -104,7 +104,7 @@ hook.Add( "Tick", "Director", function()
 		ply:SetDSP( h <= .165 && 16 || h <= .33 && 15 || h <= .66 && 14 || 1 )
 		PlyTable.GAME_flSuppression = math.Approach( PlyTable.GAME_flSuppression || 0, 0, math.max( ply:Health() * 2, ( PlyTable.GAME_flSuppression || 0 ) * .33 ) * FrameTime() )
 		local EThreat, flIntensity = DIRECTOR_THREAT_NULL, ( PlyTable.GAME_flSuppression || 0 ) / ( ply:Health() * 6 )
-		local tMusicEntities = PlyTable.DR_tMusicEntities
+		local tMusicEntities = PlyTable.DR_tMusicEntities || {}
 		local vEye = ply:EyePos()
 		if RealTime() > ( PlyTable.DR_flNextUpdate || 0 ) then
 			local aEye, flFoVHalf = ply:EyeAngles(), ply:GetInfoNum( "fov_desired", UNIVERSAL_FOV ) * .5
@@ -122,7 +122,7 @@ hook.Add( "Tick", "Director", function()
 		local tNewMusicEntities = {}
 		// We're doin' shit to them, so add it!
 		local flAllSuppression, flAllHealth = 0, 0
-		for pEntity in pairs( tMusicEntities || {} ) do
+		for pEntity in pairs( tMusicEntities ) do
 			if !IsValid( pEntity ) then continue end
 			local ETheirThreat = Director_GetThreat( ply, pEntity )
 			if ETheirThreat <= DIRECTOR_THREAT_NULL then continue end
