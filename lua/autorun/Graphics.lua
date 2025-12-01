@@ -7,16 +7,6 @@ function GetBrightnessVC( v ) return v[ 1 ]  * .2126 + v[ 2 ] * .7152  + v[ 3 ] 
 // Also same as above except uses red/green/blue floats
 function GetBrightnessRGB( r, g, b ) return r * .00083372549 + g * .00280470588 + b * .00028313725 end
 
-if SERVER then
-	CreateConVar(
-		"bAllowThirdPerson",
-		0,
-		FCVAR_CHEAT + FCVAR_NEVER_AS_STRING,
-		"Allow clients to use thirdperson mode (bThirdPerson)?",
-		0, 1
-	)
-end
-
 if !CLIENT_DLL then return end
 
 local cThirdPerson = CreateClientConVar( "bThirdPerson", "0", true, nil, "Enable thirdperson?", 0, 1 )
@@ -198,8 +188,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 		fMoreEffects( ply, view )
 		return view
 	end
-	if !bAllowThirdPerson:GetBool() then cThirdPerson:SetBool()
-	elseif cThirdPerson:GetBool() then
+	if cThirdPerson:GetBool() then
 		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
 		view.drawviewer = true
 		local vTarget = Vector( -64, cThirdPersonShoulder:GetBool() && 24 || -24, ply:Crouching() && 24 || 8 )
