@@ -198,7 +198,7 @@ hook.Add( "CalcView", "Graphics", function( ply, origin, angles, fov, znear, zfa
 		fMoreEffects( ply, view )
 		return view
 	end
-	if !bAllowThirdPerson:GetBool() then cThirdPerson:SetBool()
+	if bAllowThirdPerson && !bAllowThirdPerson:GetBool() then cThirdPerson:SetBool()
 	elseif cThirdPerson:GetBool() then
 		local VARIANTS, PEEK = ply:GetNW2Int "CTRL_Variants", ply:GetNW2Int "CTRL_Peek"
 		view.drawviewer = true
