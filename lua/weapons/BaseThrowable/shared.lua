@@ -157,6 +157,8 @@ function SWEP:PrimaryAttack()
 	MyTable.GRENADE_flTime = CurTime() + f + math_Rand( MyTable.GRENADE_flMinimumTime, MyTable.GRENADE_flMaximumTime )
 end
 
+if !SERVER then return end
+
 local CEntity_SetPos = CEntity.SetPos
 
 function SWEP:Think()
