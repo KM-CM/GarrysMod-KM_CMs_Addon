@@ -34,63 +34,33 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 	if HasMeleeAttack( self ) && !HasRangeAttack( self ) then
 		if !self.bEnemiesHaveRangeAttack || self.bMeleeChargeAgainstRange then
 			// TODO: Melee vs melee dance behavior
-			/*if self.bEnemiesHaveMeleeAttack then
-				local pPath = sched.pEnemyPath
-				if !pPath then pPath = Path "Follow" sched.pEnemyPath = pPath end
-				self:ComputeFlankPath( pPath, enemy )
-				if self:Visible( enemy ) then
-					local vTarget, vShoot = enemy:GetPos() + enemy:OBBCenter(), self:GetShootPos()
-					self.vDesAim = ( vTarget - vShoot ):GetNormalized()
-					local d = self.GAME_flReach || 64
-					local wep = self.Weapon
-					if IsValid( wep ) then d = d + wep.Melee_flRangeAdd || 0 end
-					local vMins, vMaxs = self:GatherShootingBounds()
-					local flDistance = vTarget:Distance( vShoot )
-					if flDistance <= d && self:Disposition( util_TraceLine( {
+			local pPath = sched.pEnemyPath
+			if !pPath then pPath = Path "Follow" sched.pEnemyPath = pPath end
+			self:ComputeFlankPath( pPath, enemy )
+			self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
+			if self:Visible( enemy ) then
+				if math.random( 10000 * ( self.flMeleeChargeTauntMultiplier || 1 ) * FrameTime() ) == 1 then self:DLG_MeleeTaunt() return end
+				local vTarget, vShoot = enemy:GetPos() + enemy:OBBCenter(), self:GetShootPos()
+				self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+				local d = self.GAME_flReach || 64
+				local wep = self.Weapon
+				if IsValid( wep ) then d = d + wep.Melee_flRangeAdd || 0 end
+				local vMins, vMaxs = self:GatherShootingBounds()
+				if vTarget:Distance( vShoot ) <= d then
+					if self.bHoldFire then self:ReportPositionAsClear( vTarget )
+					elseif self:Disposition( util_TraceLine( {
 						start = vShoot,
 						endpos = vShoot + self:GetAimVector() * d,
 						filter = self,
 						mask = MASK_SHOT_HULL,
 						mins = vMins, maxs = vMaxs
 					} ).Entity ) != D_LI then self:WeaponPrimaryAttack() end
-					if flDistance <= d * 3 || flDistance > d * 6 then
-						self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
-					else
-						self:MoveAlongPath( pPath, self.flRunSpeed, 1 )
-					end
-				else
-					self:ComputeFlankPath( pPath, enemy )
-					self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
-					local goal = pPath:GetCurrentGoal()
-					local v = self:GetPos()
-					if goal then self.vDesAim = ( goal.pos - v ):GetNormalized() end
 				end
-			else*/
-				local pPath = sched.pEnemyPath
-				if !pPath then pPath = Path "Follow" sched.pEnemyPath = pPath end
-				self:ComputeFlankPath( pPath, enemy )
-				self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
-				if self:Visible( enemy ) then
-					if math.random( 10000 * ( self.flMeleeChargeTauntMultiplier || 1 ) * FrameTime() ) == 1 then self:DLG_MeleeTaunt() return end
-					local vTarget, vShoot = enemy:GetPos() + enemy:OBBCenter(), self:GetShootPos()
-					self.vDesAim = ( vTarget - vShoot ):GetNormalized()
-					local d = self.GAME_flReach || 64
-					local wep = self.Weapon
-					if IsValid( wep ) then d = d + wep.Melee_flRangeAdd || 0 end
-					local vMins, vMaxs = self:GatherShootingBounds()
-					if vTarget:Distance( vShoot ) <= d && self:Disposition( util_TraceLine( {
-						start = vShoot,
-						endpos = vShoot + self:GetAimVector() * d,
-						filter = self,
-						mask = MASK_SHOT_HULL,
-						mins = vMins, maxs = vMaxs
-					} ).Entity ) != D_LI then self:WeaponPrimaryAttack() end
-				else
-					local goal = pPath:GetCurrentGoal()
-					local v = self:GetPos()
-					if goal then self.vDesAim = ( goal.pos - v ):GetNormalized() end
-				end
-			//end
+			else
+				local goal = pPath:GetCurrentGoal()
+				local v = self:GetPos()
+				if goal then self.vDesAim = ( goal.pos - v ):GetNormalized() end
+			end
 		else self:SetSchedule "TakeCover" end
 		return
 	end

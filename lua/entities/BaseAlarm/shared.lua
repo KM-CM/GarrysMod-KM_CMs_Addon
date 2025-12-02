@@ -1,4 +1,3 @@
-AddCSLuaFile()
 DEFINE_BASECLASS "base_anim"
 
 if SERVER then

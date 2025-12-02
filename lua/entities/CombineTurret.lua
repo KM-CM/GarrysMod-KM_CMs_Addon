@@ -50,12 +50,6 @@ ENT.bCombatForgetLastHostile = true
 
 local CEntity_EmitSound = FindMetaTable( "Entity" ).EmitSound
 
-function ENT:DLG_FiringAtAnExposedTarget() CEntity_EmitSound( self, "Combine_Soldier_FiringAtAnExposedTarget" ) end
-function ENT:DLG_Advancing() CEntity_EmitSound( self, "Combine_Soldier_Advancing" ) end
-function ENT:DLG_Retreating() CEntity_EmitSound( self, "Combine_Soldier_Retreating" ) end
-function ENT:DLG_TakeCoverGeneral() CEntity_EmitSound( self, "Combine_Soldier_TakeCover" ) end
-function ENT:DLG_HoldFire() CEntity_EmitSound( self, "Combine_Soldier_HoldFire" ) BaseClass.DLG_HoldFire( self ) end
-
 ENT.iDefaultClass = CLASS_COMBINE
 
 function ENT:SelectSchedule() end
