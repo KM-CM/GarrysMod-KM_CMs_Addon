@@ -22,6 +22,7 @@ SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.vViewModelAim = Vector( -5.51, -12, 3.145 )
 SWEP.Crosshair = "Pistol"
+SWEP.sAimSound = "BaseWeapon_Aim_Pistol"
 SWEP.bPistolSprint = true
 
 sound.Add {

@@ -27,10 +27,7 @@ SWEP.Slot = 2
 SWEP.DrawAmmo = true
 SWEP.vViewModelAim = Vector( -6.43, -4, 1.03 )
 SWEP.Crosshair = "SubMachineGun"
-
-// SWEP.flViewModelX = 0
-// SWEP.flViewModelY = -4
-// SWEP.flViewModelZ = 0
+SWEP.sAimSound = "BaseWeapon_Aim_SubMachineGun"
 
 sound.Add {
 	name = "MP7_Shot",

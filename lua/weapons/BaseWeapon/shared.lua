@@ -40,6 +40,7 @@ function SWEP:CanPrimaryAttack()
 	// Believe It or Not, Some People ( Including VALVe ) have The AUDACITY to Ignore This Check!
 	if CurTime() <= self:GetNextPrimaryFire() then return end
 	local owner = CEntity_GetOwner( self )
+	if owner:GetNW2Bool "CTRL_bSliding" || owner:GetNW2Bool "CTRL_bInCover" then return end
 	if CurTime() <= ( owner.CTRL_flCoverDontShootTime || 0 ) then return end
 	if self.bDisAllowPrimaryInCover then
 		if IsValid( owner ) && owner.CTRL_bInCover then return end

@@ -7,10 +7,11 @@ function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	local v = MyTable.Primary_flSpreadY
 	if v then flSpreadY = v end
 	if MyTable.bCrosshairSizeIdentical || bForceIdentical then
-		local v = math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX )
+		local v = math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX ) * ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
 		return v, v
 	end
-	return flSpreadX, flSpreadY
+	local f = MyTable.vViewModelAim && MyTable.flAimMultiplier || 1
+	return flSpreadX * f, flSpreadY * f
 end
 
 local surface = surface
@@ -160,6 +161,42 @@ surface.CreateFont( "BaseWeapon_AmmoBarLargeText", {
 	outline = false
 } )
 
+sound.Add {
+	name = "BaseWeapon_Aim_Pistol",
+	channel = CHAN_STATIC,
+	sound = {
+		"Aim/Pistol/1.wav",
+		"Aim/Pistol/2.wav",
+		"Aim/Pistol/3.wav",
+		"Aim/Pistol/4.wav",
+		"Aim/Pistol/5.wav",
+	}
+}
+sound.Add {
+	name = "BaseWeapon_Aim_SubMachineGun",
+	channel = CHAN_STATIC,
+	sound = {
+		"Aim/SubMachineGun/1.wav",
+		"Aim/SubMachineGun/2.wav",
+		"Aim/SubMachineGun/3.wav",
+		"Aim/SubMachineGun/4.wav",
+		"Aim/SubMachineGun/5.wav",
+	}
+}
+sound.Add {
+	name = "BaseWeapon_Aim_Rifle",
+	channel = CHAN_STATIC,
+	sound = {
+		"Aim/Rifle/1.wav",
+		"Aim/Rifle/2.wav",
+		"Aim/Rifle/3.wav",
+		"Aim/Rifle/4.wav",
+		"Aim/Rifle/5.wav",
+	}
+}
+
+SWEP.sAimSound = ""
+
 local CEntity = FindMetaTable "Entity"
 local CEntity_IsOnGround = CEntity.IsOnGround
 local CEntity_GetTable = CEntity.GetTable
@@ -177,6 +214,30 @@ function SWEP:DoDrawCrosshair()
 	if developer:GetBool() then return end
 	local MyTable = CEntity_GetTable( self )
 	local ply = LocalPlayer()
+	local flAimMultiplier = MyTable.flAimMultiplier
+	if MyTable.sAimSound && MyTable.vViewModelAim then
+		if MyTable.bAiming then
+			if flAimMultiplier > .9 then
+				MyTable.bAiming = nil
+				MyTable.bDidAimingSound = nil
+			elseif flAimMultiplier > .1 then
+				if !MyTable.bDidAimingSound then
+					EmitSound( MyTable.sAimSound, vector_origin, -2 )
+					MyTable.bDidAimingSound = true
+				end
+			end
+		else
+			if flAimMultiplier < .1 then
+				MyTable.bAiming = true
+				MyTable.bDidAimingSound = nil
+			elseif flAimMultiplier < .9 then
+				if !MyTable.bDidAimingSound then
+					EmitSound( MyTable.sAimSound, vector_origin, -2 )
+					MyTable.bDidAimingSound = true
+				end
+			end
+		end
+	end
 	if !MyTable.bDontDrawAmmo then
 		// TODO: Machine gun ammo cubes
 		if false then//self:GetMaxClip1() > 60 then
@@ -202,6 +263,13 @@ function SWEP:DoDrawCrosshair()
 				flX = flX - flWidth - 1
 				surface.DrawRect( flX, flY, flWidth, flHeight )
 			end
+			// TODO: Reloading animation
+			//	surface.SetDrawColor( 255, 255, 255, 255 * ( 1 - math.abs( math.sin( RealTime() * 4 ) ) ) )
+			//	local flX, flY = flW - flWidth, flH - flHeight
+			//	for _ = 1, self:GetMaxClip1() do
+			//		flX = flX - flWidth - 1
+			//		surface.DrawRect( flX + 1, flY + 1, flWidth - 2, flHeight - 2 )
+			//	end
 			surface.SetDrawColor( 255, 255, 255, 255 )
 			local flX, flY = flW - flWidth, flH - flHeight
 			for _ = 1, self:Clip1() do
@@ -215,7 +283,7 @@ function SWEP:DoDrawCrosshair()
 			end
 		end
 	end
-	if MyTable.bSniper && MyTable.flAimMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) then
+	if MyTable.bSniper && flAimMultiplier <= ( MyTable.flSniperAimingMultiplier || SNIPER_AIMING_MULTIPLIER ) then
 		surface_SetDrawColor( 0, 0, 0, 255 )
 		surface_SetTexture( surface_GetTextureID( MyTable.sSniperTexture || "CrosshairScope1" ) )
 		local flHeight, flWidth = ScrH(), ScrW()
@@ -230,9 +298,10 @@ function SWEP:DoDrawCrosshair()
 		surface_DrawRect( flX - flSize * .5, flY + flSize * .5, flSize, flHeight - flY )
 		return true
 	end
-	if CurTime() <= self:GetNextPrimaryFire() + .1 || CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) || ( !cThirdPerson:GetBool() && MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) ) then return true end
+	if CurTime() <= self:GetNextPrimaryFire() + .1 || CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) then return true end
+	if flAimMultiplier <= .5 && !cThirdPerson:GetBool() && MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
-	if v != nil then return v( MyTable, self ) end
+	if v != nil && v( MyTable, self ) then return true end
 	local flHeight, flWidth = ScrH(), ScrW()
 		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
 	local c = MyTable.CrosshairColorBase

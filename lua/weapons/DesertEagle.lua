@@ -20,6 +20,7 @@ SWEP.Secondary.Ammo = ""
 SWEP.Spawnable = true
 SWEP.Slot = 1
 SWEP.Crosshair = "Pistol"
+SWEP.sAimSound = "BaseWeapon_Aim_Pistol"
 SWEP.bPistolSprint = true
 SWEP.flSideWaysRecoilMin = -.33
 SWEP.flSideWaysRecoilMax = .33
