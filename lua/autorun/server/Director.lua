@@ -147,6 +147,7 @@ hook.Add( "Tick", "Director", function()
 		if f != f then f = 0 end // NaN
 		flIntensity = flIntensity + f
 		PlyTable.DR_tMusicEntities = tNewMusicEntities
+		if EThreat == DIRECTOR_THREAT_COMBAT then Achievement_Miscellaneous( ply, "Combat" ) end
 		ply.DR_EThreat = EThreat
 		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
 		ply:SendLua( "DIRECTOR_MUSIC_INTENSITY=" .. tostring( flIntensity ) )
