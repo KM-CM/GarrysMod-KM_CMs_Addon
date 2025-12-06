@@ -614,7 +614,11 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 			end
 			cmd:RemoveKey( IN_DUCK )
 			if !ply.GAME_flPeekUpMinimumTime then ply.GAME_flPeekUpMinimumTime = CurTime() + ply:GetUnDuckSpeed() end
-			if CurTime() <= ply.GAME_flPeekUpMinimumTime then cmd:RemoveKey( IN_ATTACK ) cmd:RemoveKey( IN_ATTACK2 ) end
+			if CurTime() <= ply.GAME_flPeekUpMinimumTime then
+				ply:SetNW2Bool( "CTRL_bPredictedCantShoot", true )
+				cmd:RemoveKey( IN_ATTACK )
+				cmd:RemoveKey( IN_ATTACK2 )
+			else ply:SetNW2Bool "CTRL_bPredictedCantShoot" end
 			ply:SetNW2Bool "CTRL_bInCover"
 			ply.CTRL_bInCover = nil
 			ply:SetNW2Int( "CTRL_Peek", cmd:KeyDown( IN_ZOOM ) && COVER_FIRE_UP || COVER_BLINDFIRE_UP )
@@ -707,12 +711,14 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				} ).Hit
 			end
 			if bMove then
+				ply:SetNW2Bool( "CTRL_bPredictedCantShoot", true )
 				cmd:RemoveKey( IN_ATTACK )
 				cmd:RemoveKey( IN_ATTACK2 )
 				cmd:SetForwardMove( ply:GetRunSpeed() * d:Dot( ply:GetForward() ) )
 				cmd:SetSideMove( ply:GetRunSpeed() * d:Dot( ply:GetRight() ) )
-			end
+			else ply:SetNW2Bool "CTRL_bPredictedCantShoot" end
 		else//if s == "FROM" then
+			ply:SetNW2Bool "CTRL_bPredictedCantShoot"
 			if cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) then ply.GAME_sCoverState = nil return end
 			local bInCover
 			local dEyeFlat = -ply.GAME_vPeekSourceHitNormal
@@ -824,6 +830,7 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 				end
 			end
 		end
+		ply:SetNW2Bool "CTRL_bPredictedCantShoot"
 		if bInCover then
 			if !Achievement_Has( ply, "Miscellaneous_CoverGrate" ) && bit.band( tr.Contents, CONTENTS_GRATE ) != 0 then Achievement_Miscellaneous_Grant( ply, "CoverGrate" ) end
 			// NOTE: Force variables will do nothing when `nil`. This is intended so that
