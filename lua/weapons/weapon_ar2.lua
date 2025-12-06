@@ -25,9 +25,12 @@ SWEP.AdminOnly = false
 SWEP.Weight = 1
 SWEP.Slot = 2
 SWEP.DrawAmmo = true
-SWEP.vViewModelAim = Vector( -5.82, -8, 1.255 )
 SWEP.Crosshair = "Rifle"
 SWEP.ViewModelFOV = 62
+SWEP.flViewModelY = -2
+SWEP.vViewModelAim = Vector( -5.82 - SWEP.flViewModelY, -8, 1.255 )
+SWEP.vSprintArm = Vector( .6, -1.228, -1.2 )
+SWEP.flRecoilMultiplierThingy = .4
 
 sound.Add {
 	name = "OSIPR_Shot",

@@ -1,3 +1,6 @@
+SWEP.flRecoilMultiplierThingy = .33 // The less, the more shots they can fire without the crosshair disappearing
+SWEP.flCrosshairInAccuracy = .08
+
 local math = math
 local math_max = math.max
 function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
@@ -6,12 +9,13 @@ function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	if v then flSpreadX = v end
 	local v = MyTable.Primary_flSpreadY
 	if v then flSpreadY = v end
+	local flCurrentRecoil = MyTable.flCrosshairInAccuracy + ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) * .01
 	if MyTable.bCrosshairSizeIdentical || bForceIdentical then
-		local v = math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX ) * ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
+		local v = ( math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX ) + flCurrentRecoil ) * ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
 		return v, v
 	end
 	local f = MyTable.vViewModelAim && MyTable.flAimMultiplier || 1
-	return flSpreadX * f, flSpreadY * f
+	return ( flSpreadX + flCurrentRecoil ) * f, ( flSpreadY + flCurrentRecoil ) * f
 end
 
 local surface = surface
@@ -20,7 +24,7 @@ local surface_GetTextureID = surface.GetTextureID
 local surface_SetDrawColor = surface.SetDrawColor
 local surface_DrawTexturedRectRotated = surface.DrawTexturedRectRotated
 
-local CROSSHAIR_PART_SIZE = ScrH() * .03
+local CROSSHAIR_PART_SIZE = ScrH() * .025
 local CROSSHAIR_PART_SIZE_SUB = CROSSHAIR_PART_SIZE * .5
 local CROSSHAIR_PART_SIZE_SUB_SUB = CROSSHAIR_PART_SIZE_SUB * .5
 
@@ -36,14 +40,15 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local co = MyTable.CrosshairColorOutLine
 		local f = .0008 * flHeight
 		local flStart, flEnd = flRadius, flRadius + f
-		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, 255 ) end
+		local flCrosshairAlpha = MyTable.flCrosshairAlpha
+		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, flCrosshairAlpha ) end
 		local c = MyTable.CrosshairColorBase
 		local flStart = flEnd
 		local flEnd = flEnd + .0012 * flHeight
-		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, 255 ) end
+		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flCrosshairAlpha ) end
 		local flStart = flEnd
 		local flEnd = flEnd + f
-		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, 255 ) end
+		for I = flStart, flEnd do surface.DrawCircle( flX, flY, I, co.r, co.g, co.b, flCrosshairAlpha ) end
 		return true
 	end,
 	Rifle = function( MyTable, self )
@@ -53,7 +58,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
-		surface_SetDrawColor( 255, 255, 255, 255 )
+		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Top
 		surface_DrawTexturedRectRotated( flX, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 180 )
 		// Bottom
@@ -71,15 +76,21 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
-		surface_SetDrawColor( 255, 255, 255, 255 )
-		// Left top
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 225 )
-		// Left bottom
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 315 )
-		// Right top
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 135 )
-		// Right bottom
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 45 )
+		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
+		// Bottom
+		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
+		// Left
+		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 270 )
+		// Right
+		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 90 )
+		//	// Left top
+		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 225 )
+		//	// Left bottom
+		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 315 )
+		//	// Right top
+		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 135 )
+		//	// Right bottom
+		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 45 )
 		return true
 	end,
 	Pistol = function( MyTable, self )
@@ -89,7 +100,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
-		surface_SetDrawColor( 255, 255, 255, 255 )
+		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Bottom
 		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
 		// Left
@@ -105,7 +116,7 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		local flSpreadHorizontal = flSpreadX * flWidth * ( 90 / MyTable.flFoV ) * .5
 		local flSpreadVertical = flSpreadY * flHeight * ( 90 / MyTable.flFoV ) * .5 * ( flWidth / flHeight )
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
-		surface_SetDrawColor( 255, 255, 255, 255 )
+		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Bottom
 		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
 		// Left
@@ -238,6 +249,7 @@ function SWEP:DoDrawCrosshair()
 			end
 		end
 	end
+	MyTable.flCrosshairAlpha = math_max( 0, 255 - 255 * ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) )
 	if !MyTable.bDontDrawAmmo then
 		// TODO: Machine gun ammo cubes
 		if false then//self:GetMaxClip1() > 60 then
@@ -298,7 +310,7 @@ function SWEP:DoDrawCrosshair()
 		surface_DrawRect( flX - flSize * .5, flY + flSize * .5, flSize, flHeight - flY )
 		return true
 	end
-	if CurTime() <= self:GetNextPrimaryFire() + .1 || CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) then return true end
+	if CEntity_GetNW2Bool( ply, "CTRL_bSprinting" )|| CEntity_GetNW2Bool( ply, "CTRL_bSliding" ) || CEntity_GetNW2Bool( ply, "CTRL_bInCover" ) && !CEntity_GetNW2Bool( ply, "CTRL_bGunUsesCoverStance" ) then return true end
 	if flAimMultiplier <= .5 && !cThirdPerson:GetBool() && MyTable.bDontDrawCrosshairDuringZoom && MyTable.vViewModelAim && CPlayer_KeyDown( ply, IN_ZOOM ) then return true end
 	local v = __WEAPON_CROSSHAIR_TABLE__[ MyTable.Crosshair ]
 	if v != nil && v( MyTable, self ) then return true end
@@ -306,10 +318,11 @@ function SWEP:DoDrawCrosshair()
 		local flX, flY = MyTable.GatherCrosshairPosition( self, MyTable )
 	local c = MyTable.CrosshairColorBase
 	local flEnd = .002 * flHeight
-	for I = 0, flEnd do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, 255 ) end
+	local flCrosshairAlpha = MyTable.flCrosshairAlpha
+	for I = 0, flEnd do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flCrosshairAlpha ) end
 	c = MyTable.CrosshairColorOutLine
 	local flTarget = flEnd + .0001 * flHeight
-	for I = flEnd, flTarget do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, 255 ) end
+	for I = flEnd, flTarget do surface.DrawCircle( flX, flY, I, c.r, c.g, c.b, flCrosshairAlpha ) end
 	return true
 end
 

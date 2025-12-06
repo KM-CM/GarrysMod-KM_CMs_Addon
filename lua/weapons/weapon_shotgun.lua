@@ -31,6 +31,7 @@ SWEP.flSideWaysRecoilMin = -.33
 SWEP.flSideWaysRecoilMax = .33
 SWEP.flRecoil = 5
 SWEP.flAimRoll = 22.5
+SWEP.flCrosshairInAccuracy = .01
 
 SWEP.bSemi = true
 SWEP.bPumped = true
