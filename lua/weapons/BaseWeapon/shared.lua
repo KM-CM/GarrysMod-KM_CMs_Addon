@@ -163,7 +163,7 @@ if CLIENT then
 	SWEP.vViewModelAimAngle = false
 	SWEP.flSwayScale = 60
 	SWEP.flSwayAngle = 4
-	SWEP.flSwayVector = 1.5
+	SWEP.flSwayVector = SWEP.flSwayAngle * .415
 	SWEP.SwayScale = 0
 	SWEP.BobScale = 0
 	SWEP.vSprintArm = Vector( 1.358, 1.228, -.94 )
