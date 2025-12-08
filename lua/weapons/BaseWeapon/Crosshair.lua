@@ -9,13 +9,12 @@ function SWEP:GatherCrosshairSpread( MyTable, bForceIdentical )
 	if v then flSpreadX = v end
 	local v = MyTable.Primary_flSpreadY
 	if v then flSpreadY = v end
-	local flCurrentRecoil = MyTable.flCrosshairInAccuracy + ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) * .01
+	local flCurrentRecoil = ( MyTable.flCrosshairInAccuracy + ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) * .01 ) * ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
 	if MyTable.bCrosshairSizeIdentical || bForceIdentical then
-		local v = ( math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX ) + flCurrentRecoil ) * ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
+		local v = ( math_max( flSpreadX || flSpreadY, flSpreadY || flSpreadX ) + flCurrentRecoil )
 		return v, v
 	end
-	local f = MyTable.vViewModelAim && MyTable.flAimMultiplier || 1
-	return ( flSpreadX + flCurrentRecoil ) * f, ( flSpreadY + flCurrentRecoil ) * f
+	return flSpreadX + flCurrentRecoil, flSpreadY + flCurrentRecoil
 end
 
 local surface = surface
@@ -249,7 +248,8 @@ function SWEP:DoDrawCrosshair()
 			end
 		end
 	end
-	MyTable.flCrosshairAlpha = math_max( 0, 255 - 255 * ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) )
+	local f = ( MyTable.vViewModelAim && MyTable.flAimMultiplier || 1 )
+	MyTable.flCrosshairAlpha = ( 255 - 255 * f ) + f * math_max( 0, 255 - 255 * ( MyTable.flCurrentRecoil / MyTable.flRecoil * MyTable.flRecoilMultiplierThingy ) )
 	if !MyTable.bDontDrawAmmo then
 		// TODO: Machine gun ammo cubes
 		if false then//self:GetMaxClip1() > 60 then

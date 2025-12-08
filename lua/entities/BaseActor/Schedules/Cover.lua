@@ -38,7 +38,7 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		local pEnemyPath = self.pLastEnemyPath || sched.pEnemyPath
 		if !pEnemyPath then
 			pEnemyPath = Path "Follow"
-			self:ComputeFlankPath( pEnemyPath, enemy )
+			self:ComputePath( pEnemyPath, enemy:GetPos() )
 			sched.pEnemyPath = pEnemyPath
 		end
 		pEnemyPath:MoveCursorToClosestPosition( vec )

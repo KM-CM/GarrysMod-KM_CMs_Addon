@@ -47,7 +47,7 @@ SWEP.sDryFire = "Weapon_Pistol.Empty"
 local CEntity = FindMetaTable "Entity"
 local CEntity_GetOwner = CEntity.GetOwner
 SWEP.bDisAllowPrimaryInCover = true
-function SWEP:CanPrimaryAttack()
+function SWEP:CanPrimaryAttack( bIgnoreAmmo )
 	// Believe it or not, some people (including VALVe!) have the AUDACITY to ignore this check!
 	if CurTime() <= self:GetNextPrimaryFire() then return end
 	local owner = CEntity_GetOwner( self )
@@ -56,12 +56,23 @@ function SWEP:CanPrimaryAttack()
 	if self.bDisAllowPrimaryInCover then
 		if IsValid( owner ) && owner.CTRL_bInCover then return end
 	end
-	if self:Clip1() <= 0 then
+	if !bIgnoreAmmo && self:Clip1() <= 0 then
 		local sDryFire = self.sDryFire
 		if sDryFire != "" then self:EmitSound( sDryFire ) end
 		self:SetNextPrimaryFire( CurTime() + .2 )
 		return
 	end
+	return true
+end
+
+function SWEP:TakeAmmo( sAmmo, flAmount )
+	local pOwner = self:GetOwner()
+	if !IsValid( pOwner ) then return end
+	local f = pOwner.GetAmmoCount
+	flAmount = flAmount || 1
+	if f && f( pOwner, sAmmo ) < flAmount then return end
+	local f = pOwner.RemoveAmmo
+	if f then f( pOwner, flAmount, sAmmo ) end
 	return true
 end
 
@@ -90,12 +101,13 @@ local CEntity_GetNW2Bool = CEntity.GetNW2Bool
 local CEntity_GetTable = CEntity.GetTable
 
 function SWEP:GetAimVector()
-	local owner = self:GetOwner()
-	local v = owner:GetAimVector()
-	local f = owner.GetViewPunchAngles
+	local pOwner = self:GetOwner()
+	if !IsValid( pOwner ) then return self:GetForward() end
+	local v = pOwner:GetAimVector()
+	local f = pOwner.GetViewPunchAngles
 	if f then
 		v = v:Angle()
-		v = v + f( owner )
+		v = v + f( pOwner )
 		v = v:Forward()
 	end
 	return v

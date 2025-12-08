@@ -174,6 +174,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 				end
 			end
 		end
+		if sched.bFromCombatFormation then return end
 	else sched.bStartedSearching = nil end
 	if self.vCover then
 		local vec = self.vCover
@@ -196,7 +197,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 		local pEnemyPath = self.pLastEnemyPath || sched.pEnemyPath
 		if !pEnemyPath then
 			pEnemyPath = Path "Follow"
-			self:ComputeFlankPath( pEnemyPath, enemy )
+			self:ComputePath( pEnemyPath, enemy:GetPos() )
 			self.pLastEnemyPath = pEnemyPath
 			sched.pEnemyPath = pEnemyPath
 		end
