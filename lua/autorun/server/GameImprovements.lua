@@ -1067,12 +1067,6 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	return true
 end )
 
-__SCALE_DAMAGE__ = { [ HITGROUP_HEAD ] = 4 }
-local __SCALE_DAMAGE__ = __SCALE_DAMAGE__
-
-hook.Add( "ScalePlayerDamage", "GameImprovements", function( _, hg, dmg ) dmg:ScaleDamage( __SCALE_DAMAGE__[ hg ] || 1 ) return false end )
-hook.Add( "ScaleNPCDamage", "GameImprovements", function( _, hg, dmg ) dmg:ScaleDamage( __SCALE_DAMAGE__[ hg ] || 1 ) return false end )
-
 if !CLASS_HUMAN then Add_NPC_Class "CLASS_HUMAN" end
 
 function CPlayer:GetNPCClass() return self.m_iClass || CLASS_HUMAN end
