@@ -93,7 +93,7 @@ if SERVER then
 	function SWEP:Think()
 		if !self:GetOwner():KeyDown( IN_ATTACK2 ) || self.flStartTime && ( CurTime() - self.flStartTime ) > 8 then
 			if self.flStartTime && ( CurTime() - self.flStartTime ) > 1 then
-				if self:TakeAmmo( self:GetSecondaryAmmoType(), math.ceil( math.max( 0, CurTime() - self.flStartTime ^ .5 ) ) ) then
+				if self:TakeAmmo( self:GetSecondaryAmmoType(), math.ceil( math.max( 0, ( CurTime() - self.flStartTime ) ^ .5 ) ) ) then
 					self:EmitSound "CombineEnergyBallShot"
 					local pBall = ents.Create "prop_combine_ball"
 					local pOwner = self:GetOwner()
