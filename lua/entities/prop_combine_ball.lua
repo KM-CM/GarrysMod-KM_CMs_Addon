@@ -22,6 +22,7 @@ if CLIENT then
 	local mSpriteB = Material "effects/ar2_altfire1b"
 	local render_SetMaterial = render.SetMaterial
 	local render_DrawSprite = render.DrawSprite
+	local DynamicLight = DynamicLight
 	local cTrail = Color( 255, 255, 255, 70 )
 	function ENT:Draw()
 		local vPos = self:GetPos()
@@ -30,9 +31,23 @@ if CLIENT then
 		render_DrawSprite( vPos, flSize, flSize, color_white )
 		render_SetMaterial( mSpriteB )
 		render_DrawSprite( vPos, flSize, flSize, color_white )
-		flSize = flSize / 1.5
-		for i = 1, 5 do
-			render.DrawSprite( self:GetPos() + self:GetVelocity() * ( i * -.005 ), flSize, flSize, cTrail )
+		local l = self:GetVelocity():Length() * .02
+		if l > 40 then l = 40 end
+		for i = 1, l do
+			local f = 1 - i / l
+			render_DrawSprite( self:GetPos() + self:GetVelocity() * ( i * -.002 ), flSize * f, flSize * f, cTrail )
+		end
+		local pLight = DynamicLight( self:EntIndex() )
+		if pLight then
+			pLight.pos = self:GetPos()
+			pLight.r = 255
+			pLight.g = 255
+			pLight.b = 255
+			local f = self:Health() / self:GetMaxHealth()
+			pLight.brightness = 4 * f
+			pLight.decay = 1000
+			pLight.size = self:BoundingRadius() * f * 4
+			pLight.dietime = CurTime() + 1
 		end
 	end
 	return
