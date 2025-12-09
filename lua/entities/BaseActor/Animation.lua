@@ -1,14 +1,18 @@
 ENT.tSequences = {}
 ENT.tPromoteSequences = {}
-ENT.flAnimationSpeed = 4
 
 function ENT:PromoteSequence( seq, flSpeed )
 	if isnumber( seq ) then seq = self:GetSequenceName( seq ) end
 	self.tPromoteSequences[ seq ] = flSpeed || 1
 end
 
+function ENT:PromoteMotionSequence( Sequence )
+	if isnumber( Sequence ) then Sequence = self:GetSequenceName( Sequence ) end
+	self.tPromoteSequences[ Sequence ] = GetVelocity( self ):Length() / self:GetSequenceGroundSpeed( self:LookupSequence( Sequence ) )
+end
+
 function ENT:AnimationSystemTick()
-	local tPromote, tSequences, flSpeed = self.tPromoteSequences, self.tSequences, self.flAnimationSpeed
+	local tPromote, tSequences = self.tPromoteSequences, self.tSequences
 	for seq in pairs( tPromote ) do
 		if !tSequences[ seq ] then
 			local lay = self:AddGestureSequence( self:LookupSequence( seq ), false )
@@ -22,12 +26,8 @@ function ENT:AnimationSystemTick()
 		local f = tPromote[ seq ]
 		if f then
 			self:SetLayerPlaybackRate( lay, f )
-			local l = self:GetLayerWeight( lay )
-			self:SetLayerWeight( lay, math.Clamp( l + ( 1 - l ) * flSpeed * FrameTime(), 0, 1 ) )
-		else
-			local l = self:GetLayerWeight( lay )
-			self:SetLayerWeight( lay, math.Clamp( l - l * flSpeed * FrameTime(), 0, 1 ) )
-		end
+			self:SetLayerWeight( lay, math.Clamp( self:GetLayerWeight( lay ) + 4 * FrameTime(), 0, 1 ) )
+		else self:SetLayerWeight( lay, math.Clamp( self:GetLayerWeight( lay ) - 4 * FrameTime(), 0, 1 ) ) end
 	end
 	table.Empty( tPromote )
 end

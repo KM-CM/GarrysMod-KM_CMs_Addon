@@ -569,14 +569,14 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			if !sched.Time then sched.Time = CurTime() + math.Rand( self.flShootTimeMin, self.flShootTimeMax )
 			elseif sched.Time == -1 then
 				local b = true
-				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end
+				if tAllies then for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then b = nil break end end end
 				if b then
 					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
 				end
 			elseif CurTime() > sched.Time then
 				local b = true
-				for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end
+				if tAllies then for ally in pairs( tAllies ) do if self != ally && IsValid( ally ) && ally.bWantsCover then sched.Time = -1 b = nil break end end end
 				if b then
 					self:SetSchedule( sched.bMove && "TakeCoverMove" || "TakeCover" )
 					return
