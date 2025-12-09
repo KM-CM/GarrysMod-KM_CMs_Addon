@@ -17,7 +17,37 @@ if SERVER then
 	)
 end
 
-if !CLIENT_DLL then return end
+/*
+net.Start "DynamicLight"
+	net.WriteFloat( 1 ) // Brightness
+	net.WriteFloat( 1 ) // Size
+	net.WriteFloat( 1 ) // Existence length
+	net.WriteVector( vector_origin ) // Position
+	net.WriteUInt( 255, 8 ) net.WriteUInt( 255, 8 ) net.WriteUInt( 255, 8 ) // R, G, B
+net.Broadcast()
+*/
+
+if SERVER then util.AddNetworkString "DynamicLight" return end
+
+local net_ReadFloat = net.ReadFloat
+local net_ReadVector = net.ReadVector
+local net_ReadUInt = net.ReadUInt
+local math_Round = math.Round
+local CurTime = CurTime
+net.Receive( "DynamicLight", function()
+	local pLight = DynamicLight( 8192 + math_Round( CurTime() ^ 2 ) )
+	if pLight then
+		pLight.brightness = net_ReadFloat()
+		pLight.size = net_ReadFloat()
+		local f = net_ReadFloat()
+		pLight.decay = 1000 / f
+		pLight.dietime = CurTime() + f
+		pLight.pos = net_ReadVector()
+		pLight.r = net_ReadUInt( 8 )
+		pLight.g = net_ReadUInt( 8 )
+		pLight.b = net_ReadUInt( 8 )
+	end
+end )
 
 local cThirdPerson = CreateClientConVar( "bThirdPerson", "0", true, nil, "Enable thirdperson?", 0, 1 )
 local cThirdPersonShoulder = CreateClientConVar( "bThirdPersonShoulder", "0", true, nil, "Should thirdperson use the left shoulder?", 0, 1 )

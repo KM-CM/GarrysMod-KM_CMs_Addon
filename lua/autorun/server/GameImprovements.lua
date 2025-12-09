@@ -141,6 +141,7 @@ hook.Add( "PlayerDeath", "GameImprovements", function( ply, _, at )
 	fOnKilled( ply, at )
 end )
 hook.Add( "PlayerDeathSilent", "GameImprovements", function( ply ) if IsValid( ply.GAME_pFlashlight ) then ply.GAME_pFlashlight:Remove() end end )
+hook.Add( "PlayerDeathSound", "GameImprovements", function() return true end )
 
 hook.Add( "OnNPCKilled", "GameImprovements", function( ent, at )
 	if IsValid( at ) && at:IsPlayer() then
@@ -271,9 +272,9 @@ hook.Add( "GetFallDamage", "GameImprovements", function( ply, flSpeed )
 end )
 
 TRACER_COLOR = {
-	Bullet = "255 48 0 1024",
-	AR2Tracer = "48 255 255 1024",
-	HelicopterTracer = "48 255 255 2048"
+	Bullet = { 255, 48, 0, 1024 },
+	AR2Tracer = { 48, 255, 255, 1024 },
+	HelicopterTracer = { 48, 255, 255, 2048 }
 }
 local TRACER_COLOR = TRACER_COLOR
 
@@ -309,22 +310,27 @@ hook.Add( "EntityFireBullets", "GameImprovements", function( ent, Data, _Comp )
 		end
 		local t = OldCallBack( atk, tr, dDamage ) || { damage = true, effects = true }
 		if t.damage && bTarget then pTarget:TakeDamageInfo( dDamage ) end
-		if !bTracer then return end
 		local b = t.effects
-		if b then
-			local pt = ents.Create "env_projectedtexture"
-			pt:SetPos( tr.StartPos )
-			pt:SetAngles( ( tr.HitPos - tr.StartPos ):GetNormalized():Angle() )
-			pt:SetKeyValue( "lightfov", "110" )
-			pt:SetKeyValue( "lightcolor", col )
-			pt:SetKeyValue( "spritedisabled", "1" )
-			pt:SetKeyValue( "farz", "256" )
-			pt:Input( "SpotlightTexture", nil, nil, "effects/flashlight/soft" )
-			pt:SetOwner( GetOwner( ent ) )
-			pt:Spawn()
-			timer.Simple( .1, function() if IsValid( pt ) then pt:Remove() end end )
-		end
-		return { damage = false, effects = b }
+		if !bTracer || !b then return { damage = false, effects = b } end
+		local pt = ents.Create "env_projectedtexture"
+		pt:SetPos( tr.StartPos )
+		pt:SetAngles( ( tr.HitPos - tr.StartPos ):GetNormalized():Angle() )
+		pt:SetKeyValue( "lightfov", "110" )
+		pt:SetKeyValue( "lightcolor", table.concat( col, " " ) )
+		pt:SetKeyValue( "spritedisabled", "1" )
+		pt:SetKeyValue( "farz", "256" )
+		pt:Input( "SpotlightTexture", nil, nil, "effects/flashlight/soft" )
+		pt:SetOwner( GetOwner( ent ) )
+		pt:Spawn()
+		timer.Simple( .1, function() if IsValid( pt ) then pt:Remove() end end )
+		net.Start "DynamicLight"
+			net.WriteFloat( col[ 4 ] * .008 ) // Brightness
+			net.WriteFloat( 32 ) // Size
+			net.WriteFloat( 4 ) // Existence length
+			net.WriteVector( tr.HitPos ) // Position
+			net.WriteUInt( col[ 1 ], 8 ) net.WriteUInt( col[ 2 ], 8 ) net.WriteUInt( col[ 3 ], 8 ) // R, G, B
+		net.Broadcast()
+		return { damage = false, effects = true }
 	end
 	return true
 end )

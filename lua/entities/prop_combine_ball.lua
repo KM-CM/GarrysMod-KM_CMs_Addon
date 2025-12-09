@@ -124,9 +124,23 @@ function ENT:Think()
 	return true
 end
 
+local util_Effect = util.Effect
+
 function ENT:PhysicsCollide( tData )
 	local pEntity = tData.HitEntity
 	if !IsValid( pEntity ) then
+		local ed = EffectData()
+		ed:SetOrigin( tData.HitPos )
+		ed:SetNormal( -( tData.HitNormal || tData.OurOldVelocity:GetNormalized() ):GetNormalized() )
+		ed:SetRadius( self:BoundingRadius() )
+		util_Effect( "AR2Explosion", ed )
+		net.Start "DynamicLight"
+			net.WriteFloat( 4 ) // Brightness
+			net.WriteFloat( self:BoundingRadius() * ( self:Health() / self:GetMaxHealth() ) * 8 ) // Size
+			net.WriteFloat( 16 ) // Existence length
+			net.WriteVector( tData.HitPos ) // Position
+			net.WriteUInt( 255, 8 ) net.WriteUInt( 255, 8 ) net.WriteUInt( 255, 8 ) // R, G, B
+		net.Broadcast()
 		self:EmitSound "CombineEnergyBallBounce"
 		return
 	end
@@ -152,6 +166,11 @@ function ENT:PhysicsCollide( tData )
 		else self:EmitSound "CombineEnergyBallDisintegrate" end
 		return
 	else // Otherwise, only deal damage to them, and bounce
+		local ed = EffectData()
+		ed:SetOrigin( tData.HitPos )
+		ed:SetNormal( -( tData.HitNormal || tData.OurOldVelocity:GetNormalized() ):GetNormalized() )
+		ed:SetRadius( self:BoundingRadius() )
+		util_Effect( "AR2Explosion", ed )
 		local dDamage = DamageInfo()
 		dDamage:SetDamage( self:Health() )
 		dDamage:SetAttacker( IsValid( self:GetOwner() ) && self:GetOwner() || self )
