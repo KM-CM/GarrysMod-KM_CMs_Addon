@@ -93,7 +93,7 @@ if SERVER then
 	function SWEP:Think()
 		if !self:GetOwner():KeyDown( IN_ATTACK2 ) || self.flStartTime && ( CurTime() - self.flStartTime ) > 8 then
 			if self.flStartTime && ( CurTime() - self.flStartTime ) > 1 then
-				if self:TakeAmmo( self:GetSecondaryAmmoType(), math.ceil( math.max( 0, ( CurTime() - self.flStartTime ) ^ .5 ) ) ) then
+				if self:TakeAmmo( self:GetSecondaryAmmoType(), math.ceil( math.max( 0, ( CurTime() - self.flStartTime ) ^ .25 ) ) ) then
 					self:EmitSound "CombineEnergyBallShot"
 					local pBall = ents.Create "prop_combine_ball"
 					local pOwner = self:GetOwner()
@@ -102,9 +102,9 @@ if SERVER then
 					pBall:SetPos( bOwner && pOwner:GetShootPos() || ( self:GetPos() + self:OBBCenter() ) )
 					pBall:SetAngles( self:GetAimVector():Angle() )
 					local f = CurTime() - self.flStartTime
-					pBall:SetModelScale( math.Remap( f, 0, 8, .1, 2 ) )
+					pBall:SetModelScale( math.Remap( f, 0, 8, .1, 1 ) )
 					pBall:Spawn()
-					pBall.ROCKET_flSpeed = pBall.ROCKET_flSpeed * math.Remap( f, 0, 8, .25, 8 )
+					pBall.ROCKET_flSpeed = pBall.ROCKET_flSpeed * math.Remap( f, 0, 8, .25, 4 )
 					f = math.Remap( f, 0, 8, .0000005, 1.25 ) ^ 4
 					pBall:SetHealth( pBall:Health() * f )
 					pBall:SetMaxHealth( pBall:GetMaxHealth() * f )
