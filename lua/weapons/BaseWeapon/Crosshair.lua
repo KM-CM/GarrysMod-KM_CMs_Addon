@@ -23,9 +23,10 @@ local surface_GetTextureID = surface.GetTextureID
 local surface_SetDrawColor = surface.SetDrawColor
 local surface_DrawTexturedRectRotated = surface.DrawTexturedRectRotated
 
-local CROSSHAIR_PART_SIZE = ScrH() * .025
+local CROSSHAIR_PART_SIZE = ScrH() * .016
+local CROSSHAIR_PART_SIZE_WIDTH = ScrH() * .004
 local CROSSHAIR_PART_SIZE_SUB = CROSSHAIR_PART_SIZE * .5
-local CROSSHAIR_PART_SIZE_SUB_SUB = CROSSHAIR_PART_SIZE_SUB * .5
+// local CROSSHAIR_PART_SIZE_SUB_SUB = CROSSHAIR_PART_SIZE_SUB * .5
 
 SWEP.CrosshairColorBase = Color( 255, 255, 255 )
 SWEP.CrosshairColorOutLine = Color( 0, 0, 0 )
@@ -59,13 +60,13 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
 		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Top
-		surface_DrawTexturedRectRotated( flX, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 180 )
+		surface_DrawTexturedRectRotated( flX, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 180 )
 		// Bottom
-		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
+		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 0 )
 		// Left
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 270 )
+		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 270 )
 		// Right
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 90 )
+		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 90 )
 		return true
 	end,
 	SubMachineGun = function( MyTable, self )
@@ -77,19 +78,19 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
 		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Bottom
-		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
+		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 0 )
 		// Left
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 270 )
+		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 270 )
 		// Right
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 90 )
+		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 90 )
 		//	// Left top
-		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 225 )
+		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 225 )
 		//	// Left bottom
-		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 315 )
+		//	surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 315 )
 		//	// Right top
-		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 135 )
+		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY - flSpreadVertical - CROSSHAIR_PART_SIZE_SUB_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 135 )
 		//	// Right bottom
-		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, 4, CROSSHAIR_PART_SIZE, 45 )
+		//	surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB_SUB, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 45 )
 		return true
 	end,
 	Pistol = function( MyTable, self )
@@ -101,11 +102,11 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
 		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Bottom
-		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
+		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 0 )
 		// Left
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 270 )
+		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 270 )
 		// Right
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 90 )
+		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 90 )
 		return true
 	end,
 	Revolver = function( MyTable, self )
@@ -117,11 +118,11 @@ __WEAPON_CROSSHAIR_TABLE__ = {
 		surface_SetTexture( surface_GetTextureID "Crosshair" )
 		surface_SetDrawColor( 255, 255, 255, MyTable.flCrosshairAlpha )
 		// Bottom
-		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, 4, CROSSHAIR_PART_SIZE, 0 )
+		surface_DrawTexturedRectRotated( flX, flY + flSpreadVertical + CROSSHAIR_PART_SIZE_SUB, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 0 )
 		// Left
-		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 270 )
+		surface_DrawTexturedRectRotated( flX - flSpreadHorizontal - CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 270 )
 		// Right
-		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, 4, CROSSHAIR_PART_SIZE, 90 )
+		surface_DrawTexturedRectRotated( flX + flSpreadHorizontal + CROSSHAIR_PART_SIZE_SUB, flY, CROSSHAIR_PART_SIZE_WIDTH, CROSSHAIR_PART_SIZE, 90 )
 		return true
 	end
 }
