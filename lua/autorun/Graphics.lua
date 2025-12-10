@@ -79,8 +79,6 @@ local MAX_WATER_BLUR = 3
 local WATER_BLUR_CHANGE_SPEED_TO = .8
 local WATER_BLUR_CHANGE_SPEED_FROM = .2
 
-local VECTOR_HUGE_Z = Vector( 0, 0, 999999 )
-
 include "postprocess/bloom.lua"
 local DrawBloom = DrawBloom
 include "postprocess/color_modify.lua"
@@ -132,16 +130,29 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 			tDrawColorModify[ "$pp_colour_contrast" ] = tDrawColorModify[ "$pp_colour_contrast" ] * math_Remap( flOxygen, f, 0, 1, 0 )
 		end
 	end
-	local tr = util_TraceLine {
-		start = EyePos(),
-		endpos = EyePos() - VECTOR_HUGE_Z,
-		mask = MASK_VISIBLE_AND_NPCS,
-		filter = self
-	}
-	local vColor = ( render_ComputeLighting( tr.HitPos, tr.HitNormal ) + render_ComputeDynamicLighting( tr.HitPos, tr.HitNormal ) ) * 33
+	local vEye, aEye = EyePos(), EyeVector():Angle()
+	local iPasses = 1
+	local vColor = Vector( 0, 0, 0 )
+	for flPitch = -22.5, 22.5, 4.5 do
+		for flYaw = -22.5, 22.5, 4.5 do
+			iPasses = iPasses + 1
+			aEye[ 1 ] = aEye[ 1 ] + flPitch
+			aEye[ 2 ] = aEye[ 2 ] + flYaw
+			local tr = util_TraceLine {
+				start = vEye,
+				endpos = vEye + aEye:Forward() * 999999,
+				mask = MASK_VISIBLE_AND_NPCS,
+				filter = self
+			}
+			vColor = vColor + ( render_ComputeLighting( tr.HitPos, tr.HitNormal ) + render_ComputeDynamicLighting( tr.HitPos, tr.HitNormal ) )
+			aEye[ 1 ] = aEye[ 1 ] - flPitch
+			aEye[ 2 ] = aEye[ 2 ] - flYaw
+		end
+	end
+	vColor = vColor / iPasses
 	local flColor = math_Clamp( VectorSum( vColor ), 0, 1 )
-	local flBloom = math_Approach( self.GP_flBloom || 0, 1 - flColor, FrameTime() )
 	local MyTable = CEntity_GetTable( self )
+	local flBloom = Lerp( math.min( 1, FrameTime() * .5 ), MyTable.GP_flBloom || 0, 1 - flColor )
 	MyTable.GP_flBloom = flBloom
 	if self:WaterLevel() >= 3 then
 		MyTable.GP_flWaterBlur = math_Approach( MyTable.GP_flWaterBlur || 0, 1, WATER_BLUR_CHANGE_SPEED_TO * FrameTime() )
@@ -178,7 +189,16 @@ hook.Add( "RenderScreenspaceEffects", "Graphics", function()
 	tDrawColorModify[ "$pp_colour_mulb" ] = tDrawColorModify[ "$pp_colour_mulb" ] + flFogB * flMultiplier
 	local flTarget = UTIL_IsUnderSkybox() && math.Remap( flColor, 0, 1, 512, 6084 ) || math.Remap( flColor, 0, 1, 512, 3072 )
 	MyTable.GP_FogDistance = math_Approach( MyTable.GP_FogDistance || 0, flTarget, math_max( 64, math_abs( flTarget - ( MyTable.GP_FogDistance || 0 ) ) * .2 ) * FrameTime() )
-	DrawBloom( 0, math_Remap( flBloom, 0, 1, .8, 1.5 ), 10, 10, 5, math_Remap( flBloom, 0, 1, 2, 4 ), 1, 1, 1 )
+	DrawBloom(
+		math_Remap( flBloom, 0, 1, .33, 0 ), math_Remap( flBloom, 0, 1, 1, 2 ),
+		// Setting all three to 1 and then tweaking the other settings
+		// is the way to make the scene actually beautiful, and why
+		// the new versions (since commit 266) are so freakin' beautiful!
+		1, // Size X
+		1, // Size Y
+		1, // Passes
+		math_Remap( flBloom, 0, 1, 1, 2 ), 1, 1, 1
+	)
 	DrawColorModify( tDrawColorModify )
 end )
 
