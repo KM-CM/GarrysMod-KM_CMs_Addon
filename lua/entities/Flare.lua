@@ -16,7 +16,7 @@ if !SERVER then return end
 
 function ENT:GetNPCClass() return self.iClass || -1 end
 ENT.Classify = ENT.GetNPCClass
-function ENT:SetNPCClass() end // Will Automatically Use GetOwner()'s Classify() Instead
+function ENT:SetNPCClass() end // Will automatically use GetOwner()'s Classify() instead
 
 function ENT:Initialize()
 	self:SetModel "models/weapons/w_grenade.mdl"

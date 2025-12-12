@@ -9,14 +9,14 @@ local Vector = Vector
 include "autorun/Director.lua"
 
 function Director_GetThreat( pPlayer, pEntity )
-	if IsValid( pEntity.Enemy ) then return DIRECTOR_THREAT_COMBAT end
+	if IsValid( pEntity.Enemy ) then return DIRECTOR_THREAT_HOLD_FIRE end
 	local f = pEntity.GetEnemy
-	if f && IsValid( f( pEntity ) ) then return DIRECTOR_THREAT_COMBAT end
+	if f && IsValid( f( pEntity ) ) then return DIRECTOR_THREAT_HOLD_FIRE end
 	local f = pEntity.GetNPCState
 	if f then
 		f = f( pEntity )
 		if f == NPC_STATE_COMBAT then
-			return DIRECTOR_THREAT_COMBAT
+			return DIRECTOR_THREAT_HOLD_FIRE
 		elseif f == NPC_STATE_ALERT then
 			return DIRECTOR_THREAT_ALERT
 		else
@@ -119,6 +119,7 @@ hook.Add( "Tick", "Director", function()
 			end
 			PlyTable.DR_flNextUpdate = RealTime() + math.Rand( .1, .2 )
 		end
+		local tSpotted = PlyTable.DR_tSpotted || {}
 		local tNewMusicEntities = {}
 		// We're doin' shit to them, so add it!
 		local flAllSuppression, flAllHealth = 0, 0
@@ -126,28 +127,29 @@ hook.Add( "Tick", "Director", function()
 			if !IsValid( pEntity ) then continue end
 			local ETheirThreat = Director_GetThreat( ply, pEntity )
 			if ETheirThreat <= DIRECTOR_THREAT_NULL then continue end
-			local vTarget = pEntity:GetPos() + pEntity:OBBCenter()
-			local vDelta = vTarget - vEye
-			local tr = util.TraceLine {
-				start = vEye + vDelta:GetNormalized() * math.min( vDelta:Length(), ply:BoundingRadius() ),
-				endpos = vTarget,
-				filter = { ply, pEntity },
-				mask = MASK_SHOT_HULL
-			}
-			if tr.Hit && tr.Fraction <= .66 then continue end
+			// TODO: Improve this, dammit!
+			if pEntity:NearestPoint( vEye ):DistToSqr( vEye ) > 9437184/*3072*/ then continue end
 			flAllSuppression = flAllSuppression + ( pEntity.GAME_flSuppression || 0 )
 			local f = pEntity:Health() * 6
 			if f > 0 then flAllHealth = flAllHealth + f end
-			if ETheirThreat > EThreat then
-				EThreat = ETheirThreat
-				tNewMusicEntities[ pEntity ] = true
-			end
+			tNewMusicEntities[ pEntity ] = true
+			f = tSpotted[ pEntity ]
+			if f then if CurTime() > f then EThreat = ETheirThreat end
+			else tSpotted[ pEntity ] = CurTime() + .5 end
 		end
+		local tNewSpotted = {}
+		for pEntity, flTime in pairs( PlyTable.DR_tSpotted ) do
+			if !IsValid( pEntity ) then continue end
+			if !tNewMusicEntities[ pEntity ] then continue end
+			tNewSpotted[ pEntity ] = flTime
+		end
+		PlyTable.DR_tSpotted = tNewSpotted
 		local f = flAllSuppression / flAllHealth
 		if f != f then f = 0 end // NaN
 		flIntensity = flIntensity + f
 		PlyTable.DR_tMusicEntities = tNewMusicEntities
-		if EThreat == DIRECTOR_THREAT_COMBAT then Achievement_Miscellaneous( ply, "Combat" ) end
+		if EThreat == DIRECTOR_THREAT_HOLD_FIRE || EThreat == DIRECTOR_THREAT_COMBAT then Achievement_Miscellaneous( ply, "Combat" ) end
+		if PlyTable.DR_EThreat == DIRECTOR_THREAT_COMBAT && EThreat == DIRECTOR_THREAT_HOLD_FIRE then EThreat = DIRECTOR_THREAT_COMBAT end
 		ply.DR_EThreat = EThreat
 		ply:SendLua( "DIRECTOR_THREAT=" .. tostring( EThreat ) )
 		ply:SendLua( "DIRECTOR_MUSIC_INTENSITY=" .. tostring( flIntensity ) )

@@ -56,7 +56,8 @@ Actor_RegisterSchedule( "Idle", function( self, sched )
 			local area, vec = self:GetLastKnownArea() || navmesh.GetNearestNavArea( self:GetPos() )
 			if !area then
 				sched.flStandTime = CurTime() + math.Rand( self.flIdleStandTimeMin, self.flIdleStandTimeMax )
-				self.vDesAim = nil
+				self.vaAimTargetBody = nil
+				self.vaAimTargetPose = nil
 				sched.Path = nil
 				sched.vGoal = nil
 				return
@@ -81,14 +82,15 @@ Actor_RegisterSchedule( "Idle", function( self, sched )
 		end
 		if !sched.Path then sched.Path = Path "Follow" end
 		local goal = sched.Path:GetCurrentGoal()
-		if goal then self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized() end
+		if goal then self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle() self.vaAimTargetPose = self.vaAimTargetBody end
 		self:ComputePath( sched.Path, sched.vGoal )
 		self:MoveAlongPath( sched.Path, self.flWalkSpeed )
 		if math.abs( sched.Path:GetCursorPosition() - sched.Path:GetLength() ) <= self.flPathTolerance then
 			sched.flStandTime = CurTime() + math.Rand( self.flIdleStandTimeMin, self.flIdleStandTimeMax )
-			self.vDesAim = nil
+			self.vaAimTargetBody = nil
+			self.vaAimTargetPose = nil
 			sched.Path = nil
 			sched.vGoal = nil
 		end
-	else self.vDesAim = nil sched.Path = nil sched.vGoal = nil self:Stand() end
+	else self.vaAimTargetBody = nil self.vaAimTargetPose = nil sched.Path = nil sched.vGoal = nil self:Stand() end
 end )

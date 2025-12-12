@@ -77,7 +77,7 @@ function HasMeleeAttack( ent )
 	end
 end
 
-// Intentionally Generates UUIDs Instead of Truly Unique Numbers for Extremely Rare Funni Bugs
+// Intentionally generates UUIDs instead of truly unique numbers for extremely rare funni bugs
 function EntityUniqueIdentifier( ent )
 	if ent.__UNIQUE_IDENTIFIER__ then return ent.__UNIQUE_IDENTIFIER__ end
 	local t = {}
@@ -569,8 +569,8 @@ hook.Add( "StartCommand", "GameImprovements", function( ply, cmd )
 		ply:SetNW2Bool( "CTRL_bSprinting", false )
 		ply:SetCrouchedWalkSpeed( 1 )
 	else
-		local bGroundCrouchingAndNotSliding = bGround && ply:Crouching() && !ply:GetNW2Bool "CTRL_bSliding"
-		if bGroundCrouchingAndNotSliding || cmd:KeyDown( IN_ZOOM ) || Either( v && v.bCanFly, true, bGround ) && !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil cmd:RemoveKey( IN_SPEED ) end
+		local bGroundCrouchingAndNotSliding = ply:Crouching() && !ply:GetNW2Bool "CTRL_bSliding"
+		if bGroundCrouchingAndNotSliding || cmd:KeyDown( IN_ZOOM ) || !( cmd:KeyDown( IN_FORWARD ) || cmd:KeyDown( IN_BACK ) || cmd:KeyDown( IN_MOVELEFT ) || cmd:KeyDown( IN_MOVERIGHT ) ) then ply.CTRL_bHeldSprint = nil cmd:RemoveKey( IN_SPEED ) end
 		if !bGroundCrouchingAndNotSliding && cmd:KeyDown( IN_SPEED ) || ply.CTRL_bHeldSprint then
 			ply.CTRL_bHeldSprint = true
 			cmd:AddKey( IN_SPEED )
@@ -1036,6 +1036,37 @@ hook.Add( "Move", "GameImprovements", function( ply, mv )
 	end
 end )
 
+NOT_A_VOICELINE = NOT_A_VOICELINE || {}
+NOT_A_VOICELINE[ "npc/antlion_guard/growl_idle.wav" ] = true
+NOT_A_VOICELINE[ "npc/antlion_guard/growl_high.wav" ] = true
+NOT_A_VOICELINE[ "npc/antlion_guard/confused1.wav" ] = true
+NOT_A_VOICELINE[ "npc/antlion/fly1.wav" ] = true
+NOT_A_VOICELINE[ "npc/attack_helicopter/aheli_rotor_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/attack_helicopter/aheli_wash_loop3.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/dropship_engine_near_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/dropship_engine_distant_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/dropship_dropping_pod_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/dropship_onground_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/engine_rotor_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/engine_whine_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/combine_gunship/gunship_engine_loop3.wav" ] = true
+NOT_A_VOICELINE[ "AirRaidSirenOscillatorLoop.wav" ] = true
+NOT_A_VOICELINE[ "npc/stalker/laser_burn.wav" ] = true
+NOT_A_VOICELINE[ "npc/stalker/laser_flesh.wav" ] = true
+NOT_A_VOICELINE[ "npc/fast_zombie/breathe_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/fast_zombie/gurgle_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/manhack/mh_blade_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/manhack/mh_engine_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/manhack/mh_engine_loop2.wav" ] = true
+NOT_A_VOICELINE[ "npc/roller/mine/combine_mine_active_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/roller/mine/rmine_movefast_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/roller/mine/rmine_moveslow_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/roller/mine/rmine_seek_loop2.wav" ] = true
+NOT_A_VOICELINE[ "npc/zombie/moan_loop1.wav" ] = true
+NOT_A_VOICELINE[ "npc/zombie/moan_loop2.wav" ] = true
+NOT_A_VOICELINE[ "npc/zombie/moan_loop3.wav" ] = true
+NOT_A_VOICELINE[ "npc/zombie/moan_loop4.wav" ] = true
+
 local player_Iterator = player.Iterator
 hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	if _Comp then return end
@@ -1064,9 +1095,27 @@ hook.Add( "EntityEmitSound", "GameImprovements", function( Data, _Comp )
 	for _, ply in player_Iterator() do
 		if ply:EyePos():DistToSqr( vPos ) <= dts then
 			ply:SendLua( "CaptionSound(" .. sColor .. "," .. sCaption .. ")" )
-			// Not `dent`, as we only want it to work for voice lines
-			if ply.DR_EThreat < DIRECTOR_THREAT_COMBAT && Director_GetThreat( ply, ent ) >= DIRECTOR_THREAT_COMBAT then
+			if NOT_A_VOICELINE[ Data.SoundName ] then continue end
+			if Director_GetThreat( ply, ent ) < DIRECTOR_THREAT_HOLD_FIRE || Director_GetThreat( ply, dent ) < DIRECTOR_THREAT_HOLD_FIRE then continue end
+			if RealTime() > ( ply.DR_flVoWait || 0 ) && ply.DR_EThreat == DIRECTOR_THREAT_HOLD_FIRE || RealTime() <= ( ply.DR_flVoDangerousWait || math.huge ) then
+				local f = ply.DR_flVoWait
+				if !f || RealTime() > ( f + DIRECTOR_MUSIC_VO_WAIT * 2 ) then
+					local t = ply.DR_tMusicEntities
+					if t then t[ dent ] = true end
+					ply.DR_EThreat = DIRECTOR_THREAT_COMBAT
+					ply:SendLua( "Director_VoiceLineHookToCombat(\"" .. Data.SoundName .. "\")" )
+					ply.DR_flVoDangerousWait = RealTime() + math.min( SoundDuration( Data.SoundName ), 8 )
+				end
+				continue
+			end
+			// If it's a voice line, wait until it is over
+			if ply.DR_EThreat < DIRECTOR_THREAT_HOLD_FIRE || RealTime() <= ( ply.DR_flVoWait || 0 ) then
+				local t = ply.DR_tMusicEntities
+				if t then t[ dent ] = true end
+				ply.DR_EThreat = DIRECTOR_THREAT_HOLD_FIRE
 				ply:SendLua( "Director_VoiceLineHook(\"" .. Data.SoundName .. "\")" )
+				ply.DR_flVoWait = RealTime() + math.min( SoundDuration( Data.SoundName ), 8 ) + DIRECTOR_MUSIC_VO_WAIT
+				continue
 			end
 		end
 	end

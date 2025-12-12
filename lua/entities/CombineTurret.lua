@@ -86,13 +86,13 @@ function ENT:Behaviour()
 				filter = self, pEnemy,
 				mask = MASK_SHOT_HULL
 			} ).Fraction <= self.flSuppressionTraceFraction then continue end
-			self.vDesAim = d
+			self.vaAimTargetPose = v
 			if !self:CanAttackHelper( v ) then return end
 			self:RangeAttack()
 			return
 		end
-		self.vDesAim = self:GetForward()
-	else self.vDesAim = self:GetForward() end
+		self.vaAimTargetPose = self:GetAngles()
+	else self.vaAimTargetPose = self:GetAngles() end
 end
 
 function ENT:Initialize()

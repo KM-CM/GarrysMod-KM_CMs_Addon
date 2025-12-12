@@ -55,8 +55,7 @@ function ENT:ComputePath( Path, vGoal, Weighter )
 	end )
 end
 
-// How Far Do We have to Move Along The Path to be Able to Suppress Anyone? Can Return `nil`
-// TODO: Return The Nearest Ally That can Suppress The Enemy if He is Farther Along The Path Than The Suppression Vector Along It
+// How far do We have to move along the path to be able to suppress anyone? Can return `nil`
 
 function ENT:FindPathBattleLine( Path, tEnemies, flTolerance )
 	flTolerance = flTolerance || 256
@@ -245,7 +244,7 @@ function ENT:ComputeVehiclePath( Path, vGoal )
 		local cost = dist + from:GetCostSoFar()
 		local d = from:ComputeAdjacentConnectionHeightChange( area )
 		if ( bDoCheck && bAllowWater && bUnderwater && from:IsUnderwater() || !bDoCheck ) && ( d > flStepHeight ||
-		// Dont Jump Down into Water as It Usually Results in The Boat Getting Flipped Over
+		// Don't jump down into water as it usually results in the boat getting flipped over
 		bAllowWater && area:IsUnderwater() && d < flStepHeightNeg ) then return -1 end
 		return cost
 	end )

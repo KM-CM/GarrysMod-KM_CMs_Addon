@@ -1,11 +1,9 @@
-// Please Never Try to Access These Directly, or Else I will Put You in a Maid Dress or Some Shit
-// ( I Dont Know How to Make Threats )
 ENT.iDefaultClass = CLASS_NONE
 // ENT.iClass = nil
 
-// The Reason We Dont Do ENT.__ACTOR_TABLE_BY_CLASS__ = {} is Because
-// Garry's Mod Lua Internally Does Magic That Makes The Table NOT Mutable.
-// Usually, This is Extremely Useful, But Here, It's a Very Small Problem.
+// The reason we don't do ENT.__ACTOR_TABLE_BY_CLASS__ = {} is because
+// Garry's Mod Lua internally does magic that makes the table NOT mutable.
+// Usually, this is extremely useful, but here, it's a very small problem.
 // local __ACTOR_TABLE_BY_CLASS__ = {}
 __ACTOR_TABLE_BY_CLASS__ = __ACTOR_TABLE_BY_CLASS__ || {}
 local __ACTOR_TABLE_BY_CLASS_LOCAL__ = __ACTOR_TABLE_BY_CLASS__

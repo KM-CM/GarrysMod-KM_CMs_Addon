@@ -15,20 +15,24 @@ Actor_RegisterSchedule( "HoldFireCheckEnemy", function( self, sched )
 		self.pLastEnemyPath = pEnemyPath
 		sched.pEnemyPath = pEnemyPath
 	end
-	// self:ComputeFlankPath( pEnemyPath, pEnemy )
 	local v = pEnemy:GetPos()
 	self:ComputePath( pEnemyPath, v )
 	v = v + pEnemy:OBBCenter()
 	local b = self:Visible( pEnemy )
 	if b && self:GetPos():Distance( v ) <= self.flCoverMoveDistance then
+		// TODO: Replace all of this bullshit with two checks:
+		// first off, sweep in front of us, then, behind us
+		// (yes, I straight up stole this idea from Splinter Cell: Blacklist)
 		local a = ( v - self:GetShootPos() ):Angle()
 		a[ 1 ] = math.sin( RealTime() * 2 ) * 22.5
 		a[ 2 ] = a[ 2 ] + math.sin( RealTime() * .25 ) * 360
-		self.vDesAim = a:Forward()
-		if !sched.flTime then sched.flTime = CurTime() + 4 end
+		self.vaAimTargetBody = a
+		self.vaAimTargetPose = self.vaAimTargetBody
+		if !sched.flTime then sched.flTime = CurTime() + 8 end
 		if CurTime() > sched.flTime then self:ReportPositionAsClear( pEnemy:GetPos() + pEnemy:OBBCenter() ) end
 	else
-		self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
+		self.vaAimTargetBody = v
+		self.vaAimTargetPose = self.vaAimTargetBody
 		self:MoveAlongPath( pEnemyPath, b && self.flWalkSpeed || self.flRunSpeed, 1 )
 	end
 end )

@@ -7,13 +7,14 @@ function Director_Music( sName, sPath )
 		name = sName,
 		channel = CHAN_STATIC,
 		level = 0,
-		sound = sPath
+		sound = "#" .. sPath
 	}
 end
 
 DIRECTOR_MUSIC_TABLE = DIRECTOR_MUSIC_TABLE || {
 	[ DIRECTOR_THREAT_HEAT ] = {},
 	[ DIRECTOR_THREAT_ALERT ] = {},
+	[ DIRECTOR_THREAT_HOLD_FIRE ] = {},
 	[ DIRECTOR_THREAT_COMBAT ] = {},
 }
 
@@ -32,12 +33,13 @@ function Director_Music_Play( self, Index, sName, flVolume, flPitch )
 	local pSound = CreateSound( LocalPlayer(), sName )
 	flVolume = flVolume || 1
 	flPitch = flPitch || 100
-	pSound:PlayEx( flVolume * self.m_flVolume, flPitch )
+	pSound:PlayEx( math.max( SOUND_PATCH_ABSOLUTE_MINIMUM, flVolume * self.m_flVolume ), flPitch )
 	self.tHandles[ Index ] = { pSound, flVolume, flPitch, RealTime() + SoundDuration( sound.GetProperties( sName ).sound ) - engine.TickInterval() }
 end
 
 Director_Music( "MUS_Transition_Instant", "Music/Default/Transition_Instant.wav" )
 
+// We have switched to HOLD_FIRE... do we even need these anymore?
 DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT || {}
 DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT = DIRECTOR_MUSIC_TRANSITIONS_FROM_COMBAT || {}
 DIRECTOR_MUSIC_TRANSITIONS_TO_COMBAT.Default_Instant = { Execute = function( self )
@@ -71,7 +73,7 @@ function Director_Music_UpdateInternal( self, ... )
 		if RealTime() > tData[ 4 ] then tData[ 1 ]:Stop() continue end
 		tNewHandles[ Index ] = tData
 		local pSound = tData[ 1 ]
-		pSound:ChangeVolume( math.max( .05, flVolume * tData[ 2 ] ) )
+		pSound:ChangeVolume( math.max( SOUND_PATCH_ABSOLUTE_MINIMUM, flVolume * tData[ 2 ] ) )
 		pSound:ChangePitch( tData[ 3 ] )
 	end
 	self.tHandles = tNewHandles
@@ -90,8 +92,17 @@ function Director_VoiceLineHook(
 		flDuration ) // sName - This is actually a String of the sound's name ( Data.SoundName )
 	flDuration = SoundDuration( flDuration )
 	if !flDuration then return end
-	DIRECTOR_MUSIC_VO_TIME = RealTime() + math.min( flDuration, 8 ) + 1
+	DIRECTOR_MUSIC_VO_TIME = RealTime() + math.min( flDuration, 8 ) + DIRECTOR_MUSIC_VO_WAIT
 	DIRECTOR_MUSIC_IN_VO = true
+	DIRECTOR_MUSIC_IN_VO_HF = nil
+end
+
+function Director_VoiceLineHookToCombat( flDuration )
+	flDuration = SoundDuration( flDuration )
+	if !flDuration then return end
+	DIRECTOR_MUSIC_VO_TIME = RealTime() + math.min( flDuration, 8 )
+	DIRECTOR_MUSIC_IN_VO = true
+	DIRECTOR_MUSIC_IN_VO_HF = true
 end
 
 local LocalPlayer = LocalPlayer
@@ -116,32 +127,86 @@ hook.Add( "RenderScreenspaceEffects", "Director", function()
 	end
 	if DIRECTOR_MUSIC_IN_VO then
 		DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_THREAT_COMBAT
-		if RealTime() > DIRECTOR_MUSIC_VO_TIME then
-			DIRECTOR_MUSIC_IN_VO = nil
-			DIRECTOR_TRANSITION = nil
-			for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
-				local pContainer = DIRECTOR_MUSIC[ ELayer ]
-				if pContainer then
-					Director_Music_UpdateInternal( pContainer )
-					if ELayer == DIRECTOR_THREAT_COMBAT then
-						pContainer.m_flVolume = 1
-					else pContainer.m_flVolume = 0 end
+		if DIRECTOR_MUSIC_IN_VO_HF then
+			DIRECTOR_MUSIC_WAS_HOLD_FIRE = true
+			if RealTime() <= DIRECTOR_MUSIC_VO_TIME then
+				for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+					local pContainer = DIRECTOR_MUSIC[ ELayer ]
+					if pContainer then
+						Director_Music_UpdateInternal( pContainer )
+						if ELayer == DIRECTOR_THREAT_HOLD_FIRE then
+							pContainer.m_flVolume = 1
+						else pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() ) end
+					end
 				end
-			end
+			else DIRECTOR_MUSIC_IN_VO = nil end
 		else
-			if DIRECTOR_TRANSITION then
-				if DIRECTOR_TRANSITION.m_flVolume <= 0 then
-					DIRECTOR_TRANSITION = nil
-				else
-					DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
+			if RealTime() > DIRECTOR_MUSIC_VO_TIME then
+				DIRECTOR_MUSIC_IN_VO = nil
+				DIRECTOR_TRANSITION = nil
+				for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+					local pContainer = DIRECTOR_MUSIC[ ELayer ]
+					if pContainer then
+						Director_Music_UpdateInternal( pContainer )
+						if ELayer == DIRECTOR_THREAT_HOLD_FIRE then
+							pContainer.m_flVolume = 1
+						else pContainer.m_flVolume = 0 end
+					end
+				end
+			else
+				if DIRECTOR_TRANSITION then
+					if DIRECTOR_TRANSITION.m_flVolume <= 0 then
+						DIRECTOR_TRANSITION = nil
+					else
+						DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
+					end
+				end
+				for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+					local pContainer = DIRECTOR_MUSIC[ ELayer ]
+					if pContainer then
+						Director_Music_UpdateInternal( pContainer )
+						pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() )
+					end
 				end
 			end
-			for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
-				local pContainer = DIRECTOR_MUSIC[ ELayer ]
-				if pContainer then
-					Director_Music_UpdateInternal( pContainer )
-					pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() )
-				end
+		end
+		return
+	end
+	if DIRECTOR_THREAT == DIRECTOR_THREAT_HOLD_FIRE then
+		for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+			local pContainer = DIRECTOR_MUSIC[ ELayer ]
+			if pContainer then
+				if ELayer == DIRECTOR_THREAT then
+					pContainer.m_flVolume = 1
+				else pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() ) end
+				Director_Music_UpdateInternal( pContainer )
+			end
+		end
+		DIRECTOR_MUSIC_WAS_HOLD_FIRE = true
+		if DIRECTOR_TRANSITION then
+			if DIRECTOR_TRANSITION.m_flVolume <= 0 then
+				DIRECTOR_TRANSITION = nil
+			else
+				DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
+			end
+		end
+	elseif DIRECTOR_MUSIC_WAS_HOLD_FIRE then
+		for _, ELayer in ipairs( DIRECTOR_LAYER_TABLE ) do
+			local pContainer = DIRECTOR_MUSIC[ ELayer ]
+			if pContainer then
+				if ELayer == DIRECTOR_THREAT then
+					if pContainer.m_flVolume == 1 then DIRECTOR_MUSIC_WAS_HOLD_FIRE = nil end
+					pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 1, FrameTime() )
+				else pContainer.m_flVolume = math.Approach( pContainer.m_flVolume, 0, FrameTime() ) end
+				Director_Music_UpdateInternal( pContainer )
+			end
+		end
+		DIRECTOR_MUSIC_LAST_THREAT = DIRECTOR_THREAT_COMBAT
+		if DIRECTOR_TRANSITION then
+			if DIRECTOR_TRANSITION.m_flVolume <= 0 then
+				DIRECTOR_TRANSITION = nil
+			else
+				DIRECTOR_TRANSITION.m_flVolume = math.Approach( DIRECTOR_TRANSITION.m_flVolume, 0, FrameTime() )
 			end
 		end
 		return

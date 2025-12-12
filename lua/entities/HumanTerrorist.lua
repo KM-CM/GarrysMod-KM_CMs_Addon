@@ -9,7 +9,7 @@ list.Set( "NPC", "HumanTerrorist", {
 	Name = "#HumanTerrorist",
 	Class = "HumanTerrorist",
 	Category = "Humans",
-	Weapons = { // My Humble Terrorist WeaponSet!
+	Weapons = { // My humble terrorist WeaponSet (yes that term is a C&C Generals: ZH reference)!
 		"weapon_smg1",
 		"weapon_shotgun",
 		"weapon_357",

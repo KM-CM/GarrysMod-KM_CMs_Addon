@@ -39,6 +39,7 @@ Actor_RegisterSchedule( "NavigationTesterHuman", function( self, sched )
 	self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
 	local goal = pPath:GetCurrentGoal()
 	if goal then
-		self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
+		self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle()
+		self.vaAimTargetPose = self.vaAimTargetBody
 	end
 end )

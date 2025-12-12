@@ -2,7 +2,7 @@ AddCSLuaFile()
 DEFINE_BASECLASS "BaseActor"
 
 scripted_ents.Register( ENT, "CombineHunter" )
-// scripted_ents.Alias( "npc_hunter", "CombineHunter" )
+scripted_ents.Alias( "npc_hunter", "CombineHunter" )
 
 // https://github.com/KM-CM/GarrysMod-KM_CMs_Addon_CombineHunter
 if file.Exists( "sound/CombineHunter/Fire.wav", "GAME" ) then
@@ -198,14 +198,14 @@ if file.Exists( "sound/CombineHunter/Fire.wav", "GAME" ) then
 	
 	sound.Add {
 		name = "CombineHunterFire",
-		channel = CHAN_STATIC,
+		channel = CHAN_WEAPON,
 		level = 150,
 		pitch = { 98, 104 },
 		sound = "^CombineHunter/Fire.wav"
 	}
 	sound.Add {
 		name = "NPC_Hunter.FlechetteShoot",
-		channel = CHAN_STATIC,
+		channel = CHAN_WEAPON,
 		level = 150,
 		pitch = { 98, 104 },
 		sound = "^CombineHunter/Fire.wav"
@@ -336,4 +336,3 @@ function ENT:OnKilled( d )
 	if BaseClass.OnKilled( self, d ) then return end
 	self:BecomeRagdoll( d )
 end
-

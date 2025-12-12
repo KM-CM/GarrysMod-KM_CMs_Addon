@@ -29,7 +29,8 @@ Actor_RegisterSchedule( "CombatFormationMove", function( self, sched )
 	f = f * f
 	if self:GetPos():DistToSqr( vec ) <= f then
 		self:Stand( 1 )
-		self.vDesAim = dir
+		self.vaAimTargetBody = Angle( dir )
+		self.vaAimTargetPose = self.vaAimTargetBody
 		if !sched.bDialogue then
 			self:DLG_CombatFormationReady()
 			sched.bDialogue = true
@@ -38,8 +39,9 @@ Actor_RegisterSchedule( "CombatFormationMove", function( self, sched )
 	else
 		local goal = sched.Path:GetCurrentGoal()
 		if goal then
-			self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-			self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+			self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle()
+			self.vaAimTargetPose = self.vaAimTargetBody
+			self:ModifyMoveAimVector( self.vaAimTargetBody, self.flTopSpeed, 1 )
 		end
 		self:MoveAlongPath( sched.Path, self.flTopSpeed, 1 )
 		sched.bReached = nil

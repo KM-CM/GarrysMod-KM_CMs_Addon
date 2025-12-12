@@ -12,8 +12,8 @@ local CurTime = CurTime
 function ENT:DLG_MeleeReachable( pEnemy ) end
 function ENT:DLG_MeleeUnReachable( pEnemy ) end
 
-local PLANT_TIME_MINIMUM = 2
-local PLANT_TIME_MAXIMUM = 4
+local PLANT_TIME_MINIMUM = 1
+local PLANT_TIME_MAXIMUM = 2
 
 function ENT:DLG_MaintainFire()
 	// TODO: Find someone else to shoot, not us
@@ -34,6 +34,10 @@ ENT.flCoverMoveDistance = 768
 include "HoldFireCheckEnemy.lua"
 
 local math_Rand = math.Rand
+
+ENT.flMaintainFireTime = 0
+ENT.flMaintainFireTimeMin = 2
+ENT.flMaintainFireTimeMax = 6
 
 Actor_RegisterSchedule( "Combat", function( self, sched )
 	local tEnemies = sched.tEnemies || self.tEnemies
@@ -100,9 +104,7 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 									endpos = vTarget,
 									mask = MASK_SHOT_HULL,
 									filter = tWholeFilter
-								} ).Hit || bCheckDistance && vPoint:DistToSqr( vTarget ) > flDistSqr then
-									continue
-								end
+								} ).Hit || bCheckDistance && vPoint:DistToSqr( vTarget ) > flDistSqr then continue end
 								return vPoint
 							end
 						end
@@ -114,7 +116,8 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 					end
 					local vLeftTarget = fDo( self:GetShootPos(), tAngles )
 					if vLeftTarget then
-						self.vDesAim = ( vLeftTarget - self:GetShootPos() ):GetNormalized()
+						self.vaAimTargetBody = vLeftTarget
+						self.vaAimTargetPose = self.vaAimTargetBody
 						if self.bPlanted then
 							local b
 							local tAllies = self:GetAlliesByClass()
@@ -135,18 +138,33 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 								end
 							end
 							if bAtLeastOneAlly && bMaintainFire then
-								self:DLG_MaintainFire()
+								if CurTime() > self.flMaintainFireTime then
+									self:DLG_MaintainFire()
+									self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax )
+								end
 								return
-							end
+							else self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax ) end
 						end
 						self:MoveAlongPath( pPath, self.flRunSpeed, 1 )
 					else
+						self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax )
 						self:MoveAlongPath( pPath, self.flTopSpeed, 1 )
 						local pGoal = sched.pEnemyPath:GetCurrentGoal()
-						if pGoal then self.vDesAim = ( pGoal.pos - self:GetPos() ):GetNormalized() end
+						if pGoal then
+							self.vaAimTargetBody = ( pGoal.pos - self:GetPos() ):Angle()
+							self.vaAimTargetPose = self.vaAimTargetBody
+						end
 					end
 				else
-					self.vDesAim = ( enemy:GetPos() + enemy:OBBCenter() - self:GetShootPos() ):GetNormalized()
+					self.vaAimTargetBody = enemy:GetPos() + enemy:OBBCenter()
+					// TODO!!!
+					//	self.vaAimTargetBody = util_TraceLine( {
+					//		start = self:GetShootPos(),
+					//		endpos = enemy:GetPos() + enemy:OBBCenter(),
+					//		mask = MASK_SHOT_HULL,
+					//		filter = IsValid( trueenemy ) && { self, enemy, trueenemy } || { self, enemy }
+					//	} ).Hit && ( enemy:GetPos() + enemy:OBBCenter() ) || x
+					self.vaAimTargetPose = self.vaAimTargetBody
 					if self.bPlanted then
 						local b
 						local tAllies = self:GetAlliesByClass()
@@ -167,13 +185,17 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 							end
 						end
 						if bAtLeastOneAlly && bMaintainFire then
-							self:DLG_MaintainFire()
+							if CurTime() > self.flMaintainFireTime then
+								self:DLG_MaintainFire()
+								self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax )
+							end
 							return
-						end
-					end
+						else self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax ) end
+					else self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax ) end
 					self:MoveAlongPath( pPath, self.flRunSpeed, 1 )
 				end
 			else
+				self.flMaintainFireTime = CurTime() + math.Rand( self.flMaintainFireTimeMin, self.flMaintainFireTimeMax )
 				local pPath = sched.pEnemyPath
 				if !pPath then pPath = Path "Follow" sched.pEnemyPath = pPath end
 				self:ComputeFlankPath( pPath, enemy )
@@ -248,7 +270,10 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 						end
 					else sched.bMoving = true end
 				else
-					self.vDesAim = ( enemy:GetPos() + enemy:OBBCenter() - self:GetShootPos() ):GetNormalized()
+					// TODO!!!
+					//	self.vaAimTargetBody = SOME_FUNCTION()
+					self.vaAimTargetBody = enemy:GetPos() + enemy:OBBCenter()
+					self.vaAimTargetPose = self.vaAimTargetBody
 					if self.bPlanted then
 						local b
 						local tAllies = self:GetAlliesByClass()
@@ -277,7 +302,8 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 			if self:Visible( enemy ) then
 				if math.random( 10000 * ( self.flMeleeChargeTauntMultiplier || 1 ) * FrameTime() ) == 1 then self:DLG_MeleeTaunt() return end
 				local vTarget, vShoot = enemy:GetPos() + enemy:OBBCenter(), self:GetShootPos()
-				self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+				self.vaAimTargetBody = vTarget
+				self.vaAimTargetPose = vTarget
 				local d = self.GAME_flReach || 64
 				local wep = self.Weapon
 				if IsValid( wep ) then d = d + wep.Melee_flRangeAdd || 0 end
@@ -295,7 +321,10 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 			else
 				local goal = pPath:GetCurrentGoal()
 				local v = self:GetPos()
-				if goal then self.vDesAim = ( goal.pos - v ):GetNormalized() end
+				if goal then
+					self.vaAimTargetBody = ( goal.pos - v ):Angle()
+					self.vaAimTargetPose = self.vaAimTargetBody
+				end
 			end
 		else self:SetSchedule "TakeCover" end
 		return
@@ -461,7 +490,8 @@ Actor_RegisterSchedule( "Combat", function( self, sched )
 			endpos = v + d * self.vHullMaxs[ 1 ] * COVER_BOUND_SIZE,
 			filter = self
 		} ).Hit && 0 || 1 )
-		self.vDesAim = d
+		self.vaAimTargetBody = d:Angle()
+		self.vaAimTargetPose = self.vaAimTargetBody
 		if self:CanExpose() then
 			if CurTime() > ( self.flSuppressed || 0 ) then
 				local flAlarm, vPos, pAlarm = math.huge, self:GetShootPos(), NULL // NULL because ent.pAlarm ( if nil ) == pAlarm ( which is nil )

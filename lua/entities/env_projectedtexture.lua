@@ -7,23 +7,23 @@ ENT.PrintName = "#env_projectedtexture"
 function ENT:UpdateTransmitState() return TRANSMIT_ALWAYS end
 
 function ENT:SetupDataTables()
-	// Use 0-1 Everywhere EXCEPT `lightcolor`! Internally NOT stored as a 0-255 integer!
+	// Use 0-1 everywhere EXCEPT `lightcolor`! Internally NOT stored as a 0-255 integer!
 	//In `lightcolor`, this is remapped from [0,255] to [0,1]!
 	self:NetworkVar( "Float", 0, "Brightness", { KeyName = "raw.brightness" } )
 	// Sprite size if `SpriteDisabled` isn't on
 	self:NetworkVar( "Float", 1, "SpriteSize", { KeyName = "raw.spritesize" } )
-	// Used by `Shadows`, mode 1: the Distance to The Trace"s `HitPos`
+	// Used by `Shadows`, mode 1: the distance to the trace's `HitPos`
 	self:NetworkVar( "Float", 2, "TrueDistance", { KeyName = "raw.truedistance" } )
-	// Doesnt Spawn a Sprite
+	// Doesn't spawn a sprite
 	self:NetworkVar( "Bool", 1, "SpriteDisabled", { KeyName = "raw.spritedisabled" } )
 	/*
-	0: Use Splinter Cell: Blacklist ( Modified Unreal Engine 2 ) Inspired Shadows ( Recommended )
-	1: Use EXTREMELY EXPENSIVE Shadows Drawn by Vulcan ( Doesnt Render AT ALL on Weak Platforms! )
+	0: Use Splinter Cell: Blacklist ( modified Unreal Engine 2 ) inspired shadows ( recommended )
+	1: Use EXTREMELY EXPENSIVE shadows drawn by Vulcan ( doesn't render AT ALL on weak platforms! )
 	*/
 	self:NetworkVar( "Bool", 2, "Shadows", { KeyName = "raw.shadows" } )
-	// The Texture of The Light
+	// The texture of the light
 	self:NetworkVar( "String", 0 ,"Texture", { KeyName = "raw.texture" } )
-	// The Light Color
+	// The light color
 	self:NetworkVar( "Vector", 0 ,"LightColor", { KeyName = "raw.lightcolor" } )
 	// Minimum distance. Clamped if less than 10.
 	self:NetworkVar( "Float", 3, "MinDistance", { KeyName = "raw.mindistance" } )

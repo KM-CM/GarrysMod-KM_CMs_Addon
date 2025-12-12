@@ -16,8 +16,8 @@ ENT.flRoundsPerMinuteLimit = 3000
 
 ENT.flTopSpeed = 1400
 ENT.flAcceleration = 1400
-ENT.flTurnSpeedBase = 200 // When Not Moving
-ENT.flTurnSpeedSpin = 100 // This is Added as We Go to Full Throttle
+ENT.flTurnSpeedBase = 200 // When not moving
+ENT.flTurnSpeedSpin = 100 // This is added as we go to full throttle
 
 ENT.flTurnSpeed = 0
 
@@ -25,7 +25,7 @@ ENT.sPropBodyGroupSolid = "Prop_Solid"
 ENT.sPropBodyGroupBlurry = "Prop_Blur2"
 
 ENT.sWeaponBodyGroup = "Weapon"
-ENT.sWeaponAttachment = "gun" // This Sucks... WHO THE HELL NAMED THE ATTACHMENTS?!
+ENT.sWeaponAttachment = "gun" // This sucks... WHO THE HELL NAMED THE ATTACHMENTS?!
 ENT.sWeaponPitchPoseParameter = "vehicle_weapon_pitch"
 ENT.sWeaponYawPoseParameter = "vehicle_weapon_yaw"
 ENT.flAimSpeed = 180
@@ -60,12 +60,12 @@ function ENT:FireWeapon()
 end
 
 ENT.sPropSpinSequence = "propeller_spin1"
-// As Sequence PlayBack Rate of sPropSpinSequence
+// As sequence playback rate of sPropSpinSequence
 ENT.flPropSolidUnTil = 3.5
 ENT.flPropBlurryAfter = 1.5
 ENT.flMaxRotorSequenceSpeed = 4
 
-DEFINE_BASECLASS "BaseVehicle" // For The BaseClass Variable...
+DEFINE_BASECLASS "BaseVehicle" // For the BaseClass variable...
 
 function ENT:Initialize()
 	local s = CreateSound( self, self.sMotorSpin )

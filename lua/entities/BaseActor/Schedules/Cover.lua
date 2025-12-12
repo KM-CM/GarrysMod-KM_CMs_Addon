@@ -91,7 +91,8 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 					if flSoFar > flThreshold then continue end
 				else b = true end
 				if b then
-					self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
+					self.vaAimTargetBody = ent:GetPos() + ent:OBBCenter()
+					self.vaAimTargetPose = self.vaAimTargetBody
 					pEnemy = ent
 					if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then self:RangeAttack() end
 					break
@@ -103,8 +104,9 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 		else
 			local goal = sched.Path:GetCurrentGoal()
 			if goal then
-				self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-				self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 )
+				self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle()
+				self.vaAimTargetPose = self.vaAimTargetBody
+				self:ModifyMoveAimVector( self.vaAimTargetBody, self.flTopSpeed, 1 )
 			end
 			self:MoveAlongPathToCover( sched.Path )
 		end
@@ -138,7 +140,8 @@ Actor_RegisterSchedule( "TakeCover", function( self, sched )
 					if flSoFar > flThreshold then continue end
 				else b = true end
 				if b then
-					self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
+					self.vaAimTargetBody = ent:GetPos() + ent:OBBCenter()
+					self.vaAimTargetPose = self.vaAimTargetBody
 					if self:GetWeaponClipPrimary() <= 0 then self:WeaponReload() end
 					if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then
 						self:RangeAttack()

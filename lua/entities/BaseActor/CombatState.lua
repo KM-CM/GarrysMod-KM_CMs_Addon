@@ -1,13 +1,13 @@
-// Whether We wanna Advance or Retreat, and How Fast
+// Whether we wanna advance or retreat, and how fast
 ENT.flCombatState = 1
-// Same as Above, Except Caused Even by Small Amounts of GunFire
-// When You're Retreating Via This, Dont Shout "FALL BACK TO COVER!!!"
+// Same as above, except caused even by small amounts of gunfire
+// When You're retreating via this, don't shout "FALL BACK TO COVER!!!"
 ENT.flCombatStateSmall = 1
 
-// If an Ally This Close to Us is Falling Back, We will Also Do
+// If an ally this close to us is falling back, we will also do
 ENT.flAllyRetreatShareDistance = 4096
 
-// Short-Term Suppression Does Not Get Shared Between Allies
+// Short-term suppression does not get shared between allies
 ENT.flCombatStateSuppressionShort = 0
 ENT.flCombatStateSuppressionShortMax = 16
 ENT.flCombatStateSuppressionShortRec = 4
@@ -37,7 +37,7 @@ function ENT:CalcCombatState( MyTable )
 	flDistSqr = flDistSqr * flDistSqr
 	local vMe = CEntity_GetPos( self )
 	local flSupLong, flSupShort = MyTable.flCombatStateSuppressionLong, MyTable.flCombatStateSuppressionShort
-	// If Some of Us are Already Retreating, Join Them
+	// If some of us are already retreating, join them
 	local t = MyTable.GetAlliesByClass( self )
 	if t then
 		for ally in pairs( t ) do

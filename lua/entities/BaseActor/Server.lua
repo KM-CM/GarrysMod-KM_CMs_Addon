@@ -67,18 +67,20 @@ function ENT:SelectAim( pEnemy, vShoot, flSpeed, flRadius, flBound )
 	if tr.Hit then
 		v = tr.HitPos
 		if self:VisibleVec( v ) then
-			self.vDesAim = ( v + GetVelocity( pEnemy ) * v:Distance( vShoot ) / flSpeed - vShoot ):GetNormalized()
+			self.vaAimTargetBody = v + GetVelocity( pEnemy ) * v:Distance( vShoot ) / flSpeed
+			self.vaAimTargetPose = self.vaAimTargetBody
 		else
 			local vTarget = pEnemy:GetPos() + pEnemy:OBBCenter()
 			local vOffset = GetVelocity( pEnemy ) * vTarget:Distance( vShoot ) / flSpeed
 			vTarget = vTarget + vOffset
-			self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+			self.vaAimTargetBody = vTarget
+			self.vaAimTargetPose = self.vaAimTargetBody
 		end
 	else
 		local vTarget = pEnemy:GetPos() + pEnemy:OBBCenter()
 		local vOffset = GetVelocity( pEnemy ) * vTarget:Distance( vShoot ) / flSpeed
-		vTarget = vTarget + vOffset
-		self.vDesAim = ( vTarget - vShoot ):GetNormalized()
+		self.vaAimTargetBody = vTarget
+		self.vaAimTargetPose = self.vaAimTargetBody
 	end
 end
 
@@ -106,12 +108,9 @@ function ENT:OnKilled( dmg )
 	hook.Run( "OnNPCKilled", self, dmg:GetAttacker(), dmg:GetInflictor() )
 end
 
-function ENT:ModifyMoveAimVector( vec, flSpeed, flDuck )
+function ENT:ModifyMoveAimVector( ang, flSpeed, flDuck )
 	if flDuck < .5 then return end
-	local MyTable = CEntity_GetTable( self )
-	local v = MyTable.vDesAim:Angle()
-	v.p = v.p + 35
-	MyTable.vDesAim = v:Forward()
+	ang[ 1 ] = ang[ 1 ] + 35
 end
 
 function ENT:OnAcquireEnemy() end
@@ -271,11 +270,15 @@ local CEntity_SetPoseParameter = CEntity.SetPoseParameter
 local CEntity_LookupPoseParameter = CEntity.LookupPoseParameter
 local Angle = Angle
 function ENT:HandleTurning( MyTable )
-	local vDesAim = MyTable.GetDesiredAimVector( self )
-	local aDesAim = vDesAim:Angle()
 	local ppAimPitch = CEntity_LookupPoseParameter( self, "aim_pitch" )
 	local Angles = CEntity_GetAngles( self )
 	local aAim = Angle( Angles )
+	local v = MyTable.vaAimTargetPose
+	local aDesAim
+	if v then
+		if isangle( v ) then aDesAim = v
+		else aDesAim = ( v - MyTable.GetShootPos( self, MyTable ) ):Angle() end
+	else aDesAim = Angles end
 	local flTurnRate = MyTable.flTurnRate
 	if ppAimPitch != -1 then
 		local p = CEntity_GetPoseParameter( self, "aim_pitch" )
@@ -299,9 +302,12 @@ function ENT:HandleTurning( MyTable )
 	if MyTable.bCantTurnBody then return end
 	local loco = MyTable.loco
 	loco:SetMaxYawRate( flTurnRate * math_Clamp( math_abs( math_AngleDifference( aDesAim.y, Angles.y ) ), 0, 90 ) * .01111111111 )
-	local v = CEntity_GetPos( self ) + vDesAim
+	local v = MyTable.vaAimTargetBody || CEntity_GetAngles( self )
+	if isangle( v ) then v = v:Forward() else v = ( v - self:GetShootPos() ):GetNormalized() end
+	v = CEntity_GetPos( self ) + v
 	for _ = 1, 8 do loco:FaceTowards( v ) end
 end
+
 function ENT:RunBehaviour()
 	while true do
 		if ai_disabled:GetInt() == 1 then coroutine_yield() continue end
@@ -322,10 +328,10 @@ end
 
 /*
 ENT.bCanClimbLadders = false
-// Note That This is NOT Climbing Ladders, It's Climbing ANYTHING, Like Left 4 Dead 2 Infected
+// Note that this is NOT climbing ladders, it's climbing ANYTHING, like Left 4 Dead 2 infected
 ENT.bCanClimb = false
 
-ENT.bSimpleDuck = false // Can Only Duck Very Simply as The Name Suggests - Either Ducked, or Not Ducked
+ENT.bSimpleDuck = false // Can only duck very simply as the name suggests - either ducked, or not ducked
 ENT.bCanMove = false
 ENT.bCanMoveShoot = false
 ENT.bCanDuck = false

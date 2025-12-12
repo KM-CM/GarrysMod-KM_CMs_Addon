@@ -468,7 +468,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			elseif trDuck then
 				self:Stand( sched.bDuck && 0 || 1 )
 			end
-			self.vDesAim = ( v - self:GetShootPos() ):GetNormalized()
+			self.vaAimTargetBody = v
+			self.vaAimTargetPose = self.vaAimTargetBody
 			if self:CanAttackHelper( v ) then self:RangeAttack() end
 		else
 			local tNearestEnemies = {}
@@ -496,7 +497,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 						if flSoFar > flThreshold then continue end
 					else b = true end
 					if b then
-						self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
+						self.vaAimTargetBody = ent:GetPos() + ent:OBBCenter()
+						self.vaAimTargetPose = self.vaAimTargetBody
 						pEnemy = ent
 						if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then self:RangeAttack() end
 						break
@@ -517,8 +519,9 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			else
 				local goal = sched.Path:GetCurrentGoal()
 				if goal then
-					self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-					if sched.bMove then self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 ) end
+					self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle()
+					self.vaAimTargetPose = self.vaAimTargetBody
+					if sched.bMove then self:ModifyMoveAimVector( self.vaAimTargetBody, self.flTopSpeed, 1 ) end
 				end
 				if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 				local flDist = self.flWalkSpeed * 4
@@ -589,7 +592,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 			elseif trDuck then
 				self:Stand( sched.bDuck && 0 || 1 )
 			end
-			self.vDesAim = ( enemy:GetPos() + enemy:OBBCenter() - self:GetShootPos() ):GetNormalized()
+			self.vaAimTargetBody = enemy:GetPos() + enemy:OBBCenter()
+			self.vaAimTargetPose = self.vaAimTargetBody
 			if self:CanAttackHelper( enemy:GetPos() + enemy:OBBCenter() ) then self:RangeAttack() end
 		else
 			if sched.bMove then
@@ -615,7 +619,8 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 							end
 						end
 						if b then
-							self.vDesAim = ( ent:GetPos() + ent:OBBCenter() - self:GetShootPos() ):GetNormalized()
+							self.vaAimTargetBody = ent:GetPos() + ent:OBBCenter()
+							self.vaAimTargetPose = self.vaAimTargetBody
 							pEnemy = ent
 							if self:CanAttackHelper( ent:GetPos() + ent:OBBCenter() ) then self:RangeAttack() end
 							break
@@ -636,8 +641,9 @@ Actor_RegisterSchedule( "RangeAttack", function( self, sched )
 				else
 					local goal = sched.Path:GetCurrentGoal()
 					if goal then
-						self.vDesAim = ( goal.pos - self:GetPos() ):GetNormalized()
-						if sched.bMove then self:ModifyMoveAimVector( self.vDesAim, self.flTopSpeed, 1 ) end
+						self.vaAimTargetBody = ( goal.pos - self:GetPos() ):Angle()
+						self.vaAimTargetPose = self.vaAimTargetBody
+						if sched.bMove then self:ModifyMoveAimVector( self.vaAimTargetBody, self.flTopSpeed, 1 ) end
 					end
 					if sched.bDuck == nil then sched.bDuck = math.random( 2 ) == 1 end
 					local flDist = self.flWalkSpeed * 4
