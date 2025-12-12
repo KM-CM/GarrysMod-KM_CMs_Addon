@@ -77,7 +77,7 @@ function SWEP:PrimaryAttack()
 	util.Effect( "MuzzleFlash", ed )
 	self:EmitSound "AWM_Shot"
 	self:TakePrimaryAmmo( 1 )
-	// self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() ) // Bolt-Action
+	// self:SetNextPrimaryFire( CurTime() + self:SequenceDuration() ) // Bolt-action
 	self:SetNextPrimaryFire( CurTime() + self.Primary_flDelay )
 end
 

@@ -122,7 +122,7 @@ function SWEP:Think()
 	end
 	if self:GetReloading() then
 		local owner = self:GetOwner()
-		/*// Instantly Snap Out of Reloading
+		/*// Instantly snap out of reloading
 		if owner:KeyDown( IN_ATTACK ) then
 			self:SetReloading( false )
 			local t = CurTime()
@@ -153,7 +153,7 @@ sound.Add {
 
 sound.Add {
 	name = "SPAS12_Pump",
-	channel = CHAN_AUTO, // CHAN_WEAPON Changed so That It Doesnt Interrupt The Firing Sound
+	channel = CHAN_AUTO, // CHAN_WEAPON changed so that it doesn't interrupt the firing sound
 	level = 150,
 	pitch = { 90, 110 },
 	sound = "weapons/shotgun/shotgun_cock.wav"
