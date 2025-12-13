@@ -138,7 +138,7 @@ hook.Add( "Tick", "Director", function()
 			else tSpotted[ pEntity ] = CurTime() + .5 end
 		end
 		local tNewSpotted = {}
-		for pEntity, flTime in pairs( PlyTable.DR_tSpotted ) do
+		for pEntity, flTime in pairs( tSpotted ) do
 			if !IsValid( pEntity ) then continue end
 			if !tNewMusicEntities[ pEntity ] then continue end
 			tNewSpotted[ pEntity ] = flTime
@@ -161,3 +161,4 @@ hook.Add( "Tick", "Director", function()
 		ply:SendLua( "DIRECTOR_MUSIC_TENSION=" .. tostring( flTension ) )
 	end
 end )
+
