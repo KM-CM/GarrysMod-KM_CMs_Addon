@@ -26,6 +26,8 @@ SWEP.bCoverNotAnimated = true
 SWEP.bJumpingNotAnimated = true
 SWEP.bPlayingJump = true
 
+function SWEP:Reload() end
+
 local language_GetPhrase = CLIENT && language.GetPhrase
 local table_Random = table.Random
 local table_insert = table.insert
@@ -113,3 +115,4 @@ function SWEP:Think()
 		self.bPlayingSprint = nil
 	end
 end
+
