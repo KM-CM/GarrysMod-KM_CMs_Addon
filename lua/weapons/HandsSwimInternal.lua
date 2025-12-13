@@ -42,6 +42,8 @@ sound.Add {
 	channel = CHAN_STATIC
 }
 
+function SWEP:Reload() end
+
 local language_GetPhrase = CLIENT && language.GetPhrase
 local table_Random = table.Random
 local table_insert = table.insert
@@ -131,3 +133,4 @@ function SWEP:Think()
 		else self.flSwim = CurTime() + self:SequenceDuration() + .5 end
 	end
 end
+
