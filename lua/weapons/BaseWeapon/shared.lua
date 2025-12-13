@@ -35,8 +35,7 @@ end
 function SWEP:Reload()
 	local pOwner = self:GetOwner()
 	if SERVER && self:Clip1() >= self:GetMaxClip1() && pOwner:IsPlayer() then Achievement_Miscellaneous( pOwner, "WeaponReloadFull" ) end
-	self:SetClip1( 0 )
-	self:DefaultReload( ACT_VM_RELOAD )
+	if self:DefaultReload( ACT_VM_RELOAD ) then self:SetClip1( 0 ) end
 end
 
 function SWEP:AllowsAutoSwitchFrom() return false end
