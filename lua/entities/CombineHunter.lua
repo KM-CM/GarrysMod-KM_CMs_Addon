@@ -2,7 +2,7 @@ AddCSLuaFile()
 DEFINE_BASECLASS "BaseActor"
 
 scripted_ents.Register( ENT, "CombineHunter" )
-scripted_ents.Alias( "npc_hunter", "CombineHunter" )
+// scripted_ents.Alias( "npc_hunter", "CombineHunter" )
 
 // https://github.com/KM-CM/GarrysMod-KM_CMs_Addon_CombineHunter
 if file.Exists( "sound/CombineHunter/Fire.wav", "GAME" ) then
